@@ -19,7 +19,7 @@ export default function App() {
   useStore()
   useGlobalKeys()
   const { r, arg } = useRoute()
-  useEffect(() => { scrollTo(0, 0); document.title = `${ROUTE_NAME[r]} · 입력정보 점검` }, [r])
+  useEffect(() => { scrollTo(0, 0); document.title = `${ROUTE_NAME[r]} · AI 누리 보안` }, [r])
   return (
     <MotionConfig reducedMotion="user">
     <TipProvider>

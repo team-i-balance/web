@@ -23,6 +23,10 @@
 - 판단에 쓰지 않는 정보는 지우거나 `title` 로 접습니다. 데이터 출처('예시 데이터')는 사이드바 한 곳에만 둡니다.
 - 공용 부품: `ds.table` / `ds.table2` / `ds.panel`, Button `quiet`·`link`, Select `quiet`, `<Hit>`, `<Dot>`, Notice `now`. 토큰: `--acc-fill`, `--row-hover/sel/open`, `--bar`, `--ctl-*`, `--side-bg`, `--t-22`.
 
+## 이름·로고 (2026-11-05)
+
+서비스 이름은 **AI 누리 보안**. 로고는 Codex 시안 A '문장과 가림': 문장 세 줄 중 가운데가 블록으로 가려진 마크(64칸 그리드, 면만, 강조색 하나). 부품 `src/shell/Logo.tsx`, 파비콘 `public/favicon.svg`.
+
 ## 지금까지 고친 것
 
 - 1edff48: 한글 낱말 단위 줄바꿈, 좁은 화면 위반 검토 판단 막대, 흐린 글자 대비, 판단 버튼 색 통일(색으로 정답 암시 안 함)

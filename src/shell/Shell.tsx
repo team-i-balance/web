@@ -1,7 +1,7 @@
 // 앱 뼈대: 왼쪽 사이드바(로고·찾기·메뉴·연결 상태·시연), 좁으면 아이콘만, 휴대폰은 위 막대 + 아래 탭. 명령 팔레트, 단축키 안내
 import { useEffect, useState, type ReactNode } from 'react'
 import { Command } from 'cmdk'
-import { LayoutGrid, ShieldAlert, Flag, SlidersHorizontal, MonitorCheck, ChartColumn, Search, Play, Keyboard, RefreshCw, ArrowRight, UserRound, ShieldCheck } from 'lucide-react'
+import { LayoutGrid, ShieldAlert, Flag, SlidersHorizontal, MonitorCheck, ChartColumn, Search, Play, Keyboard, RefreshCw, ArrowRight, UserRound } from 'lucide-react'
 import clsx from 'clsx'
 import { S, emit, useStore, fpGroups, boardWork, QUEUE_ORDER, QUEUE_NAME } from '../domain/store'
 import { connect } from '../api/client'
@@ -12,6 +12,7 @@ import { ROUTE_NAME, go, type Route } from './route'
 import { openDialog } from '../features/dialogs'
 import { undoLast } from '../features/toasts'
 import { toggleCoach } from '../features/coach'
+import { Logo } from './Logo'
 import sh from './shell.module.css'
 
 // 메뉴 아이콘: 16px 가는 선, 색은 글자색을 따른다
@@ -35,8 +36,8 @@ const connText = () => {
 }
 const openPalette = () => { S.ui.palette = true; emit() }
 const Brand = () => (
-  <a className={sh.brand} href="#home" aria-label="입력정보 점검 콘솔 작업판으로">
-    <ShieldCheck size={20} className={sh.logo} aria-hidden="true" /><span className={sh.brandT}>입력정보 점검</span>
+  <a className={sh.brand} href="#home" aria-label="AI 누리 보안 작업판으로">
+    <Logo size={22} className={sh.logo} /><span className={sh.brandT}>AI 누리 보안</span>
   </a>
 )
 

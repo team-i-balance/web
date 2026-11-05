@@ -9,7 +9,7 @@
 }
 .sideTop { padding: 0 10px; margin-bottom: 16px; }
 .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--fg); min-width: 0; }
-.logo { flex: none; color: var(--fg); }
+.logo { flex: none; color: var(--acc); } /* 로고 마크는 서비스 강조색 */
 .brandT { font-weight: var(--w-title); font-size: var(--t-16); letter-spacing: -0.02em; white-space: nowrap; }
 .search {
   display: flex; align-items: center; gap: 8px; height: var(--ctl-sm); padding: 0 8px 0 10px; margin-bottom: 16px;
