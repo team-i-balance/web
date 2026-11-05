@@ -117,7 +117,6 @@ export default function Insights() {
             </details>
             {st.evasion_suspect > 0 && <div><Tag tone="warn">회피 의심 {st.evasion_suspect}</Tag></div>}
           </section>}
-          {live && byAi.length === 0 && <p className={i.note}>대상 AI는 서버 이벤트에 값이 있을 때만 보여요.</p>}
         </div>
       </div>
       <section className={ds.panel} id="recent" aria-label="최근 입력">
