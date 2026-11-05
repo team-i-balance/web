@@ -6,7 +6,6 @@ import { TopBar, Overlays, useGlobalKeys } from './shell/Shell'
 import { useRoute, ROUTE_NAME } from './shell/route'
 import { DialogHost } from './features/dialogs'
 import { Toasts } from './features/toasts'
-import { Coach } from './features/coach'
 import Board from './features/board/Board'
 import Review from './features/review/Review'
 import FalsePositives from './features/fp/FalsePositives'
@@ -37,7 +36,6 @@ export default function App() {
       <Overlays />
       <DialogHost />
       <Toasts />
-      <Coach />
     </TipProvider>
     </MotionConfig>
   )

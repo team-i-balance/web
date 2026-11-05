@@ -5,10 +5,10 @@ import { CAUSES, CONCLUSION, METHODS } from '../domain/defaults'
 import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, josa, partial } from '../lib/util'
 import { hashOf, syncExcludeDecisions } from '../api/fp'
-import { QUEUE_KO, connect, post, setIncludeTest } from '../api/client'
+import { QUEUE_KO, connect } from '../api/client'
 import { afterServerPublish, applyOnServer, publishToServer, reasonKo } from '../api/policy'
 import { EVERY } from '../api/live'
-import { Button, Checkbox, Field, Input, KV, Notice, Select, Switch, Tag, TextArea } from '../ds'
+import { Button, Checkbox, Field, Input, KV, Notice, Select, Tag, TextArea } from '../ds'
 import { Modal } from '../ds/Overlay'
 import f from './dialogs.module.css'
 
@@ -178,15 +178,7 @@ function Publish({ onDone }: { onDone?: () => void }) {
 
 function Server() {
   const a = S.api, st = a.stats, pct = (x?: number) => Math.round((x || 0) * 100) + '%'
-  const [out, setOut] = useState<ReactNode>(null)
-  const [busy, setBusy] = useState(false)
   const reload = async () => { S.ui.dialog = null; emit(); toast((await connect()) ? `서버 데이터 ${S.api.count}건을 불러왔어요` : '서버에 연결하지 못했어요') }
-  const exp = async () => {
-    setBusy(true); setOut('내보내는 중…')
-    try { const r = await post<{ exported: number; public_key_fingerprint: string }>('/logs/export?limit=10000'); setOut(<>{r.exported}건을 내보냈어요 · 키 지문 <code>{String(r.public_key_fingerprint).slice(0, 16)}…</code></>) }
-    catch (e) { setOut('내보내지 못했어요: ' + (e as Error).message) }
-    finally { setBusy(false) }
-  }
   if (!a.live) return (
     <Modal open onClose={closeDialog} title={a.state === 'auth' ? '서버 인증이 필요해요' : '서버에 연결되지 않았어요'}
       desc="서버 데이터만 보여 줘요. 연결되면 바로 채워져요" foot={<><Button variant="ghost" onClick={closeDialog}>닫기</Button><Button variant="primary" onClick={reload}>다시 연결하기</Button></>}>
@@ -195,7 +187,7 @@ function Server() {
     </Modal>
   )
   return (
-    <Modal open onClose={closeDialog} title="백엔드 서버" foot={<><Button variant="ghost" onClick={exp} disabled={busy}>로그 암호화 내보내기</Button><Button variant="primary" onClick={reload}>다시 불러오기</Button></>}>
+    <Modal open onClose={closeDialog} title="백엔드 서버" foot={<Button variant="primary" onClick={reload}>다시 불러오기</Button>}>
       <KV rows={[
         ['주소', a.base === '/api' ? '같은 주소 프록시 → 백엔드' : a.base],
         ['불러온 시각', a.synced ? fmt(a.synced) : '—'],
@@ -203,10 +195,7 @@ function Server() {
         ['최근 7일', `${a.count}건${a.truncated ? ' (너무 많아 일부만 불러옴)' : ''}`],
         ...(st ? [['최근 7일 서버 집계', `${st.total}건`], ['수용률 · 되돌림률', `${pct(st.acceptance_rate)} · ${pct(st.revert_rate)}`]] as [string, string][] : []),
       ]} />
-      <label className={f.checkRow} style={{ justifyContent: 'space-between' }}><span><b>시험 이벤트 포함</b><br /><small style={{ color: 'var(--mute)' }}>흐름도·현황·오탐 신고 숫자에 들어가요. 위반 검토 건은 되지 않아요</small></span>
-        <Switch checked={a.includeTest} label="시험 이벤트 포함" onChange={v => { setIncludeTest(v).then(ok => toast(ok ? `서버 데이터 ${S.api.count}건을 다시 불러왔어요` : '서버에 연결하지 못했어요')) }} /></label>
       {st && Object.keys(st.by_queue).length > 0 && <div className={f.tags}>{Object.entries(st.by_queue).map(([k, v]) => <Tag key={k}>{QUEUE_KO[k] || k} {v}</Tag>)}</div>}
-      {out && <Note>{out}</Note>}
     </Modal>
   )
 }

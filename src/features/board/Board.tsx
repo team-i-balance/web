@@ -39,7 +39,7 @@ export default function Board() {
   const { scale, boxW, off } = useFit(scroller)
   const lock = useRef(0)
 
-  const { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, wait, opt, fps, P, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
+  const { live, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, wait, opt, fps, P, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
     Q, keyOf, cur, ci, eff, steps, decideCase, keepFp, select, pickItem, allOk } = useBoardModel()
 
   // ── 단축키: 1·2·3 판단, ↑↓ 다른 건, Z 되돌리기
@@ -121,7 +121,7 @@ export default function Board() {
           : c.reason?.pick === '오탐' ? <p>'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫으세요. 값 정보가 없어 탐지 제외로는 이어지지 않아요</p>
           : c.reason?.pick ? <p>사유 글 없이 '{c.reason.pick}'만 골랐어요</p>
           : <p className={clsx(b.none, b.row)}>{SEL === 'req' ? '사유가 없어요 · 직원 프로그램은 아직 나중에 사유를 받지 못해요' : '사유 없음'}{SEL === 'req' && <Button size="sm" variant="quiet" onClick={() => requestReason(c)}>사유 다시 요청</Button>}</p>}</div>
-        <div className={b.decide} style={{ '--n': SEL === 'req' ? 3 : 2 } as React.CSSProperties} data-coach="decide">
+        <div className={b.decide} style={{ '--n': SEL === 'req' ? 3 : 2 } as React.CSSProperties}>
           {SEL === 'req'
             ? DECIDE.map(([k, t, d], i) => <DecideButton key={k} title={t} desc={d} k={String(i + 1)} onClick={() => decideCase(c, k)} />)
             : <><DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" onClick={() => decideCase(c, 'violation')} />
@@ -142,7 +142,7 @@ export default function Board() {
           <div className={b.whoT}><b className={b.fpTitle}>{partial(g.type, g.value)}</b><span className={b.dest}>{g.type} · 신고 {g.refs.length}회 · 직원 {g.users.size}명</span></div>
         </div>
         <div className={b.text}><p>{sent(g)}</p></div>
-        <div className={b.decide} style={{ '--n': 2 } as React.CSSProperties} data-coach="decide">
+        <div className={b.decide} style={{ '--n': 2 } as React.CSSProperties}>
           <DecideButton title="탐지 결과 유지" desc="실제 개인정보가 맞아요" k="1" onClick={() => keepFp(g)} />
           <DecideButton title="탐지 제외 검토" desc="이 값만 앞으로 안 잡도록 초안에 추가" k="2" onClick={() => openDialog({ kind: 'exclude', groupKey: groupKey(g), onDone: advanceBoard })} />
         </div>
@@ -165,7 +165,7 @@ export default function Board() {
       <div className={b.pb}>
         <div className={b.changes}>{P.changes.map((c, i) => <div key={i} className={b.change}>{c.what}<em>{c.src}</em></div>)}</div>
         <div className={clsx(b.row, b.rowGap)}>
-          <Button variant="now" size="lg" data-coach="publish" onClick={() => openDialog({ kind: 'publish', onDone: publishDone })}>서명 후 배포하기</Button>
+          <Button variant="now" size="lg" onClick={() => openDialog({ kind: 'publish', onDone: publishDone })}>서명 후 배포하기</Button>
           <Button variant="link" onClick={() => { location.hash = 'policy' }}>정책에서 보기</Button>
         </div>
       </div>
@@ -181,8 +181,8 @@ export default function Board() {
 
   return (
     <div className={b.board}>
-      <section className={b.flow} aria-label="흐름도" data-coach="flow">
-        <div className={b.flowHead}><h2>처리 흐름</h2><span>입력은 최근 7일 · 검토는 열린 건 전체</span>{live && includeTest && <Tag tone="warn">시험 이벤트 포함</Tag>}{truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
+      <section className={b.flow} aria-label="흐름도">
+        <div className={b.flowHead}><h2>처리 흐름</h2><span>입력은 최근 7일 · 검토는 열린 건 전체</span>{truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
         <div className={b.scroller} ref={scroller}>
           <div className={b.stageBox} style={{ width: boxW, height: SH * scale + TOP, marginLeft: off, marginRight: off }}>
             <div className={b.stage} style={{ width: SW, height: SH, top: TOP, transform: `scale(${scale})` }}>
@@ -209,7 +209,7 @@ export default function Board() {
         </div>
       </section>
       <div className={clsx(b.panel, !hasSide && b.solo)}>
-        <section className={clsx(b.main, now && b.mainNow)} aria-label="지금 한 건" data-panel data-coach="panel">
+        <section className={clsx(b.main, now && b.mainNow)} aria-label="지금 한 건" data-panel>
           <div className={b.ph}>
             <h2>{QUEUE_NAME[SEL]}</h2>
             {Q.length > 1 && SEL !== 'pol' && <span className={b.prog}>{Q.length}건 중 {ci + 1}번째</span>}

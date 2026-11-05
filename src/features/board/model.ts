@@ -55,10 +55,10 @@ export function useBoardModel() {
   }
 
 
-  const live = S.api.live, includeTest = S.api.includeTest, truncated = S.api.truncated
+  const live = S.api.live, truncated = S.api.truncated
   const finishEffect = () => { S.ui.lastPub = null; advanceBoard() } // 배포 효과를 보고 다음 할 일로
   const publishDone = () => { S.ui.lastPub = S.policy.version; emit() } // 배포 대화상자가 끝나면 효과 화면으로
-  return { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, ready, wait, opt, fps, P, fresh, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
+  return { live, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, ready, wait, opt, fps, P, fresh, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
     Q, keyOf, cur, ci, eff, steps, act, decideCase, keepFp, select, pickItem, allOk }
 }
 export type BoardModel = ReturnType<typeof useBoardModel>

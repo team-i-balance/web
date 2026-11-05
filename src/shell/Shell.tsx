@@ -1,7 +1,7 @@
 // 앱 뼈대: 왼쪽 사이드바(로고·찾기·메뉴·연결 상태·시연), 좁으면 아이콘만, 휴대폰은 위 막대 + 아래 탭. 명령 팔레트, 단축키 안내
 import { useEffect, useState, type ReactNode } from 'react'
 import { Command } from 'cmdk'
-import { LayoutGrid, ShieldAlert, Flag, SlidersHorizontal, MonitorCheck, ChartColumn, Search, Play, Keyboard, RefreshCw, ArrowRight, UserRound } from 'lucide-react'
+import { LayoutGrid, ShieldAlert, Flag, SlidersHorizontal, MonitorCheck, ChartColumn, Search, Keyboard, RefreshCw, ArrowRight, UserRound } from 'lucide-react'
 import clsx from 'clsx'
 import { S, emit, useStore, fpGroups, boardWork, QUEUE_ORDER, QUEUE_NAME } from '../domain/store'
 import { connect } from '../api/client'
@@ -11,7 +11,6 @@ import { partial } from '../lib/util'
 import { ROUTE_NAME, go, type Route } from './route'
 import { openDialog } from '../features/dialogs'
 import { undoLast } from '../features/toasts'
-import { toggleCoach } from '../features/coach'
 import { Logo } from './Logo'
 import sh from './shell.module.css'
 
@@ -73,7 +72,6 @@ export function TopBar({ r }: { r: Route }) {
         </nav>
         <div className={sh.sideFoot}>
           <Item icon={<i className={clsx(sh.connDot, sh[S.api.state])} />} label={connText()} onClick={() => openDialog({ kind: 'server' })} cls={sh.conn} rail={rail} />
-          <Item icon={<Play size={16} />} label="시연 순서" onClick={toggleCoach} rail={rail} />
         </div>
       </aside>
       <header className={sh.top}>
@@ -81,7 +79,6 @@ export function TopBar({ r }: { r: Route }) {
         <div className={sh.tools}>
           <button type="button" className={sh.tool} onClick={openPalette} aria-label="찾기·이동"><Search size={20} /></button>
           <button type="button" className={sh.tool} onClick={() => openDialog({ kind: 'server' })} aria-label={`데이터: ${connText()}`}><i className={clsx(sh.connDot, sh[S.api.state])} /></button>
-          <button type="button" className={sh.tool} onClick={toggleCoach} aria-label="시연 순서"><Play size={20} /></button>
         </div>
       </header>
       <nav className={sh.bottom} aria-label="메뉴">
@@ -124,7 +121,6 @@ function Palette() {
           </Command.Group>}
           <Command.Group heading="설정" className={sh.palGroup}>
             <Command.Item className={sh.palItem} onSelect={run(() => { connect() })}><RefreshCw size={16} />서버에서 다시 불러오기</Command.Item>
-            <Command.Item className={sh.palItem} onSelect={run(toggleCoach)}><Play size={16} />시연 순서 보기</Command.Item>
             <Command.Item className={sh.palItem} onSelect={run(() => { S.ui.help = true; emit() })}><Keyboard size={16} />단축키 보기<span className={sh.palMeta}>?</span></Command.Item>
           </Command.Group>
         </Command.List>
