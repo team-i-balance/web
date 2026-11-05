@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>입력정보 점검 콘솔</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="bar-box">
+      <span class="bar-title">입력정보 사전 점검 도우미</span>
+      <nav class="navs" aria-label="메뉴">
+        <a class="nav" href="#home" data-r="home">작업판</a>
+        <a class="nav" href="#review" data-r="review">위반 검토<span class="cnt hot" id="nReview"></span></a>
+        <a class="nav" href="#fp" data-r="fp">오탐 신고<span class="cnt" id="nFp"></span></a>
+        <a class="nav" href="#policy" data-r="policy">변환 정책<span class="cnt hot" id="nPolicy"></span></a>
+      </nav>
+    </div>
+    <div class="bar-box"><span class="conn" id="conn" title="">예시 데이터</span><button class="btn sm" id="demoBtn">시연 순서 보기</button></div>
+  </header>
+  <main class="main" id="view"></main>
+</div>
+<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="mbox" id="mbox"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ═══════════ 기준 ═══════════
+const ME = '김보안';
+let NOW = new Date('2026-11-05T16:40:00');
+let LOADED = Date.now(); const clock = () => new Date(NOW.getTime()+Date.now()-LOADED);
+const GRADE = {O:'공개', C:'기밀', S:'민감'};
+const METHODS = ['대체','일반화','삭제','태그'];
+const METHOD_HELP = {대체:'비슷한 가짜 값으로', 일반화:'덜 구체적으로', 삭제:'문장에서 빼기', 태그:'이름표로'};
+const CONCLUSION = {
+  violation:['위반 확정','정당한 사유 없이 개인정보를 외부로 보냈어요'],
+  legit:['정당한 업무 사용','업무상 원문이 필요했고, 확인 결과 문제없어요'],
+  fp:['탐지 오류','개인정보가 아니었어요 (오탐)'],
+};
+// 원인: 변환 결과가 업무에 맞지 않았던 경우만 자동 변환으로 재발을 막을 수 있다
+const CAUSES = {
+  fit:{t:'변환 결과가 업무에 맞지 않아 원문을 썼어요', rule:true},
+  care:{t:'개인정보가 들어간 줄 모르고 원문을 보냈어요'},
+  intent:{t:'업무상 필요 없이 원문을 보냈어요'},
+};
+const ID_TYPES = ['주민등록번호'];
+const USERS = [['이서연','영업1팀'],['박지훈','고객지원팀'],['최유나','인사팀'],['정민호','개발팀'],['강하늘','재무팀'],['윤지아','마케팅팀'],['한도윤','고객지원팀'],['오세린','개발팀'],['임재현','영업2팀'],['송다은','법무팀'],['배준서','영업1팀'],['신하은','고객지원팀'],['조민재','개발팀'],['권나연','인사팀'],['황지호','재무팀'],['안소율','마케팅팀'],['유태경','영업2팀'],['노예린','고객지원팀'],['서도현','개발팀'],['문채원','구매팀'],['장우진','구매팀'],['홍서아','영업1팀']];
+const AI = ['ChatGPT','Claude','Gemini','Copilot'];
+
+// ═══════════ 변환 정책 (직원 PC가 받는 사내 정책·변환) ═══════════
+const POLICY = {
+  version:'v12', deployed:'10/28 14:02', sig:'a3f9…7c21',
+  entities:[
+    {name:'이름', grade:'S', method:'대체', sample:'홍길동', on:true},
+    {name:'전화번호', grade:'S', method:'대체', sample:'010-2345-6789', on:true},
+    {name:'이메일', grade:'S', method:'대체', sample:'hong@gmail.com', on:true},
+    {name:'주소', grade:'S', method:'일반화', sample:'서울 마포구 월드컵북로 21', on:true},
+    {name:'나이', grade:'S', method:'일반화', sample:'17세', on:true},
+    {name:'생년월일', grade:'S', method:'일반화', sample:'1994년 3월 12일', on:true},
+    {name:'계좌번호', grade:'S', method:'대체', sample:'국민 123456-01-234567', on:true},
+    {name:'고객ID', grade:'S', method:'대체', sample:'CU-882910', on:true},
+    {name:'카드번호', grade:'S', method:'삭제', sample:'4111-1111-1111-1111', on:true},
+    {name:'주민등록번호', grade:'S', method:'삭제', sample:'880512-1234567', on:true},
+    {name:'프로젝트 코드명', grade:'S', method:'태그', sample:'프로젝트 오로라', on:true},
+    {name:'API 키', grade:'C', method:'—', sample:'sk-live-…', on:true},
+    {name:'비밀번호', grade:'C', method:'—', sample:'password=…', on:true},
+    {name:'미공개 실적', grade:'C', method:'—', sample:'3분기 매출 412억', on:true},
+    {name:'사업자번호', grade:'O', method:'—', sample:'123-45-67890', on:false},
+  ],
+  learned:[
+    {type:'고객ID', when:'"CU-"로 시작하는 6자리 고객번호', method:'대체', from:'INC-24702', hits:212, live:true, at:new Date('2026-10-21')},
+    {type:'계좌번호', when:'은행명 바로 뒤에 오는 숫자 묶음', method:'대체', from:'INC-24731', hits:47, live:true, at:new Date('2026-10-28')},
+  ],
+  dict:[
+    {term:'프로젝트 오로라', alias:'AURORA, 오로라 PJT', type:'프로젝트 코드명'},
+    {term:'프로젝트 한라', alias:'HALLA', type:'프로젝트 코드명'},
+    {term:'3분기 매출', alias:'Q3 잠정', type:'미공개 실적'},
+  ],
+  exclude:[
+    {term:'1588-1234', why:'회사 대표번호 (홈페이지 공개)', from:'오탐 신고 9회'},
+    {term:'support@company.co.kr', why:'고객센터 공용 메일 (공개)', from:'오탐 신고 4회'},
+  ],
+  risk:{threshold:0.35, maxUp:3},
+  meta:{'작성자':true,'메모·주석':true,'변경 내용 추적':true,'숨긴 시트·행':true,'사진 위치(EXIF)':true,'문서 속성(회사명 등)':true},
+  changes:[],
+};
+const ent = n => POLICY.entities.find(e=>e.name===n);
+function change(what, src='직접 수정'){ POLICY.changes.push({what,src}); }
+
+const FAKE_NAMES=['김민수','이지은','박준호','최서연','정하준','한지민'];
+function convert(type, v, method, i=0){
+  if(method==='삭제') return '';
+  if(method==='태그') return type==='프로젝트 코드명' ? `[프로젝트${String.fromCharCode(65+i)}]` : `[${type}${String.fromCharCode(65+i)}]`;
+  if(method==='일반화'){
+    if(type==='주소') return v.split(/\s+/).slice(0,2).join(' ');
+    if(type==='나이'){const n=parseInt(v);return isNaN(n)?'(연령대)':`${Math.floor(n/10)*10}대`}
+    if(type==='생년월일'){const y=(v.match(/\d{4}/)||[''])[0];return y?`${y.slice(0,3)}0년대`:'(연대)'}
+    return `(${type})`;
+  }
+  if(type==='이름') return FAKE_NAMES[i%FAKE_NAMES.length];
+  if(type==='전화번호') return `010-0000-${String(i+1).padStart(4,'0')}`;
+  if(type==='이메일') return `user${i+1}@example.com`;
+  if(type==='고객ID') return `CU-${100001+i}`;
+  if(type==='계좌번호') return v.replace(/\d/g,'0');
+  if(type==='주소') return '서울 중구 세종대로 1';
+  if(type==='프로젝트 코드명') return ['프로젝트 은하','프로젝트 바다','프로젝트 숲'][i%3];
+  const d=v.replace(/\d/g,'0'); return d===v?'○○○':d;
+}
+// 보안팀 화면에서는 원래 값을 일부만 보여준다
+function partial(type,v){
+  if(v==null||v==='') return '—';
+  if(typeof v==='string'&&v.startsWith('⟦')) return v; // 서버 데이터: 값은 저장하지 않음
+  if(type==='이름') return v[0]+'*'.repeat(Math.max(1,v.length-2))+(v.length>2?v.slice(-1):'');
+  if(type==='주소') return v.split(/\s+/).slice(0,2).join(' ')+' ***';
+  if(type==='전화번호') return v.replace(/(\d{2,3})-?(\d{3,4})-?(\d{4})/,'$1-****-$3');
+  if(type==='이메일') return v.replace(/^(.).*@/,'$1***@');
+  if(type==='주민등록번호') return '******-*******';
+  if(['카드번호','계좌번호'].includes(type)) return v.slice(0,4)+'****';
+  if(type==='생년월일') return v.replace(/\d+월 \d+일/,'**월 **일');
+  return v;
+}
+function josa(w,a,b){const c=w.charCodeAt(w.length-1);if(c<0xAC00||c>0xD7A3)return w+a;return w+((c-0xAC00)%28?a:b)}
+
+// ═══════════ 목업: 직원 PC에서 올라온 이벤트 ═══════════
+const SAMPLES = [
+  {tpl:'고객 {0} 님(연락처 {1})이 {2}로 배송지 변경을 요청했어요. 사과 메일 초안 써줘.', items:[['이름','홍길동'],['전화번호','010-2345-6789'],['주소','서울 마포구 월드컵북로 21 302호']]},
+  {tpl:'{0}({1}, 고객번호 {2}) 환불 건 처리 순서 정리해줘', items:[['이름','김도현'],['이메일','dohyun.kim@gmail.com'],['고객ID','CU-882910']]},
+  {tpl:'지원자 {0}, {1}생, {2} 거주. 면접 질문 10개 뽑아줘', items:[['이름','박서준'],['생년월일','1994년 3월 12일'],['주소','경기 성남시 분당구 정자동 178']]},
+  {tpl:'{0} 일정이 2주 밀렸어요. 협력사에 보낼 지연 안내 메일 써줘', items:[['프로젝트 코드명','프로젝트 오로라']]},
+  {tpl:'{0} {1} 님 4대보험 취득 신고서 작성 순서 알려줘', items:[['주민등록번호','880512-1234567'],['이름','윤정아']]},
+  {tpl:'거래처 담당 {0} 님 계좌 {1}로 이체 요청 메일 써줘', items:[['이름','이영희'],['계좌번호','국민 123456-01-234567']]},
+  {tpl:'{0}({1}) 학생 상담 기록 요약해줘. 보호자 연락처 {2}', items:[['이름','최하린'],['나이','17세'],['전화번호','010-8877-1234']]},
+  {tpl:'카드 {0} 결제가 왜 거절됐는지 고객 {1} 님께 안내문 써줘', items:[['카드번호','4111-1111-1111-1111'],['이름','문가영']]},
+  {tpl:'Authorization: Bearer {0} 넣었는데 왜 401 나와?', items:[['API 키','sk-live-9fA2x7Qp1LmZ0bN4']]},
+  {tpl:'{0} 412억 기준으로 IR 자료 요약해줘', items:[['미공개 실적','3분기 매출']]},
+  {tpl:'회의록 템플릿 마크다운으로 만들어줘', items:[]},
+  {tpl:'파이썬에서 리스트 중복 제거하는 법 알려줘', items:[]},
+];
+const REV_W = {'주소':.4,'프로젝트 코드명':.5,'고객ID':.35,'생년월일':.25,'계좌번호':.2,'이름':.12,'나이':.15,'전화번호':.08,'이메일':.08,'주민등록번호':.05,'카드번호':.05};
+const FP_P  = {'프로젝트 코드명':.75,'고객ID':.65,'주소':.25};
+const FILES = [['고객명단_11월.xlsx',['작성자','숨긴 시트·행','메모·주석']],['인사평가_초안.docx',['작성자','변경 내용 추적']],['현장사진_0412.jpg',['사진 위치(EXIF)']],['계약서_스캔.pdf',['작성자','문서 속성(회사명 등)']]];
+
+function rnd(seed){let s=seed;return()=>((s=Math.imul(s^s>>>15,1|s)+0x6D2B79F5|0,(s>>>0)%100000)/100000)}
+const R = rnd(11);
+const pick = a => a[Math.floor(R()*a.length)];
+const EVENTS = [];
+for(let i=0;i<380;i++){
+  const s=pick(SAMPLES); let u=pick(USERS);
+  const t=new Date(NOW-Math.floor(Math.pow(R(),1.1)*21*24*60)*60000), age=(NOW-t)/864e5;
+  const grade = s.items.some(([x])=>ent(x).grade==='C')?'C':s.items.length?'S':'O';
+  const ti={};
+  const items=s.items.map(([type,orig])=>{const e=ent(type),k=ti[type]=(ti[type]??-1)+1;
+    return {type,orig,method:e.method,conv:e.grade==='S'?convert(type,orig,e.method,k):null,status:grade==='S'?'conv':null,reason:null,fp:null}});
+  let action = grade==='C'?'block':grade==='O'?'pass':null;
+  if(grade==='S'){
+    // 자동 변환이 쌓이며 원문 전송은 줄어드는 추세
+    const r=R(), pr=.06+.08*(age/21);
+    action = r<pr?'raw':r<pr+.23?'revert':r<pr+.31?'cancel':'sent';
+    if(action==='raw'){ items.forEach(it=>it.status='raw'); if(R()<.3) u=USERS[pick([1,8,12])]; }
+    if(action==='revert'){
+      items.forEach(it=>{ if(R()<(REV_W[it.type]||.1)*1.6) it.status='revert' });
+      if(!items.some(it=>it.status==='revert')) items.reduce((a,b)=>(REV_W[b.type]||0)>(REV_W[a.type]||0)?b:a).status='revert';
+      items.filter(it=>it.status==='revert').forEach(it=>{ it.reason=R()<(FP_P[it.type]??.3)?'오탐':'업무상 필요'; if(it.reason==='오탐') it.fp='open'; });
+    }
+  }
+  const f = R()<.2&&grade==='S' ? pick(FILES) : null;
+  EVENTS.push({id:String(25060-i), time:t, user:u[0], dept:u[1], ai:pick(AI), file:f?{name:f[0],meta:f[1]}:null,
+    tpl:s.tpl, items, grade, action, conf:+(0.93+R()*.06).toFixed(2), ver:t<new Date('2026-10-28T14:02')?'v11':'v12'});
+}
+EVENTS.sort((a,b)=>b.time-a.time);
+// 데모: 최근 민감 건 하나는 주민등록번호 원문 전송
+{const e=EVENTS.find(e=>e.grade==='S'&&NOW-e.time>3*36e5);const sm=SAMPLES[4];
+ Object.assign(e,{tpl:sm.tpl,action:'raw',file:null,items:sm.items.map(([type,orig])=>({type,orig,method:ent(type).method,conv:convert(type,orig,ent(type).method),status:'raw',reason:null,fp:null}))});}
+EVENTS.filter(e=>NOW-e.time>10*864e5).forEach(e=>e.items.forEach(it=>{if(it.fp==='open'&&R()<.6)it.fp=pick(['exclude','keep'])}));
+
+// ═══════════ 위반 사건 ═══════════
+// 필수: 원문 전송 + 사유 없음(확실한 탐지) → 시스템이 직원에게 사유 제출을 요청한다
+// 선택: 항목 되돌림 + "업무상 필요" → 직원이 전송할 때 사유를 이미 남겼다
+const LATE_REASON = [
+  '고객 문의 답장을 급하게 쓰느라 사유 입력 창을 그냥 넘겼습니다. 실제 이름과 연락처가 들어가야 하는 안내문이었습니다.',
+  '개인정보가 들어간 줄 모르고 원문 전송을 눌렀습니다. 앞으로 미리보기를 확인하겠습니다.',
+  '변환본으로 보내면 거래처가 내용을 못 알아봐서 원문으로 보냈습니다. 사유 입력은 깜빡했습니다.',
+];
+const NEED_REASON = {'주민등록번호':'4대보험 신고서 양식이 맞는지 확인하려면 실제 번호 형식이 필요했습니다.','계좌번호':'거래처 이체 요청 메일이라 실제 계좌번호가 들어가야 했습니다.','프로젝트 코드명':'협력사에 보내는 메일이라 실제 프로젝트명이 필요했습니다.','주소':'배송지 변경 안내라 정확한 주소가 필요했습니다.','고객ID':'고객 시스템에서 조회할 실제 고객번호가 필요했습니다.','생년월일':'지원 자격(연령) 확인에 실제 생년월일이 필요했습니다.','이름':'고객에게 바로 보낼 안내문이라 실제 이름이 필요했습니다.'};
+const CASES = EVENTS.filter(e=>e.action==='raw'||(e.action==='revert'&&e.items.some(i=>i.reason==='업무상 필요'))).map(e=>({
+  id:'INC-'+e.id, ev:e, need:e.action==='raw'?'req':'opt', time:e.time, user:e.user, dept:e.dept, items:e.items, file:e.file,
+  status:'open', reason:null, history:[], ask:null, close:null, timeline:[],
+}));
+CASES.forEach(c=>{
+  const age=(NOW-c.time)/864e5;
+  if(c.need==='opt'){
+    const it=c.items.find(i=>i.reason==='업무상 필요');
+    c.reason={pick:'업무상 필요', text:NEED_REASON[it.type]||'업무 처리에 실제 값이 필요했습니다.', at:c.time, when:'전송할 때'};
+    c.timeline.push({t:c.time,who:c.user,cls:'emp',what:'미리보기에서 항목 되돌림 · 사유 "업무상 필요"',quote:c.reason.text});
+    if(age>4&&R()<.9){c.status='closed';c.close={k:'legit',cause:null,memo:'사유 확인',rule:null,by:pick(['이정보','박관제']),at:new Date(c.time.getTime()+(1+R()*2)*864e5)};c.timeline.push({t:c.close.at,who:c.close.by,cls:'me',what:'종결 · 정당한 업무 사용'})}
+    return;
+  }
+  c.timeline.push({t:c.time,who:'시스템',cls:'sys',what:'원문 전송 · 사유 선택 건너뜀 → 직원에게 사유 제출 요청'});
+  const sub=new Date(c.time.getTime()+(.03+R()*Math.min(1.6,Math.max(.05,age-.05)))*864e5);
+  if(R()<.72&&sub<NOW){c.reason={text:pick(LATE_REASON),at:sub,when:'요청 받고 제출'};c.timeline.push({t:sub,who:c.user,cls:'emp',what:'사유 제출',quote:c.reason.text})}
+  if(age>3&&R()<.88){
+    const k=c.reason?pick(['violation','violation','legit','fp']):'violation';
+    c.status='closed';c.close={k,cause:k==='fp'?null:pick(['care','care','fit','intent']),memo:c.reason?'':'사유 미제출',rule:null,by:pick(['이정보','박관제','김보안']),at:new Date(Math.max(c.time.getTime()+864e5,(c.reason?c.reason.at:c.time).getTime()+(.3+R())*864e5))};
+    c.timeline.push({t:c.close.at,who:c.close.by,cls:'me',what:`종결 · ${CONCLUSION[k][0]}`});
+  }
+});
+// 데모: 최근 선택 건 하나는 한 항목을 "오탐"으로도 되돌림 (오탐 신고·선택 검토 양쪽에 보임)
+{const c=CASES.find(c=>c.need==='opt'&&c.status==='open'&&c.items.some(i=>i.status==='conv'&&['주소','생년월일','고객ID','프로젝트 코드명','나이'].includes(i.type)));
+  if(c){const it=c.items.find(i=>i.status==='conv'&&['주소','생년월일','고객ID','프로젝트 코드명','나이'].includes(i.type));it.status='revert';it.reason='오탐';it.fp='open';}}
+const caseById = id => CASES.find(c=>c.id===id);
+const openOf = need => CASES.filter(c=>c.need===need&&c.status==='open');
+
+// ═══════════ 유틸 ═══════════
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const fmt=d=>`${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+function ago(d){const m=Math.max(0,Math.round((clock()-d)/6e4));return m<1?'방금':m<60?`${m}분 전`:m<1440?`${Math.round(m/60)}시간 전`:`${Math.round(m/1440)}일 전`}
+const needPill=c=>c.need==='req'?'<span class="pill req">필수</span>':'<span class="pill opt">선택</span>';
+const typeTags=items=>{const c={};items.forEach(i=>c[i.type]=(c[i.type]||0)+1);return Object.entries(c).map(([t,n])=>`<span class="tag">${t}${n>1?' '+n+'개':''}</span>`).join('')};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2800)}
+const ICON={
+  check:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  clock:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  lock:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>',
+  search:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#98a1b0" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  back:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>',
+};
+
+// ═══════════ 라우팅 ═══════════
+const VIEWS={home, review, fp, policy};
+let lastRoute='';
+function route(){
+  const [r,arg]=(location.hash.slice(1)||'home').split('/');
+  $$('.nav').forEach(n=>n.classList.toggle('on',n.dataset.r===r));
+  (VIEWS[r]||home)(arg); badges();
+  if(r!==lastRoute) scrollTo(0,0);
+  lastRoute=r;
+}
+function badges(){
+  const set=(id,n)=>{$(id).textContent=n||''};
+  set('#nReview',openOf('req').length); set('#nFp',fpGroups(true).length); set('#nPolicy',POLICY.changes.length); renderDock();
+}
+window.addEventListener('hashchange',route);
+
+// ═══════════ 지표 ═══════════
+function metrics(from,to=NOW){
+  const S=EVENTS.filter(e=>e.grade==='S'&&e.time>=from&&e.time<to&&e.action!=='cancel');
+  const items=S.flatMap(e=>e.items), rev=items.filter(i=>i.status!=='conv').length;
+  const byType={};
+  items.forEach(i=>{const b=byType[i.type]||(byType[i.type]={n:0,rev:0,fp:0});b.n++;if(i.status==='revert'){b.rev++;if(i.reason==='오탐')b.fp++}});
+  return {n:S.length, accept:pct(S.filter(e=>e.action==='sent').length,S.length), revert:pct(rev,items.length), byType};
+}
+
+// ═══════════ 1. 흐름 (홈) — 점검 단계를 노드로, 처리할 경로만 밝게 ═══════════
+const ICN={
+  inbox:'<path d="M3 13h5l2 3h4l2-3h5"/><path d="M5 5h14l2 8v6H3v-6z"/>',
+  scale:'<path d="M12 3v18M5 7h14M7 7l-3 7h6zM17 7l-3 7h6z"/>',
+  wand:'<path d="M4 20L16 8M14 4v3M18 8h3M17 3l1.5 1.5M10 6h2"/>',
+  cursor:'<path d="M5 3l6 16 2-7 7-2z"/>',
+  bell:'<path d="M6 16V11a6 6 0 0112 0v5l2 2H4zM10 20h4"/>',
+  flag:'<path d="M5 21V4h12l-2 4 2 4H5"/>',
+  list:'<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
+  alert:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>',
+  loop:'<path d="M4 12a8 8 0 0114-5l2 2M20 12a8 8 0 01-14 5l-2-2M20 4v5h-5M4 20v-5h5"/>',
+};
+const ic=k=>`<span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICN[k]}</svg></span>`;
+// 꺾이는 점들을 둥근 모서리 경로로
+function rpath(p,r=10){let d=`M${p[0][0]},${p[0][1]}`;for(let i=1;i<p.length-1;i++){const[a,b,c]=[p[i-1],p[i],p[i+1]];const d1=Math.hypot(b[0]-a[0],b[1]-a[1]),d2=Math.hypot(c[0]-b[0],c[1]-b[1]),k=Math.min(r,d1/2,d2/2);
+  const p1=[b[0]+(a[0]-b[0])/d1*k,b[1]+(a[1]-b[1])/d1*k],p2=[b[0]+(c[0]-b[0])/d2*k,b[1]+(c[1]-b[1])/d2*k];d+=` L${p1} Q${b} ${p2}`}
+  const l=p[p.length-1];return d+` L${l}`}
+// 지금 할 일: 독에 할 일 종류가 모이고, 가운데에는 지금 할 일 하나만 크게. 흐름도는 그 일이 있는 자리로 확대된다.
+let SIM=false, FK=null, EFFECT=false, MAPMODE='all', VIEW=null, MAPOPEN=false, DEC=null;
+function tasks(){
+  const req=openOf('req');
+  return [
+    {k:'close',t:'사유를 보고 결론 내요',items:req.filter(c=>c.reason).sort((a,b)=>b.time-a.time),node:'req',hot:true},
+    {k:'deploy',t:'재발 방지 규칙을 배포해요',items:POLICY.changes.length?[POLICY.changes]:[],n:POLICY.changes.length,node:'pol',hot:true},
+    {k:'fp',t:'오탐 신고를 정리해요',items:fpGroups(true),node:'fp'},
+    {k:'opt',t:'선택 검토를 훑어봐요',items:openOf('opt').sort((a,b)=>b.time-a.time),node:'opt'},
+  ];
+}
+const waiting=()=>openOf('req').filter(c=>!c.reason);
+function curTask(){const T=tasks();return T.find(t=>t.k===FK&&t.items.length)||T.find(t=>t.items.length)||null}
+function renderDock(){const d=$('#dock');d&&d.remove()}
+function excludeModal(g,done){
+  openModal({title:'탐지 제외',html:`<p><b>${esc(partial(g.type,g.value))}</b> 값은 배포 후 탐지하지 않아요.</p>
+    ${['이름','주민등록번호','카드번호','계좌번호','전화번호','이메일','주소'].includes(g.type)?`<div class="note w mt"><div>공개된 값일 때만 제외하세요</div></div>`:''}
+    <label class="f">제외 사유</label><input type="text" name="why" placeholder="예: 회사 대표번호 (홈페이지 공개)"><div class="err">제외 사유를 적어 주세요.</div>`,ok:'제외에 추가하기',validate:f=>!!f.why,
+    onOk:f=>{POLICY.exclude.unshift({term:g.value,why:f.why,from:`오탐 신고 ${g.refs.length}회`,draft:true});change(`탐지 제외 추가: "${partial(g.type,g.value)}" (${f.why})`,'오탐 신고');g.refs.forEach(r=>r.it.fp='exclude');badges();done();toast('추가했어요 · 서명 후 배포하면 적용돼요')}});
+}
+function publishModal(done){
+  const P=POLICY, nv='v'+(+P.version.slice(1)+1);
+  openModal({title:`${nv} 서명 후 배포`,html:`<p>서명한 정책만 직원 PC가 받아요.</p><div class="mt">${P.changes.map(c=>`<div class="chg">${esc(c.what)}</div>`).join('')}</div>`,
+    ok:'서명 후 배포하기',onOk:()=>{P.learned.forEach(r=>{if(!r.live){r.live=true;r.at=clock();r.fresh=true}});P.dict.forEach(d=>delete d.draft);P.exclude.forEach(d=>delete d.draft);
+      P.version=nv;P.deployed=fmt(clock());P.changes=[];badges();done();toast(`${nv}를 서명해 배포했어요`)}});
+}
+// 작업판: 흐름도 노드가 곧 대기열. 노드를 누르면 옆 패널에서 바로 처리한다.
+let SEL=null, LASTPUB=null, CUR={}, ADV=false;
+function undoToast(msg,undo){
+  let t=$('#utoast');if(!t){t=document.createElement('div');t.id='utoast';t.className='utoast';t.setAttribute('role','status');document.body.appendChild(t)}
+  t.innerHTML=`<span>${msg}</span>${undo?'<button class="btn sm ghost" id="uBtn">되돌리기</button>':''}`;t.classList.add('show');
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),6000);
+  if(undo)$('#uBtn').onclick=()=>{undo();t.classList.remove('show');home();badges()};
+}
+function home(){
+  const day=864e5, wk=new Date(NOW-7*day);
+  const E=EVENTS.filter(e=>e.time>=wk), n=f=>E.filter(f).length;
+  const pub=n(e=>e.grade==='O'), conf=n(e=>e.grade==='C'), sens=n(e=>e.grade==='S');
+  const raw=n(e=>e.action==='raw');
+  const req=openOf('req'), ready=req.filter(c=>c.reason).sort((a,b)=>b.time-a.time), wait=req.filter(c=>!c.reason);
+  const opt=openOf('opt').sort((a,b)=>b.time-a.time), fps=fpGroups(true), P=POLICY;
+  const fresh=P.learned.filter(r=>r.live&&r.fresh).map(r=>r.type);
+  const caught=fresh.length?E.filter(e=>e.action==='raw'&&e.items.some(i=>i.status==='raw'&&fresh.includes(i.type))).length:0;
+  const work={req:ready.length,pol:P.changes.length,fp:fps.length,opt:opt.length};
+  const ORDER=['req','pol','fp','opt'];
+  if(!SEL) SEL=ORDER.find(k=>work[k])||'req';
+  if(ADV&&!work[SEL]&&!(SEL==='pol'&&LASTPUB)){const nx=ORDER.find(k=>work[k]);if(nx)SEL=nx}
+  ADV=false;
+
+  // ── 흐름도 (스테이지 1216×300): 위 줄은 흐름, 아래 줄은 할 일 노드 4개가 트레이 위에 나란히
+  const SW=1216, SH=300, W=176, H=88, AY=40, BY=200, cx=x=>x+W/2, my=y=>y+H/2;
+  const N=[
+    {id:'in',x:0,y:AY,l:'AI 입력',v:E.length,s:'최근 7일'},
+    {id:'conv',x:260,y:AY,l:'개인정보 변환',v:sens,s:`공개 ${pub} · 기밀 차단 ${conf}`},
+    {id:'raw',x:740,y:AY,l:'원문 전송',v:LASTPUB&&fresh.length?`${raw} → ${raw-caught}`:raw,s:'사유 선택 건너뜀',cls:'danger',go:'req'},
+    {id:'fp',x:140,y:BY,l:'오탐 신고',v:fps.length,s:'잘못 잡힌 값',w:work.fp,act:1},
+    {id:'opt',x:380,y:BY,l:'선택 검토',v:opt.length,s:'사유 남기고 보냄',w:work.opt,act:1},
+    {id:'req',x:740,y:BY,l:'필수 검토',v:req.length,s:`사유 도착 ${ready.length} · 대기 ${wait.length}`,w:work.req,act:1},
+    {id:'pol',x:1040,y:BY,l:'재발 방지 배포',v:P.changes.length?`대기 ${P.changes.length}`:P.version,s:P.changes.length?'서명 후 배포':'적용 중',w:work.pol,act:1},
+  ];
+  const EG=[
+    {c:'main',p:[[W,my(AY)],[260,my(AY)]]},
+    {c:'main',p:[[260+W,my(AY)],[740,my(AY)]]},
+    {c:'hot',p:[[cx(740),AY+H],[cx(740),BY]]},
+    {c:'',p:[[310,AY+H],[310,164],[cx(140),164],[cx(140),BY]]},
+    {c:'',p:[[386,AY+H],[386,164],[cx(380),164],[cx(380),BY]]},
+    {c:'loop'+(P.changes.length?' on':''),p:[[740+W,my(BY)],[1040,my(BY)]]},
+    {c:'loop'+(LASTPUB?' on':''),p:[[cx(1040),BY],[cx(1040),14],[cx(260),14],[cx(260),AY]]},
+  ];
+  const CH=[
+    {x:262,y:164,t:'오탐'},{x:428,y:164,t:'업무상 필요'},
+    {x:978,y:my(BY),t:'결론 → 규칙',cls:'loop'},{x:760,y:14,t:'배포 → 다음부터 자동 변환',cls:'loop'},
+  ];
+  const node=x=>{const tag=x.act||x.go?'button':'div';
+    return `<${tag} class="wn ${x.cls||''}${SEL===x.id?' sel':''}${x.act&&!x.w?' idle':''}" data-id="${x.id}" style="left:${x.x}px;top:${x.y}px" ${tag==='button'?`data-sel="${x.go||x.id}"`:''}>
+      ${x.w?`<span class="wn-n">${x.w}</span>`:''}<span class="wn-l">${x.l}</span><span class="wn-v">${x.v}</span><span class="wn-s">${x.s}</span></${tag}>`};
+
+  // ── 트레이: 왼쪽 큰 칸 = 지금 한 건, 오른쪽 좁은 칸 = 다음 대기 건
+  const types=c=>[...new Set(c.items.filter(i=>i.status!=='conv').map(i=>i.type))].join('·');
+  const Q={req:ready,opt,fp:fps,pol:P.changes.length?[P.changes]:[]}[SEL]||[];
+  const keyOf=x=>SEL==='fp'?x.type+'|'+x.value:SEL==='pol'?'pol':x.id;
+  let cur=Q.find(x=>keyOf(x)===CUR[SEL])||Q[0]||null; if(cur) CUR[SEL]=keyOf(cur);
+  const ci=cur?Q.indexOf(cur):-1;
+  const prog=Q.length>1?`<div class="prog">${Q.slice(0,12).map((_,i)=>`<i class="${i===ci?'on':''}"></i>`).join('')}<span>${ci+1} / ${Q.length}</span></div>`:'';
+  const TITLE={req:'필수 검토',opt:'선택 검토',fp:'오탐 신고',pol:'재발 방지 배포'}[SEL];
+  const eff=SEL==='pol'&&LASTPUB&&fresh.length&&!P.changes.length;
+  let BIG='',NEXT='',TA='';
+  if(SEL==='req'||SEL==='opt'){
+    if(SEL==='opt'&&opt.length) TA='<button class="btn sm" id="allOk">모두 문제 없음</button>';
+    BIG=cur?`<div class="nc-who"><b>${cur.user}</b><span class="sub">${cur.dept} · ${ago(cur.time)}</span><a class="qi-more" href="#review/${cur.id}">자세히</a></div>
+      <div class="nc-t">${types(cur)} → ${cur.ev.ai}</div>
+      <div class="nc-x">${sentHtml(cur)}</div>
+      <div class="nc-r">“${esc(cur.reason.text)}”</div>
+      <div class="nc-a">${SEL==='req'
+        ?[['violation','위반'],['legit','예외 인정'],['fp','오탐']].map(([k,t])=>`<button class="btn" data-q="${k}" data-id="${cur.id}">${t}</button>`).join('')
+        :`<button class="btn" data-q="violation" data-id="${cur.id}">위반</button><button class="btn p" data-q="legit0" data-id="${cur.id}">문제 없음</button>`}</div>`
+      :`<div class="empty"><b>${SEL==='req'?'결론 낼 건이 없어요':'확인할 건이 없어요'}</b></div>`;
+    NEXT=Q.filter(x=>x!==cur).map(c=>`<button class="nx" data-pick="${c.id}"><b>${c.user}</b><span>${types(c)} → ${c.ev.ai}</span><em>${ago(c.time)}</em></button>`).join('')
+      +(SEL==='req'&&wait.length?`<div class="nx-h">사유 대기 ${wait.length}</div>`+wait.map(c=>`<div class="nx dim"><b>${c.user}</b><span>${types(c)} → ${c.ev.ai}</span><button class="btn sm ghost" data-q="demo" data-id="${c.id}">사유 도착 (데모)</button></div>`).join(''):'');
+  }else if(SEL==='fp'){
+    const sent=g=>{const r=g.refs[0];return esc(r.e.tpl.replace(/\{(\d)\}/g,(_,j)=>r.e.items[j]===r.it?'⟪'+partial(g.type,r.it.orig)+'⟫':'…'))};
+    BIG=cur?`<div class="nc-who"><b>${esc(partial(cur.type,cur.value))}</b><span class="sub">${cur.type} · 신고 ${cur.refs.length}회</span></div>
+      <div class="nc-x">${sent(cur)}</div>
+      <div class="nc-a"><button class="btn" data-q="keep" data-g="${ci}">정탐 유지</button><button class="btn p" data-q="exclude" data-g="${ci}">탐지 제외</button></div>`
+      :'<div class="empty"><b>처리할 신고가 없어요</b></div>';
+    NEXT=Q.map((g,i)=>g===cur?'':`<button class="nx" data-pick="${keyOf(g)}"><b>${esc(partial(g.type,g.value))}</b><span>${g.type}</span><em>${g.refs.length}회</em></button>`).join('');
+  }else{
+    BIG=eff?`<div class="nc-big">원문 전송 ${raw} → ${raw-caught}</div><div class="nc-who"><span class="sub">${LASTPUB} 배포 · 지난 7일에 이 규칙이 있었다면</span></div>
+        <div class="nc-a"><button class="btn p" data-q="next">다음 할 일</button></div>`
+      :P.changes.length?`<div class="qlist">${P.changes.map(c=>`<div class="chg">${esc(c.what)}</div>`).join('')}</div><div class="nc-a"><button class="btn p" id="pubBtn">서명 후 배포</button></div>`
+      :`<div class="empty"><b>배포할 변경이 없어요</b><span class="sub">${P.version} 적용 중</span></div>`;
+    NEXT=P.learned.slice().reverse().map(r=>`<div class="nx static"><b>${r.type}</b><span>${esc(r.when)} → ${r.method}</span><em>${r.live?'적용 중':'배포 대기'}</em></div>`).join('');
+  }
+
+  // 지금 보는 건이 거쳐 온 단계와 앞으로 갈 단계
+  const ST=!cur&&SEL!=='pol'?null:{
+    req:[['원문 전송','done'],['사유 도착','done'],['판단','now'],['규칙 배포','next','예외 인정일 때'],['PC 적용','next']],
+    opt:[['되돌림','done','업무상 필요'],['사유 남김','done'],['확인','now'],['종결','next']],
+    fp:[['오탐으로 되돌림','done',`${cur&&cur.refs?cur.refs.length:0}회`],['판단','now'],['배포','next','제외할 때'],['PC 적용','next']],
+    pol:eff?[['판단','done'],['규칙 생성','done'],['서명 후 배포','done',LASTPUB],['PC 적용','now','5분 안에 받아요']]
+      :P.changes.length?[['판단','done'],['규칙 생성','done',`${P.changes.length}건`],['서명 후 배포','now'],['PC 적용','next']]
+      :[['서명 후 배포','done',P.version],['PC 적용','done']],
+  }[SEL];
+  const STEPBAR=ST?`<ol class="stp" aria-label="이 건의 단계">${ST.map(([t,s,sub])=>`<li class="${s}"${s==='now'?' aria-current="step"':''}><span class="d">${s==='done'?'✓':''}</span><span class="t">${t}</span>${sub?`<em>${sub}</em>`:''}</li>`).join('')}</ol>`:'';
+  $('#view').innerHTML=`
+  <section class="card board tray-board">
+    <div class="bd-vp" id="vp"><div class="stage" id="stage" style="width:${SW}px;height:${SH}px">
+      <svg aria-hidden="true" style="width:${SW}px;height:${SH}px">${EG.map(e=>`<path class="bedge ${e.c}" d="${rpath(e.p)}"/>`).join('')}</svg>
+      ${CH.map(c=>`<span class="bchip ${c.cls||''}" style="left:${c.x}px;top:${c.y}px">${c.t}</span>`).join('')}
+      ${N.map(node).join('')}
+    </div>
+    <div class="zoom"><button class="btn sm ghost" data-z="1" aria-label="확대">+</button><button class="btn sm ghost" data-z="0">맞춤</button><button class="btn sm ghost" data-z="-1" aria-label="축소">−</button></div></div>
+    <svg class="bwire" id="bwire" aria-hidden="true"><path id="bwp"/><circle id="bwa" r="0"/></svg>
+    <div class="tray" id="tray">
+      <span class="tail" id="tab"></span>
+      <div class="tray-in">
+        <section class="nowc" aria-label="지금 한 건">
+          <div class="nc-h"><h2 class="h20">${TITLE}</h2>${prog}${TA}</div>
+          ${STEPBAR}
+          <div class="nc-b" id="ncb">${BIG}</div>
+        </section>
+        <aside class="nexts" aria-label="다음">${NEXT?`<div class="nx-h">${SEL==='pol'?'규칙':'다음'}</div>${NEXT}`:''}</aside>
+      </div>
+    </div>
+  </section>`;
+
+  // ── 확대·이동 + 노드 아래에서 트레이 꼬리로 내려오는 선
+  const vp=$('#vp'), stg=$('#stage'), bd=$('.tray-board'), tab=$('#tab'), tray=$('#tray');
+  const off=()=>{$('#bwp').setAttribute('d','');$('#bwa').setAttribute('r',0)};
+  const placeTab=()=>{const el=stg.querySelector('.wn.sel');if(!el)return;const b=tray.getBoundingClientRect(),r=el.getBoundingClientRect();
+    tab.style.left=Math.min(Math.max(r.left+r.width/2-b.left,40),b.width-40)+'px'};
+  const wire=()=>{const el=stg.querySelector('.wn.sel');if(!el)return off();
+    const b=bd.getBoundingClientRect(),r=el.getBoundingClientRect(),v=vp.getBoundingClientRect(),t=tab.getBoundingClientRect();
+    if(r.bottom<v.top||r.top>v.bottom||r.right<v.left||r.left>v.right)return off();
+    const x1=r.left+r.width/2-b.left,y1=Math.min(r.bottom,v.bottom)-b.top,x2=t.left+t.width/2-b.left,y2=t.top+t.height/2-b.top;
+    const mid=(y1+y2)/2;$('#bwp').setAttribute('d',Math.abs(x1-x2)<1?`M${x1},${y1} V${y2}`:rpath([[x1,y1],[x1,mid],[x2,mid],[x2,y2]],12));
+    $('#bwa').setAttribute('cx',x1);$('#bwa').setAttribute('cy',y1);$('#bwa').setAttribute('r',5)};
+  let raf=0;const follow=ms=>{const t0=performance.now();cancelAnimationFrame(raf);const f=()=>{wire();if(performance.now()-t0<ms)raf=requestAnimationFrame(f)};f()};
+  const apply=(v,anim)=>{stg.classList.toggle('anim',!!anim);stg.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.s})`;VIEW=v;placeTab();follow(anim?600:0)};
+  // 오른쪽 64px는 줌 버튼 자리로 비워 둔다
+  const fit=anim=>{const w=vp.clientWidth-64,h=vp.clientHeight,s=Math.min(1.1,Math.max(.4,Math.min((w-32)/SW,(h-40)/SH)));apply({s,x:Math.max(16,(w-SW*s)/2),y:Math.max(8,(h-SH*s)/2)},anim)};
+  // 꼬리는 이전 자리에서 새 자리로 미끄러지듯 이동
+  if(home._tabX!=null){tab.style.transition='none';tab.style.left=home._tabX+'px'}
+  if(VIEW&&VIEW.keep) apply(VIEW); else fit();
+  if(home._tabX!=null){const to=tab.style.left;tab.style.left=home._tabX+'px';void tab.offsetWidth;tab.style.transition='';tab.style.left=to;follow(500)}
+  home._tabX=parseFloat(tab.style.left)||0;
+  window.onresize=()=>{if(document.body.contains(vp))fit()};
+  const zoomAt=(ns,mx,my)=>{ns=Math.min(2,Math.max(.35,ns));apply({s:ns,x:mx-(mx-VIEW.x)*ns/VIEW.s,y:my-(my-VIEW.y)*ns/VIEW.s,keep:1})};
+  vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect();zoomAt(VIEW.s*Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015)),e.clientX-r.left,e.clientY-r.top)},{passive:false});
+  $$('[data-z]').forEach(b=>b.onclick=()=>{const z=+b.dataset.z;if(!z){VIEW=null;fit(true);return}zoomAt(VIEW.s*(z>0?1.2:1/1.2),vp.clientWidth/2,vp.clientHeight/2)});
+  let drag=null;
+  vp.onpointerdown=e=>{if(e.target.closest('button,a'))return;drag={x:e.clientX,y:e.clientY,v:VIEW};vp.setPointerCapture(e.pointerId);vp.classList.add('grab')};
+  vp.onpointermove=e=>{if(!drag)return;apply({s:drag.v.s,x:drag.v.x+e.clientX-drag.x,y:drag.v.y+e.clientY-drag.y,keep:1})};
+  vp.onpointerup=vp.onpointercancel=()=>{drag=null;vp.classList.remove('grab')};
+
+  // ── 처리 (한 번 클릭 + 되돌리기). 처리하면 다음 건, 대기열이 끝나면 다음 할 일 노드로
+  $$('[data-sel]').forEach(b=>b.onclick=()=>{SEL=b.dataset.sel;home()});
+  $$('[data-pick]').forEach(b=>b.onclick=()=>{CUR[SEL]=b.dataset.pick;home()});
+  const NAME={violation:'위반',legit:'예외 인정',legit0:'문제 없음',fp:'오탐'};
+  const done=()=>{const nb=$('#ncb');if(nb)nb.classList.add('out');setTimeout(()=>{ADV=true;home();badges()},nb?200:0)};
+  $$('[data-q]').forEach(b=>b.onclick=()=>{const q=b.dataset.q,c=b.dataset.id&&caseById(b.dataset.id);
+    if(q==='next'){LASTPUB=null;ADV=true;home();return}
+    if(q==='demo'){c.reason={text:pick(LATE_REASON),at:clock(),when:'요청 받고 제출'};c.timeline.push({t:clock(),who:c.user,cls:'emp',what:'사유 제출',quote:c.reason.text});home();badges();return}
+    if(q==='keep'||q==='exclude'){const g=fps[+b.dataset.g];
+      if(q==='keep'){g.refs.forEach(r=>r.it.fp='keep');undoToast(`${partial(g.type,g.value)} 정탐 유지`,()=>g.refs.forEach(r=>r.it.fp='open'));done()}
+      else excludeModal(g,done);return}
+    if(c){const nL=P.learned.length,nC=P.changes.length,k=q==='legit0'?'legit':q;
+      if(q==='legit0'){closeCase(c,{k:'legit',cause:null,memo:'사유 확인',rule:null})}else quickClose(c,k,true);
+      done();
+      undoToast(`${c.user} · ${NAME[q]}${P.learned.length>nL?' · 규칙 추가돼 배포 대기':''}`,()=>{c.status='open';c.close=null;P.learned.length=nL;P.changes.length=nC;CUR[SEL]=c.id;SEL=c.need==='opt'?'opt':'req'})}
+  });
+  const all=$('#allOk');if(all)all.onclick=()=>{const list=[...opt];list.forEach(c=>closeCase(c,{k:'legit',cause:null,memo:'사유 확인',rule:null}));ADV=true;home();badges();
+    undoToast(`선택 검토 ${list.length}건 문제 없음`,()=>{list.forEach(c=>{c.status='open';c.close=null});SEL='opt'})};
+  const pb=$('#pubBtn');if(pb)pb.onclick=()=>publishModal(()=>{LASTPUB=POLICY.version;home()});
+  guideSpot();
+}
+
+// ═══════════ 2. 위반 검토 ═══════════
+let rq={tab:'req', q:''}, picked=new Set();
+const TABS={
+  req:['필수','<b>원문을 그대로 보내면서 사유 선택을 건너뛴 건</b>이에요(탐지가 확실한 건만). 시스템이 직원에게 사유 제출을 요청했어요. 모두 결론을 내 주세요.'],
+  opt:['선택','직원이 미리보기에서 <b>일부 항목을 되돌리고 "업무상 필요"를 고른 건</b>이에요. 사유가 이미 있어요. 필요할 때 확인하세요.'],
+  closed:['종결','결론이 난 사건이에요. 직원 사유와 보안팀 판단 근거가 함께 남아요.'],
+};
+function listOf(tab){
+  return CASES.filter(c=>tab==='closed'?c.status==='closed':c.need===tab&&c.status==='open')
+    .filter(c=>!rq.q||(c.id+c.user+c.dept+c.items.map(i=>i.type).join()).includes(rq.q))
+    .sort(tab==='closed'?(a,b)=>b.close.at-a.close.at:tab==='req'?(a,b)=>(!!b.reason-!!a.reason)||b.time-a.time:(a,b)=>b.time-a.time);
+}
+function review(id){
+  if(id){const c=caseById(id);if(c)rq.tab=c.status==='closed'?'closed':c.need}
+  const list=listOf(rq.tab), wide=innerWidth>1100;
+  if(!id&&wide&&list[0]) id=list[0].id;
+  const c=id&&caseById(id);
+  const n=k=>k==='closed'?CASES.filter(c=>c.status==='closed').length:openOf(k).length;
+  const row=x=>{
+    const sel=rq.tab==='opt';
+    const line = x.status==='closed' ? `<span class="pill ${x.close.k==='violation'?'bad':x.close.k==='fp'?'info':'mute'}">${CONCLUSION[x.close.k][0]}</span> <span class="sub">${x.reason?'· "'+esc(x.reason.text)+'"':'· 사유 미제출'}</span>`
+      : x.reason ? `<b>${x.reason.pick?'업무상 필요':'사유 도착'}</b> · ${esc(x.reason.text)}` : `<span class="wait">사유 대기 중</span>`;
+    return `<a class="it ${c&&x.id===c.id?'on':''}" href="#review/${x.id}">
+      <div class="a">${sel?`<input type="checkbox" class="chk" data-pick="${x.id}" ${picked.has(x.id)?'checked':''} aria-label="${x.id} 선택">`:''}<span class="who">${x.user}</span><span class="sub">${x.dept}</span><span class="when">${ago(x.time)}</span></div>
+      <div class="types">${typeTags(x.items.filter(i=>i.status!=='conv'))}</div>
+      <div class="r">${line}</div></a>`;
+  };
+  $('#view').innerHTML=`
+  <div class="split ${c?'has':''}">
+    <section class="card listpane" aria-label="사건 목록">
+      <div class="card-h" style="flex-direction:column;align-items:flex-start;gap:24px"><h1 class="t32">위반 검토</h1>
+        <div class="tabs" id="tabs" role="tablist">${Object.entries(TABS).map(([k,[t]])=>`<button role="tab" data-k="${k}" class="${rq.tab===k?'on':''}">${t}<span class="n ${k==='req'?'hot':''}">${n(k)}</span></button>`).join('')}</div></div>
+      <div class="card-b">
+        ${rq.tab==='opt'?`<div class="toolbar"><span class="sub">체크해서 한 번에 종결해요</span><button class="btn sm" id="bulk" ${picked.size?'':'disabled'}>${picked.size?picked.size+'건 ':''}종결하기</button></div>`:''}
+        <div class="list">${list.length?(rq.tab==='req'?groupRows(list,row):list.map(row).join('')):`<div class="empty"><b>${rq.tab==='closed'?'종결된 사건이 없어요':'검토할 사건이 없어요'}</b><span class="sub">다른 탭을 확인해 보세요</span></div>`}</div>
+      </div>
+    </section>
+    <section class="card detailpane" aria-label="사건 상세">${c?detail(c):'<div class="empty"><b>사건을 고르세요</b><span class="sub">왼쪽 목록에서 사건을 누르면 여기에 열려요</span></div>'}</section>
+  </div>`;
+  $('#tabs').onclick=e=>{const k=e.target.closest('button')?.dataset.k;if(!k)return;rq.tab=k;picked.clear();if(location.hash==='#review')review();else location.hash='review'};
+  let tm;if($('#q'))$('#q').oninput=e=>{clearTimeout(tm);tm=setTimeout(()=>{rq.q=e.target.value;review(c&&c.id);const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)},250)};
+  $$('[data-pick]').forEach(x=>{x.onclick=e=>e.stopPropagation();x.onchange=()=>{x.checked?picked.add(x.dataset.pick):picked.delete(x.dataset.pick);review(c&&c.id)}});
+  const bulk=$('#bulk');if(bulk)bulk.onclick=()=>openModal({title:`선택 검토 ${picked.size}건 — 문제 없음`,
+    html:`<p>정당한 업무 사용으로 종결해요.</p><label class="f">판단 근거</label><textarea name="memo">사유 확인 — 업무 범위 내 사용</textarea>`,
+    ok:'종결하기',onOk:f=>{const k=picked.size;[...picked].forEach(id=>closeCase(caseById(id),{k:'legit',cause:null,memo:f.memo,rule:null}));picked.clear();toast(`${k}건을 종결했어요`);review()}});
+  if(c) bindDetail(c);
+}
+
+function groupRows(list,row){
+  const ready=list.filter(x=>x.reason), wait=list.filter(x=>!x.reason);
+  const h=(t,n)=>`<div class="lh"><b>${t}</b><span class="n">${n}</span></div>`;
+  return (ready.length?h('사유 도착 · 지금 결론',ready.length)+ready.map(row).join(''):'')
+       + (wait.length?h('사유 기다리는 중',wait.length)+wait.map(row).join(''):'');
+}
+function detail(c){
+  const leaked=c.items.filter(i=>i.status!=='conv');
+  const st=c.status==='closed'?`<span class="pill ${c.close.k==='violation'?'bad':c.close.k==='legit'?'ok':''}">${CONCLUSION[c.close.k][0]}</span>`:c.reason?'<span class="pill br">검토 대기</span>':'<span class="pill">사유 대기</span>';
+  return `
+  <div class="dhead">
+    <div style="min-width:0">
+      <a class="btn sm ghost back" href="#review" style="margin:-8px 0 8px -16px">목록으로</a>
+      <div class="badges">${needPill(c)}${st}</div>
+      <h2 class="t24">${c.user} 님이 ${leaked.map(i=>i.type).join(', ')} 원문을 ${c.ev.ai}에 보냈어요</h2>
+      <div class="sub">${c.dept} · ${ago(c.time)}</div>
+    </div>
+    <div class="actbar">${actions(c)}</div>
+  </div>
+  <div class="dbody">
+  ${reasonSec(c)}
+  ${c.close?closeSec(c):''}
+  <div class="dsec"><h3>사건 경로</h3>${casePath(c)}</div>
+  <div class="dsec"><h3>보낸 내용 <span class="sub">원문은 일부만 보여요</span></h3>
+    <div class="text">${sentHtml(c)}</div>
+    ${c.items.some(i=>i.reason==='오탐')?`<div class="note mt"><div>${c.items.filter(i=>i.reason==='오탐').map(i=>i.type).join(', ')} 항목은 "오탐"으로 되돌려 <a href="#fp">오탐 신고</a>에서 따로 처리해요</div></div>`:''}
+    <div class="scroll mt"><table class="nw"><thead><tr><th>항목</th><th>나간 값</th><th>변환했다면</th><th>직원 처리</th></tr></thead><tbody>
+    ${c.items.map(it=>`<tr><td>${it.type}</td>
+      <td>${it.status==='conv'?`<span class="muted">${esc(it.conv)||'(삭제)'}</span>`:`<b style="color:var(--text-danger)">${esc(partial(it.type,it.orig))}</b>`}</td>
+      <td>${it.conv===''?'<span class="muted">(삭제)</span>':esc(it.conv)}</td>
+      <td>${it.status==='conv'?'<span class="pill">변환 유지</span>':it.status==='revert'?`<span class="pill">되돌림 · ${it.reason}</span>`:'<span class="pill bad">원문 전송</span>'}</td></tr>`).join('')}
+    </tbody></table></div>
+    ${c.file?`<div class="note ${c.need==='req'?'c':''} mt"><div><b>${esc(c.file.name)}</b> · ${c.need==='req'?'원본 파일이 올라갔어요 · 숨은 정보 포함':'변환 사본이 올라갔어요 · 숨은 정보 제거'}</div></div>`:''}
+  </div>
+  </div>`;
+}
+function reasonSec(c){
+  if(c.reason) return `<div class="dsec"><h3>직원 사유 <span class="sub">${c.reason.pick?c.reason.pick+' · ':''}${c.reason.when}</span></h3>
+    <div class="quote">${esc(c.reason.text)}</div></div>`;
+  return `<div class="dsec"><h3>직원 사유</h3><div class="note w"><div>직원 사유를 기다리고 있어요</div></div></div>`;
+}
+function closeSec(c){
+  const x=c.close;
+  return `<div class="dsec"><h3>보안팀 결론</h3>
+    <div class="note ${x.k==='violation'?'c':x.k==='legit'?'ok':''}"><div><div><b>${CONCLUSION[x.k][0]}</b></div>
+      ${x.cause?`<div>원인: ${CAUSES[x.cause].t}</div>`:''}
+      ${x.memo?`<div>판단 근거: ${esc(x.memo)}</div>`:''}
+      ${x.rule?`<div>재발 방지: ${esc(x.rule)}</div>`:''}</div></div></div>`;
+}
+// 사건 하나가 지나온 단계 — 지금 차례인 단계만 밝게
+function casePath(c){
+  const rv=c.items.filter(i=>i.status!=='conv').length, closed=c.status==='closed';
+  const st=[
+    ['done','입력',c.ev.ai],
+    ['done','탐지',`민감 ${c.items.length}개`],
+    [c.need==='req'?'done bad':'done','직원 선택',c.need==='req'?'원문 전송':`${rv}개 되돌림`],
+    c.reason?['done','직원 사유','제출함']:[closed?'done':'now','직원 사유',closed?'미제출':'기다리는 중'],
+    closed?['done','보안팀 결론',CONCLUSION[c.close.k][0]]:[c.reason?'now':'later','보안팀 결론',c.reason?'지금 차례':'사유 도착 후'],
+    closed&&c.close.rule?['ok','재발 방지','자동 변환 등록']:['later','재발 방지',closed?'없음':'결론과 함께'],
+  ];
+  const nowAt=st.findIndex(x=>x[0].startsWith('now'));
+  return `<div class="path">${st.map((x,i)=>`${i?`<span class="pe ${nowAt>=0&&i<=nowAt?'lit':''}"></span>`:''}<div class="pn ${x[0]}"><span class="lab">${x[1]}</span><span class="v">${x[2]}</span></div>`).join('')}</div>`;
+}
+// 유형별 되돌림률 (현황에서 정책 표로 옮김: 고칠 자리 옆에서 보이게)
+function revCell(b){
+  if(!b||b.n<3) return '<span class="muted">—</span>';
+  const r=pct(b.rev,b.n), hi=r>=30;
+  return `<span class="rbar ${hi?'hi':''}"><i><span style="width:${Math.min(100,r*2)}%"></span></i><b style="font-variant-numeric:tabular-nums">${r}%</b>${hi?'<span class="pill req">높음</span>':''}</span>`;
+}
+
+function sentHtml(c){
+  return esc(c.ev.tpl).replace(/\{(\d)\}/g,(_,i)=>{const it=c.items[i];
+    if(it.status==='conv') return it.conv===''?`<mark class="mD">${it.type}</mark>`:`<mark class="mS" title="${it.type} · ${it.method}">${esc(it.conv)}</mark>`;
+    return `<mark class="mR" title="${it.type} 원문 (일부 가림)">${esc(partial(it.type,it.orig))}</mark>`});
+}
+function actions(c){
+  if(c.status==='closed') return `<button class="btn" data-a="reopen">다시 열기</button>`;
+  if(!c.reason) return `<button class="btn ghost" data-a="demo">사유 도착시키기 (데모)</button><button class="btn" data-a="close">사유 없이 결론 내기</button>`;
+  if(c.need==='opt') return `<button class="btn" data-a="close">결론 내기</button><button class="btn p" data-a="ok">문제 없음으로 종결</button>`;
+  return `<button class="btn p" data-a="close">결론 내기</button>`;
+}
+function log(c,what,quote){c.timeline.push({t:clock(),who:ME,cls:'me',what,quote})}
+function bindDetail(c){
+  const re=()=>{review(c.id);badges()};
+  $$('[data-a]').forEach(b=>b.onclick=()=>{
+    const a=b.dataset.a;
+    if(a==='reopen'){c.status='open';c.close=null;log(c,'다시 열기');re();return}
+    if(a==='ok'){closeCase(c,{k:'legit',cause:null,memo:'사유 확인',rule:null});re();toast('정당한 업무 사용으로 종결했어요');return}
+    if(a==='demo'){c.reason={text:c.history.length?'협력사 요청 메일에 실제 값이 들어가야 해서 그대로 보냈습니다. 변환본으로는 상대가 확인할 수 없었습니다.':pick(LATE_REASON),at:clock(),when:'요청 받고 제출'};
+      c.timeline.push({t:clock(),who:c.user,cls:'emp',what:'사유 제출',quote:c.reason.text});re();toast('직원 사유가 도착했어요');return}
+    if(a==='close') closeModal(c,re);
+  });
+}
+function quickClose(c,k,silent){
+  const leaked=c.items.filter(i=>i.status!=='conv'), it=leaked.find(i=>i.reason==='업무상 필요')||leaked[0];
+  let rule=null;
+  if(k==='legit'&&it){const ty=it.type,cur=ent(ty).method;
+    const method=(ty==='이름'&&cur==='대체')?'태그':({태그:'대체',대체:'일반화',일반화:'대체',삭제:'태그'}[cur]||'대체');
+    const when=ty==='프로젝트 코드명'?`"${it.orig}"${josa(it.orig,'이','가').slice(it.orig.length)} 포함된 입력`:`${josa(ty,'이','가')} 포함된 ${c.file?'파일':'입력'}`;
+    rule=`${when} → ${ty} ${method}`;POLICY.learned.push({type:ty,when,method,from:c.id,hits:0,live:false});change(`자동 변환 추가: ${rule}`,c.id)}
+  closeCase(c,{k,cause:k==='fp'?null:k==='legit'?'fit':'care',memo:{violation:'사유 확인 — 위반',legit:'사유 확인 — 업무상 필요',fp:'개인정보 아님'}[k],rule});
+  if(!silent)toast(rule?'종결했어요 · 변환 정책에서 배포하면 적용돼요':'종결했어요');
+}
+function closeCase(c,res){
+  c.status='closed';c.close={...res,by:ME,at:clock()};
+  log(c,`종결 · ${CONCLUSION[res.k][0]}${res.rule?' · 자동 변환 등록':''}`,res.memo&&res.memo!=='사유 확인'?res.memo:null);
+}
+function closeModal(c,done){
+  const leaked=c.items.filter(i=>i.status!=='conv'), t0=leaked.find(i=>i.reason==='업무상 필요')||leaked[0]||c.items[0];
+  const types=[...new Set(leaked.map(i=>i.type))];
+  const k0=c.need==='opt'?'legit':'violation', cause0=c.need==='opt'||GI>=0?'fit':'care';
+  openModal({title:'결론 내기',
+    html:`${c.reason?`<div class="quote">${esc(c.reason.text)}</div>`:`<div class="note w"><div>직원 사유 없이 결론을 내요</div></div>`}
+    <label class="f">결론</label>
+    ${Object.entries(CONCLUSION).map(([k,[t,d]])=>`<label class="choice"><input type="radio" name="k" value="${k}" ${k===k0?'checked':''}><span><b>${t}</b></span></label>`).join('')}
+    <div id="causeW"><label class="f">원인</label><select name="cause">${Object.entries(CAUSES).map(([k,v])=>`<option value="${k}" ${k===cause0?'selected':''}>${v.t}</option>`).join('')}</select></div>
+    <div id="ruleW"><label class="choice plain"><input type="checkbox" name="mk" checked><span><b>재발 방지 — 같은 입력은 다음부터 자동 변환</b></span></label>
+    <div class="rulebox" id="rb">
+      <label class="f">항목</label><select name="type">${types.map(t=>`<option ${t===t0.type?'selected':''}>${t}</option>`).join('')}</select>
+      <label class="f">이런 경우에</label><input type="text" name="when">
+      <label class="f">이렇게 바꿔요</label><select name="method">${METHODS.map(m=>`<option>${m}</option>`).join('')}</select>
+      <div class="sub">결과: <span id="rbIn"></span> → <b id="rbOut"></b></div>
+      <div class="err" id="rbSame" style="color:var(--text-warning)">지금 기본 방식과 같아서 바뀌는 게 없어요. 직원이 원문을 써야 했던 이유에 맞게 고르세요.</div>
+    </div></div>
+    <div id="noRule" class="note mt" style="display:none">이 원인은 자동 변환으로 막을 수 없어요. 결론과 판단 근거만 남겨요.</div>
+    <div id="fpW" style="display:none"><label class="choice plain"><input type="checkbox" name="ex"><span><b>잘못 잡힌 값을 탐지 제외에 추가</b></span></label>
+      <div id="exW"><select name="exi">${leaked.map((i,n)=>`<option value="${n}">${i.type} · ${esc(partial(i.type,i.orig))}</option>`).join('')}</select>
+      <div class="note w mt" id="exWarn"><div>공개된 값일 때만 제외하세요</div></div></div></div>
+    <label class="f">판단 근거</label><textarea name="memo" placeholder="판단 근거">${GI>=0?'사유 확인 — 변환본이 거래처 업무에 맞지 않아 원문을 보냄. 고의성 없음, 같은 입력은 자동 변환으로 막음':''}</textarea>
+    <div class="err" id="memoErr">판단 근거를 적어 주세요.</div>`,
+    ok:'종결하기',
+    onOpen:box=>{
+      const q=n=>box.querySelector(n);
+      const u=()=>{const k=q('[name=k]:checked').value, cause=CAUSES[q('[name=cause]').value];
+        q('#causeW').style.display=k==='fp'?'none':''; q('#fpW').style.display=k==='fp'?'':'none';
+        q('#ruleW').style.display=k!=='fp'&&cause.rule?'':'none'; q('#noRule').style.display=k!=='fp'&&!cause.rule?'':'none';
+        q('#rb').style.display=q('[name=mk]').checked?'':'none';
+        q('#exW').style.display=q('[name=ex]').checked?'':'none';
+        q('#exWarn').style.display=['이름','주민등록번호','카드번호','계좌번호','전화번호','이메일','주소','생년월일'].includes(leaked[+q('[name=exi]').value]?.type)?'':'none';
+        const ty=q('[name=type]').value, src=c.items.find(i=>i.type===ty)||t0, cur=ent(ty).method, sel=q('[name=method]');
+        if(!q('[name=when]').dataset.touched) q('[name=when]').value=ty==='프로젝트 코드명'?`"${src.orig}"${josa(src.orig,'이','가').slice(src.orig.length)} 포함된 입력`:`${josa(ty,'이','가')} 포함된 ${c.file?'파일':'입력'}`;
+        if(sel.dataset.for!==ty){sel.value=(ty==='이름'&&cur==='대체')?'태그':({태그:'대체',대체:'일반화',일반화:'대체',삭제:'태그'}[cur]||'대체');sel.dataset.for=ty}
+        q('#rbIn').textContent=partial(ty,src.orig); q('#rbOut').textContent=convert(ty,src.orig,sel.value)||'(삭제)'; 
+        q('#rbSame').style.display=sel.value===cur&&q('#ruleW').style.display!=='none'&&q('[name=mk]').checked?'block':'none'};
+      q('[name=when]').addEventListener('input',e=>e.target.dataset.touched='1');
+      box.querySelectorAll('input,select').forEach(x=>x.addEventListener('change',u));u()},
+    validate:f=>!!f.memo,
+    onOk:f=>{
+      let rule=null;
+      if(f.k!=='fp'&&CAUSES[f.cause].rule&&f.mk){rule=`${f.when} → ${f.type} ${f.method}`;POLICY.learned.push({type:f.type,when:f.when,method:f.method,from:c.id,hits:0,live:false});change(`자동 변환 추가: ${rule}`,c.id)}
+      if(f.k==='fp'&&f.ex){const it=leaked[+f.exi];POLICY.exclude.unshift({term:it.orig,why:'위반 검토에서 탐지 오류로 확인',from:c.id,draft:true});change(`탐지 제외 추가: ${it.type} "${partial(it.type,it.orig)}"`,c.id)}
+      closeCase(c,{k:f.k,cause:f.k==='fp'?null:f.cause,memo:f.memo,rule});done();
+      toast(rule||f.k==='fp'&&f.ex?'종결했어요 · 변환 정책에서 서명 후 배포하면 적용돼요':'종결했어요');
+    }});
+}
+
+// ═══════════ 3. 오탐 신고 (탐지 개선 큐) ═══════════
+let fpTab='open';
+function fpGroups(open){
+  const g={};
+  EVENTS.forEach(e=>e.items.forEach(it=>{if(it.reason!=='오탐')return;if(open!==(it.fp==='open'))return;
+    const k=it.type+'|'+it.orig;(g[k]||(g[k]={type:it.type,value:it.orig,refs:[],users:new Set(),fp:it.fp})).refs.push({e,it});g[k].users.add(e.user)}));
+  return Object.values(g).sort((a,b)=>b.refs.length-a.refs.length);
+}
+function fp(){
+  const groups=fpGroups(fpTab==='open');
+  const RES={exclude:['탐지 제외함','info'],keep:['정탐 유지','mute']};
+  $('#view').innerHTML=`
+  <section class="card">
+    <div class="card-h"><h1 class="t32">오탐 신고</h1>
+      <div class="tabs" id="ftabs"><button data-k="open" class="${fpTab==='open'?'on':''}">처리할 신고<span class="n">${fpGroups(true).length}</span></button><button data-k="done" class="${fpTab==='done'?'on':''}">처리함<span class="n">${fpGroups(false).length}</span></button></div></div>
+    <div class="card-b">
+    ${groups.length?`<div class="scroll"><table><thead><tr><th>잡힌 값</th><th>탐지 항목</th><th class="num">신고</th><th>나온 문장</th><th class="num">${fpTab==='open'?'처리':'결과'}</th></tr></thead><tbody>
+    ${groups.map((g,i)=>{const r=g.refs[0];const cs=g.refs.map(x=>caseById('INC-'+x.e.id)).filter(Boolean);return`<tr><td style="white-space:nowrap"><b>${esc(partial(g.type,g.value))}</b></td><td style="white-space:nowrap">${g.type}</td>
+      <td class="num" style="white-space:nowrap">${g.refs.length}회</td>
+      <td style="min-width:240px"><div class="cell-sub">${esc(r.e.tpl.replace(/\{(\d)\}/g,(_,j)=>r.e.items[j]===r.it?'⟪'+partial(g.type,r.it.orig)+'⟫':'…'))}</div>${cs.length?`<a class="cell-sub" href="#review/${cs[0].id}">선택 검토에도 있어요</a>`:''}</td>
+      <td class="num" style="white-space:nowrap">${fpTab==='open'?`<button class="btn sm" data-kp="${i}">정탐 유지하기</button> <button class="btn sm" data-x="${i}">탐지 제외하기</button>`:`<span class="pill">${RES[g.fp][0]}</span>`}</td></tr>`}).join('')}
+    </tbody></table></div>`:`<div class="empty"><b>${fpTab==='open'?'처리할 신고가 없어요':'아직 처리한 신고가 없어요'}</b><span class="sub">직원이 "오탐"으로 되돌리면 여기에 모여요</span></div>`}
+    </div>
+  </section>`;
+  $('#ftabs').onclick=e=>{const k=e.target.closest('button')?.dataset.k;if(k){fpTab=k;fp()}};
+  const mark=(g,s)=>g.refs.forEach(r=>r.it.fp=s);
+  $$('[data-x]').forEach(b=>b.onclick=()=>excludeModal(groups[b.dataset.x],()=>{fp();badges()}));
+  $$('[data-kp]').forEach(b=>b.onclick=()=>{mark(groups[b.dataset.kp],'keep');fp();badges();toast('정탐으로 유지했어요')});
+}
+
+// ═══════════ 4. 변환 정책 ═══════════
+function policy(){
+  const P=POLICY, nv='v'+(+P.version.slice(1)+1);
+  const pm7=metrics(new Date(NOW-7*864e5));
+  const sec=(id,title,why,body,btn='')=>`<section class="psec" id="${id}"><div class="psec-h"><h2 class="h20">${title}</h2>${btn}</div>${body}</section>`;
+  const draft=x=>x.draft||x.live===false?'<span class="pill draft">배포 대기</span>':'';
+  $('#view').innerHTML=`
+  <section class="card">
+    <div class="card-h"><div><h1 class="t32">변환 정책</h1><p class="d">${P.changes.length?`배포 대기 ${P.changes.length}건 · 서명 후 배포하면 ${nv}가 돼요`:`${P.version} 적용 중 · ${P.deployed} 배포`}</p></div>
+      ${P.changes.length?`<div class="row"><button class="btn ghost" id="showChg">변경 내용 보기</button><button class="btn p" id="pub">서명 후 배포하기</button></div>`:''}</div>
+    <div class="polhead"><div class="pipe">${(()=>{const dr=k=>P.changes.some(c=>k.test(c.what));
+      const ns=[['p1','기본 템플릿',`${P.entities.filter(e=>e.on).length}개 항목`,/탐지 (켬|끔)|등급:|변환 방식:/],['p2','자동 변환',`${P.learned.length}개 규칙`,/자동 변환/],['p3','회사 고유 단어',`${P.dict.length}개`,/고유 단어/],['p4','탐지 제외',`${P.exclude.length}개`,/탐지 제외/],['p6','파일 사본',`숨은 정보 ${Object.values(P.meta).filter(Boolean).length}종`,/파일 사본/]];
+      return ns.map(([id,t,v,k],i)=>`${i?'<span class="pe"></span>':''}<button class="pn ${dr(k)?'draft':''}" data-j="${id}"><span class="lab">${dr(k)?'바뀜 · ':''}${t}</span><span class="v">${v}</span></button>`).join('')
+        +`<span class="pe ${P.changes.length?'lit':''}"></span><div class="pn ship ${P.changes.length?'now':''}"><span class="lab">서명 · 배포</span><span class="v">${P.changes.length?`대기 ${P.changes.length}건 → ${nv}`:`${P.version} 적용 중`}</span></div>`})()}</div></div>
+    <div class="card-b" id="polBody"><div class="psecs">
+  ${sec('p1','탐지 항목과 변환 방식','첫 규칙 세트예요. <b>민감</b>은 AI가 문맥을 놓치지 않는 평문으로 바꿔 보내고, <b>기밀</b>은 외부 전송을 막고 사내 AI로 안내해요.',
+    `<div class="scroll"><table class="nw"><thead><tr><th>사용</th><th>항목</th><th>등급</th><th>변환 방식</th><th>결과 예시</th><th>되돌림률</th></tr></thead><tbody>
+    ${P.entities.map((e,i)=>`<tr><td><label class="switch"><input type="checkbox" data-on="${i}" ${e.on?'checked':''} aria-label="${e.name} 탐지"><span></span></label></td>
+      <td><b>${e.name}</b></td>
+      <td><select class="sel" data-g="${i}" aria-label="${e.name} 등급">${['O','S','C'].map(g=>`<option value="${g}" ${e.grade===g?'selected':''}>${GRADE[g]}</option>`).join('')}</select></td>
+      <td>${e.grade==='S'?`<select class="sel" data-m="${i}" aria-label="${e.name} 변환 방식">${METHODS.map(m=>`<option ${e.method===m?'selected':''}>${m}</option>`).join('')}</select>`:'<span class="muted">—</span>'}</td>
+      <td><span class="cell-sub">${e.grade==='C'?'외부 차단':e.grade==='O'?'그대로 전송':`${esc(e.sample)} → </span><b>${esc(convert(e.name,e.sample,e.method))||'(삭제)'}</b><span>`}</span></td><td>${revCell(pm7.byType[e.name])}</td></tr>`).join('')}
+    </tbody></table></div>`)}
+
+  ${sec('p2','위반에서 등록한 자동 변환','보안팀이 위반을 해결하며 등록한 규칙이에요. 같은 입력이 오면 미리보기에 이미 바뀐 상태로 나와서, 직원은 확인만 하면 돼요.',
+    `<div class="scroll"><table class="nw"><thead><tr><th>이런 경우에</th><th>이렇게</th><th>출처</th><th class="num">적용</th></tr></thead><tbody>
+    ${[...P.learned].reverse().map(r=>`<tr><td><b>${r.type}</b> · ${esc(r.when)}${draft(r)}</td><td>${r.method}</td><td><a href="#review/${r.from}">${r.from}</a></td><td class="num">${r.hits?r.hits.toLocaleString()+'회':'<span class="muted">—</span>'}</td></tr>`).join('')}
+    </tbody></table></div>`)}
+
+  ${sec('p3','회사 고유 단어','프로젝트명처럼 우리 회사만 쓰는 단어는 탐지 엔진이 몰라요. 여기 등록해야 잡혀요.',
+    `<table><thead><tr><th>단어</th><th>함께 잡을 표현</th><th>탐지 항목</th><th></th></tr></thead><tbody>
+    ${P.dict.map((d,i)=>`<tr><td><b>${esc(d.term)}</b>${draft(d)}</td><td class="cell-sub">${esc(d.alias)||'—'}</td><td>${d.type}</td><td class="num"><button class="btn sm ghost" data-dd="${i}">삭제하기</button></td></tr>`).join('')}
+    </tbody></table>`,`<button class="btn sm" id="addDict">단어 추가하기</button>`)}
+
+  ${sec('p4','탐지 제외','공개된 정보라 잡지 않기로 한 값이에요. 오탐 신고와 위반 검토에서 추가돼요.',
+    `<table><thead><tr><th>값</th><th>사유</th><th>근거</th><th></th></tr></thead><tbody>
+    ${P.exclude.map((d,i)=>`<tr><td><b>${esc(d.term)}</b>${draft(d)}</td><td>${esc(d.why)}</td><td class="cell-sub">${/^INC-/.test(d.from)?`<a href="#review/${d.from}">${d.from}</a>`:esc(d.from)}</td><td class="num"><button class="btn sm ghost" data-de="${i}">삭제하기</button></td></tr>`).join('')}
+    </tbody></table>`)}
+
+  ${sec('p6','파일 사본에서 지울 숨은 정보','파일을 올리면 원본은 그대로 두고, 개인정보를 바꾸고 숨은 정보를 지운 사본을 대신 올려요.',
+    `<div class="metas">${Object.entries(P.meta).map(([k,v])=>`<label><span>${k}</span><span class="switch"><input type="checkbox" data-meta="${k}" ${v?'checked':''} aria-label="${k} 제거"><span></span></span></label>`).join('')}</div>`)}
+    </div></div>
+  </section>`;
+
+  const re=()=>{const y=$('#polBody').scrollTop;policy();badges();$('#polBody').scrollTop=y};
+  $$('[data-j]').forEach(b=>b.onclick=()=>{const el=document.getElementById(b.dataset.j),bd=$('#polBody');bd.scrollTo({top:el.offsetTop-bd.offsetTop-0,behavior:'smooth'})});
+  $$('[data-on]').forEach(x=>x.onchange=()=>{const e=P.entities[x.dataset.on];e.on=x.checked;change(`${e.name} 탐지 ${e.on?'켬':'끔'}`);re()});
+  $$('[data-g]').forEach(x=>x.onchange=()=>{const e=P.entities[x.dataset.g],b=e.grade;e.grade=x.value;e.method=x.value==='S'?(e.method==='—'?'대체':e.method):'—';change(`${e.name} 등급: ${GRADE[b]} → ${GRADE[e.grade]}`);re()});
+  $$('[data-m]').forEach(x=>x.onchange=()=>{const e=P.entities[x.dataset.m],b=e.method;e.method=x.value;change(`${e.name} 변환 방식: ${b} → ${e.method}`);re()});
+  $$('[data-dd]').forEach(x=>x.onclick=()=>{const d=P.dict.splice(x.dataset.dd,1)[0];change(`회사 고유 단어 삭제: ${d.term}`);re()});
+  $$('[data-de]').forEach(x=>x.onclick=()=>{const d=P.exclude.splice(x.dataset.de,1)[0];change(`탐지 제외 삭제: "${d.term}"`);re()});
+  $$('[data-meta]').forEach(x=>x.onchange=()=>{P.meta[x.dataset.meta]=x.checked;change(`파일 사본: ${x.dataset.meta} ${x.checked?'제거':'유지'}`);re()});
+  $('#addDict').onclick=()=>openModal({title:'회사 고유 단어 추가',html:`<label class="f">단어</label><input type="text" name="term" placeholder="예: 프로젝트 백두"><label class="f">함께 잡을 표현</label><input type="text" name="alias" placeholder="예: BAEKDU, 백두 PJT"><label class="f">어떤 정보로 잡을까요</label><select name="type"><option>프로젝트 코드명</option><option>미공개 실적</option></select><div class="err">단어를 적어 주세요.</div>`,
+    ok:'추가하기',validate:f=>!!f.term,onOk:f=>{P.dict.unshift({term:f.term,alias:f.alias,type:f.type,draft:true});change(`회사 고유 단어 추가: ${f.term}`);re()}});
+  const chgList=()=>`<div class="mt">${P.changes.map(c=>`<div class="chg">${esc(c.what)}</div>`).join('')}</div>`;
+  const sc=$('#showChg');if(sc)sc.onclick=()=>openModal({title:`배포 대기 변경 ${P.changes.length}건`,html:chgList(),ok:'닫기',onOk:()=>{},noCancel:true});
+  const pub=$('#pub');if(pub)pub.onclick=()=>publishModal(re);
+}
+
+// ═══════════ 모달 ═══════════
+let lastFocus=null;
+function openModal({title,html,ok,onOk,onOpen,validate,noCancel}){
+  const box=$('#mbox'); lastFocus=document.activeElement;
+  box.innerHTML=`<h3>${title}</h3>${html}<div class="mfoot">${noCancel?'':'<button class="btn ghost" id="mNo">취소</button>'}<button class="btn p" id="mOk">${ok}</button></div>`;
+  $('#modal').classList.add('open');onOpen&&onOpen(box);
+  (box.querySelector('input[type=text],textarea')||$('#mOk')).focus();
+  if(!noCancel)$('#mNo').onclick=closeM;
+  $('#mOk').onclick=()=>{const f={};box.querySelectorAll('[name]').forEach(x=>{if(x.type==='radio'){if(x.checked)f[x.name]=x.value}else f[x.name]=x.type==='checkbox'?x.checked:x.value.trim()});
+    if(validate&&!validate(f)){const er=box.querySelector('#memoErr')||box.querySelector('.err');if(er)er.style.display='block';return}
+    closeM();onOk(f)};
+}
+function closeM(){$('#modal').classList.remove('open');lastFocus&&lastFocus.focus&&lastFocus.focus()}
+$('#modal').onclick=e=>{if(e.target.id==='modal')closeM()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
+addEventListener('keydown',e=>{
+  if(!location.hash.startsWith('#review')||$('#modal').classList.contains('open')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
+  const k=e.key, dir=k==='ArrowDown'||k==='j'?1:k==='ArrowUp'||k==='k'?-1:0; if(!dir)return;
+  const items=$$('.it'); if(!items.length)return; e.preventDefault();
+  const i=items.findIndex(a=>a.classList.contains('on')), nx=items[Math.max(0,Math.min(items.length-1,i+dir))];
+  location.hash=nx.getAttribute('href'); requestAnimationFrame(()=>{const on=$('.it.on');on&&on.scrollIntoView({block:'nearest'})});
+});
+addEventListener('resize',()=>{if(location.hash.startsWith('#review'))route()});
+
+
+// ═══════════ 시연 순서 (해커톤 발표용) ═══════════
+const GUIDE=[
+  {h:()=>'home',pre:()=>{SEL='req';VIEW=null},sel:'.bd-vp',t:'흐름이 곧 작업판',x:'숫자 배지가 붙은 노드가 할 일이에요. 고른 노드에서 내려온 선이 아래 트레이로 이어져요'},
+  {h:()=>'home',pre:()=>{SEL='req'},sel:'.nc-a',t:'한 건씩 결론',x:'<b>위반 · 예외 인정 · 오탐</b> 중 하나를 누르면 다음 건으로 넘어가요. 다 끝나면 다음 할 일로 옮겨가요'},
+  {h:()=>'home',pre:()=>{SEL='pol'},sel:'#pubBtn',alt:'.nowc',t:'서명 후 배포 → 효과',x:'<b>서명 후 배포</b>하면 원문 전송이 줄어든 숫자가 바로 보여요'},
+];
+let GI=-1;
+function guideGo(i){if(i===GUIDE.length&&GI===GUIDE.length-1){GI=-1;location.hash='home';route();guideDraw();return}GI=i;if(i<0){guideDraw();return}GUIDE[i].pre&&GUIDE[i].pre();const h=GUIDE[i].h();if(location.hash.slice(1)!==h)location.hash=h;else{route()}guideDraw()}
+function guideSpot(){$$('.spot').forEach(e=>e.classList.remove('spot'));if(GI<0)return;const g=GUIDE[GI];const el=$(g.sel)||(g.alt&&$(g.alt));if(el){el.classList.add('spot');el.scrollIntoView({block:'nearest',behavior:'smooth'})}}
+function guideDraw(){let el=$('#guide');if(GI<0){el&&el.remove();guideSpot();return}
+  if(!el){el=document.createElement('aside');el.id='guide';el.className='guide';document.body.appendChild(el)}
+  const g=GUIDE[GI];el.innerHTML=`<div class="g-h"><span class="lab">시연 순서 ${GI+1} / ${GUIDE.length}</span><button class="btn sm ghost icon" id="gX" aria-label="시연 닫기">✕</button></div>
+  <div class="g-t">${g.t}</div><div class="g-x">${g.x}</div>
+  <div class="g-dots">${GUIDE.map((_,i)=>`<i class="${i===GI?'on':i<GI?'done':''}"></i>`).join('')}</div>
+  <div class="g-f"><button class="btn sm ghost g-reset" id="gR">처음으로</button><button class="btn sm" id="gP" ${GI?'':'disabled'}>이전</button><button class="btn sm p" id="gN">${GI===GUIDE.length-1?'마치기':'다음'}</button></div>`;
+  $('#gX').onclick=()=>guideGo(-1);$('#gP').onclick=()=>guideGo(GI-1);$('#gN').onclick=()=>guideGo(GI+1);$('#gR').onclick=()=>{location.hash='home';location.reload()};
+  setTimeout(guideSpot,60)}
+$('#demoBtn').onclick=()=>guideGo(GI<0?0:-1);
+// 발표 중 리모컨·키보드로 넘기기 (모달이 열려 있으면 모달이 우선)
+document.addEventListener('keydown',e=>{if(GI<0||$('#modal').classList.contains('open')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
+  if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();guideGo(GI+1)}else if((e.key==='ArrowLeft'||e.key==='PageUp')&&GI>0){e.preventDefault();guideGo(GI-1)}else if(e.key==='Escape')guideGo(-1)});
+window.addEventListener('hashchange',()=>setTimeout(guideSpot,80));
+
+
+// ═══════════ 백엔드 연동 (team-i-balance/backend) ═══════════
+// 서버에 붙으면 /logs 데이터로 EVENTS·CASES 를 다시 만들고, 안 붙으면 위 예시 데이터를 그대로 쓴다.
+// 서버 주소: ?api=http://host:port → localStorage(apiBase) → http://localhost:8000(백엔드 기본 포트) 순서로 시도.
+const API={base:null,live:false,count:0};
+const TYPE_KO={NAME:'이름',PHONE:'전화번호',EMAIL:'이메일',ADDRESS:'주소',ID_NUMBER:'주민등록번호',ID:'주민등록번호',ACCOUNT:'계좌번호',CARD:'카드번호',DOB:'생년월일',
+  USERNAME:'아이디',IP_ADDRESS:'IP 주소',BUSINESS_NUMBER:'사업자번호',API_KEY:'API 키',ACCESS_TOKEN:'액세스 토큰',PASSWORD:'비밀번호'};
+const GRADE_IN={public_O:'O',sensitive_S:'S',confidential_C:'C'};
+async function apiGet(path,ms=2500){
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms);
+  try{const r=await fetch(API.base+path,{signal:ctl.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}
+}
+function apiCandidates(){
+  const q=new URLSearchParams(location.search).get('api');let st=null;try{st=localStorage.getItem('apiBase')}catch(e){}
+  return [q,st,'http://localhost:8000'].filter(Boolean).map(u=>u.replace(/\/$/,''));
+}
+// 서버 이벤트 1건 → 콘솔 이벤트. 서버는 원문·직원·AI를 저장하지 않으므로 그 칸은 비워 둔다.
+function fromServer(ev){
+  const grade=GRADE_IN[ev.grade]||'O', types=(ev.detected_types||[]).map(t=>TYPE_KO[t]||t);
+  types.forEach(t=>{if(!ent(t))POLICY.entities.push({name:t,grade:grade==='C'?'C':'S',method:grade==='C'?'—':'대체',sample:'',on:true})});
+  const action=grade==='C'?'block':grade==='O'?'pass':{send_transformed:'sent',send_as_is:'raw',revert_original:'revert',cancel:'cancel'}[ev.action]||'sent';
+  const rsn={false_positive:'오탐',business_need:'업무상 필요'}[ev.reason]||null;
+  const items=types.map(type=>({type,orig:`⟦${type}⟧`,method:(ent(type)||{}).method||'대체',conv:'(변환됨)',
+    status:grade!=='S'?null:action==='raw'?'raw':action==='revert'?'revert':'conv',reason:action==='revert'?rsn:null,fp:action==='revert'&&rsn==='오탐'?'open':null}));
+  const h=(ev.content_hash||String(ev.id)).slice(0,4);
+  return {id:String(ev.id),time:new Date(ev.created_at),user:`직원 ${h}`,dept:'부서 미전송',ai:'AI 미전송',file:null,
+    tpl:items.map((_,i)=>`{${i}}`).join(' · ')+(items.length?' — 본문은 서버에 저장하지 않아요':''),items,grade,action,
+    conf:ev.detection_confidence==='high'?0.95:0.6,ver:POLICY.version,server:ev};
+}
+function rebuildCases(){
+  CASES.length=0;
+  EVENTS.filter(e=>e.grade==='S'&&(e.action==='raw'||(e.action==='revert'&&e.items.some(i=>i.reason==='업무상 필요')))).forEach(e=>{
+    const c={id:'INC-'+e.id,ev:e,need:e.action==='raw'?'req':'opt',time:e.time,user:e.user,dept:e.dept,items:e.items,file:null,
+      status:'open',reason:null,history:[],ask:null,close:null,timeline:[]};
+    if(c.need==='opt') c.reason={pick:'업무상 필요',text:'(직원이 쓴 사유 글은 아직 서버에 없어요)',at:c.time,when:'전송할 때'};
+    CASES.push(c);
+  });
+}
+async function connect(){
+  for(const base of apiCandidates()){
+    API.base=base;
+    try{
+      const h=await apiGet('/health');if(h.status!=='ok')continue;
+      const start=new Date(Date.now()-7*864e5).toISOString();
+      const evs=await apiGet('/logs/events?limit=1000&start='+encodeURIComponent(start),5000);
+      NOW=new Date();LOADED=Date.now();
+      EVENTS.length=0;evs.map(fromServer).forEach(e=>EVENTS.push(e));EVENTS.sort((a,b)=>b.time-a.time);
+      rebuildCases();
+      Object.assign(API,{live:true,count:evs.length});return true;
+    }catch(e){/* 다음 후보 */}
+  }
+  API.base=null;return false;
+}
+function connBadge(){
+  const el=$('#conn');if(!el)return;
+  el.className='conn '+(API.live?'on':'off');
+  el.textContent=API.live?`서버 연결됨 · ${API.count}건`:'예시 데이터';
+  el.title=API.live?`${API.base} · 최근 7일 /logs/events`:'서버에 연결하지 못해 예시 데이터를 보여줘요. 주소 뒤에 ?api=http://서버:포트 를 붙이면 그 서버로 연결해요';
+}
+async function boot(){
+  route();connBadge();
+  if(await connect()){route();connBadge();toast(`서버 데이터 ${API.count}건을 불러왔어요`)}
+}
+
+boot();
+</script>
+</body>
+</html>

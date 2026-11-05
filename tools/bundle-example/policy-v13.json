@@ -1,0 +1,18 @@
+{
+ "schema": 1,
+ "org": "acme",
+ "version": 13,
+ "issued_at": "2026-11-05T16:40:00+09:00",
+ "expires_at": "2026-12-05T00:00:00+09:00",
+ "prev": "sha256:예시-v12-번들-해시",
+ "model": {"name": "pii-slm", "version": "0.3.0", "sha256": "예시-모델-해시"},
+ "thresholds": {"confidential": 0.45, "personal": 0.35, "high_confidence": 0.7},
+ "rules": [
+  {"id": "r-24702", "label": "고객 ID", "description": "CU로 시작하는 6자리 고객번호", "grade": "S", "action": "대체"},
+  {"id": "r-24731", "label": "거래처 계좌번호", "description": "은행명 바로 뒤에 오는 숫자 묶음", "grade": "S", "action": "대체"},
+  {"id": "r-24974", "label": "주민등록번호", "description": "4대보험 신고서 작성에 쓰인 주민번호", "grade": "S", "action": "태그"}
+ ],
+ "types": {"주민등록번호": {"on": true}, "사업자번호": {"on": false}},
+ "dict": [],
+ "exclude": []
+}

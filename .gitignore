@@ -1,0 +1,4 @@
+.DS_Store
+*.key
+artifact-main.html
+__pycache__/
