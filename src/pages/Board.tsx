@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { S, emit, useStore, openOf, fpGroups, groupKey, boardWork, QUEUE_ORDER, QUEUE_NAME, ago, ent, quickClose, fpKeep, demoReason, advanceBoard, closeCase, undoToast, type Queue } from '../domain/store'
 import { openDialog } from '../ui/Dialogs'
+import { connect } from '../api/client'
 import { undoLast } from '../ui/Toasts'
 import { SentText, StepBar, typesOf, type Step } from '../ui/common'
 import { partial, rpath } from '../lib/util'
@@ -35,7 +36,7 @@ export default function Board() {
   const N = [
     { id: 'in', x: 0, y: AY, l: 'AI 입력', v: E.length, s: '최근 7일' },
     { id: 'conv', x: 260, y: AY, l: '개인정보 변환', v: sens, s: `공개 ${pub} · 기밀 차단 ${conf}` },
-    { id: 'raw', x: 740, y: AY, l: '원문 전송', v: lastPub && fresh.length ? `${raw} → ${raw - caught}` : raw, s: '사유 선택 건너뜀', cls: 'danger', go: 'req' as Queue },
+    { id: 'raw', x: 740, y: AY, l: '원문 전송', v: lastPub && fresh.length ? `${raw} → ${raw - caught}` : raw, s: '사유 선택 건너뜀', cls: raw ? 'danger' : '', go: 'req' as Queue },
     { id: 'fp', x: 140, y: BY, l: '오탐 신고', v: fps.length, s: '잘못 잡힌 값', w: work.fp, act: true },
     { id: 'opt', x: 380, y: BY, l: '선택 검토', v: opt.length, s: '사유 남기고 보냄', w: work.opt, act: true },
     { id: 'req', x: 740, y: BY, l: '필수 검토', v: req.length, s: `판단 가능 ${ready.length} · 사유 대기 ${wait.length}`, w: work.req, act: true },
@@ -44,7 +45,7 @@ export default function Board() {
   const EG = [
     { c: 'main', p: [[W, my(AY)], [260, my(AY)]] },
     { c: 'main', p: [[260 + W, my(AY)], [740, my(AY)]] },
-    { c: 'hot', p: [[cx(740), AY + H], [cx(740), BY]] },
+    { c: raw ? 'hot' : '', p: [[cx(740), AY + H], [cx(740), BY]] },
     { c: '', p: [[310, AY + H], [310, 164], [cx(140), 164], [cx(140), BY]] },
     { c: '', p: [[386, AY + H], [386, 164], [cx(380), 164], [cx(380), BY]] },
     { c: 'loop' + (P.changes.length ? ' on' : ''), p: [[740 + W, my(BY)], [1040, my(BY)]] },
@@ -170,7 +171,9 @@ export default function Board() {
 
   const hasNext = SEL === 'pol' ? P.learned.length > 0 : Q.length > 1 || (SEL === 'req' && wait.length > 0)
   const other = QUEUE_ORDER.find(k => k !== SEL && work[k])
-  const nextWork = other ? <button className="btn sm" onClick={() => select(other)}>다음 할 일: {QUEUE_NAME[other]} {work[other]}건</button> : null
+  const nextWork = S.api.live && !S.api.count
+    ? <><span className="sub">서버에 최근 7일 이벤트가 아직 없어요</span><div className="empty-acts"><button className="btn sm" onClick={() => connect()}>다시 불러오기</button><a className="btn sm ghost" href="?api=off#home">예시 데이터로 보기</a></div></>
+    : other ? <button className="btn sm" onClick={() => select(other)}>다음 할 일: {QUEUE_NAME[other]} {work[other]}건</button> : null
   // ── 트레이 내용
   const types = (c: Case) => typesOf(c).join('·')
   const kbdHint = (t: string) => <div className="kbd-hint">{t}</div>
@@ -193,7 +196,7 @@ export default function Board() {
           </>}
         {kbdHint(SEL === 'req' ? '1·2·3 판단 · ↑↓ 다른 건 · Z 되돌리기' : '1·2 판단 · ↑↓ 다른 건 · Z 되돌리기')}
       </div>
-    </> : <div className="empty"><b>{SEL === 'req' ? '결론 낼 건이 없어요' : '확인할 건이 없어요'}</b>{S.api.live && !S.api.count && <span className="sub">서버에 최근 7일 이벤트가 아직 없어요</span>}{nextWork}</div>
+    </> : <div className="empty"><b>{SEL === 'req' ? '결론 낼 건이 없어요' : '확인할 건이 없어요'}</b>{nextWork}</div>
     next = <>
       {(Q as Case[]).filter(x => x !== c).map(x => <button key={x.id} className="nx" data-pick={x.id} onClick={() => pickItem(x.id)}><b>{x.user}</b><span>{types(x)} → {x.ev.ai}</span><em>{ago(x.time)}</em></button>)}
       {SEL === 'req' && wait.length > 0 && <>
@@ -249,7 +252,7 @@ export default function Board() {
       <svg className="bwire" aria-hidden="true"><path ref={wireP} /><circle ref={wireA} r="0" /></svg>
       <div className="tray" ref={tray}>
         <span className="tail" ref={tail} />
-        <div className="tray-in">
+        <div className={'tray-in' + (hasNext ? '' : ' solo')}>
           <section className="nowc" aria-label="지금 한 건">
             <div className="nc-h">
               <h2 className="h20">{QUEUE_NAME[SEL]}</h2>

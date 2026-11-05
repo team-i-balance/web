@@ -780,3 +780,7 @@ button.conn:hover{background:var(--bg-subtle)}
   .nc-a{position:static;box-shadow:none}
 }
 @media (hover:none){.nc-a .kbd-hint,.btn.dbtn kbd{display:none}.btn.dbtn{padding-right:20px}}
+
+/* 4회차: 빈 서버·다음 없음 */
+.tray-in.solo{grid-template-columns:minmax(0,1fr)}.tray-in.solo .nexts{display:none}.tray-in.solo .nowc{border-right:0}
+.empty-acts{display:flex;gap:8px;flex-wrap:wrap}
