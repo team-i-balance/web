@@ -7,19 +7,21 @@
 ## 실행
 
 ```bash
-python3 -m http.server 5310
+# 배포된 백엔드에 붙여서 (같은 주소 /api → 백엔드 프록시)
+python3 tools/dev_server.py            # http://localhost:5320
+BACKEND_URL=http://localhost:8000 python3 tools/dev_server.py   # 로컬 백엔드에 붙일 때
 ```
 
-http://localhost:5310 을 연다.
+백엔드 CORS가 콘솔 주소를 허용하지 않아도 되도록, 콘솔은 같은 주소의 `/api`를 먼저 부른다.
+`tools/dev_server.py`(로컬)와 `vercel.json`의 rewrites(Vercel 배포)가 `/api/*`를 백엔드로 넘긴다.
 
 ## 백엔드 연결
 
 [team-i-balance/backend](https://github.com/team-i-balance/backend)의 `/health`, `/logs/events`에 붙는다.
 
-- 서버 주소는 `?api=http://서버:포트` → 브라우저에 저장한 값(`localStorage.apiBase`) → `http://localhost:8000` 순서로 시도한다.
-- 연결되면 오른쪽 위에 **서버 연결됨 · N건**이 뜨고, 최근 7일 이벤트로 흐름도·대기열을 다시 만든다.
+- 서버 주소는 같은 주소 `/api` → `?api=http://서버:포트` → 브라우저에 저장한 값(`localStorage.apiBase`) → `http://localhost:8000` 순서로 시도한다.
+- 연결되면 오른쪽 위에 **서버 연결됨 · N건**이 뜨고, 최근 7일 이벤트로 흐름도·대기열을 다시 만든다. 누르면 서버 전체 통계(`/logs/stats`), 다시 불러오기, 로그 암호화 내보내기(`/logs/export`)가 있다.
 - 연결하지 못하면 **예시 데이터**로 돌아간다(발표·시연용).
-- 백엔드 CORS의 `ALLOWED_ORIGINS`에 이 페이지 주소를 넣어야 한다.
 
 로컬에서 백엔드를 띄우고 예시 이벤트를 넣는 방법:
 
@@ -52,6 +54,8 @@ python3 tools/seed_local_backend.py http://localhost:8000
 | `docs/BUNDLE-SPEC.md` | 변환 정책 번들(DSSE) · Ed25519 서명 명세 |
 | `tools/policy_bundle.py` | 번들 서명·검증 참고 구현 (`pip install cryptography`) |
 | `tools/seed_local_backend.py` | 로컬 백엔드에 예시 이벤트 넣기 |
+| `tools/dev_server.py` | 정적 파일 + `/api` 프록시 개발 서버 |
+| `vercel.json` | Vercel 배포 시 `/api/*` → 백엔드 rewrites |
 
 ## 화면
 

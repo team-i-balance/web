@@ -18,7 +18,7 @@
         <a class="nav" href="#policy" data-r="policy">변환 정책<span class="cnt hot" id="nPolicy"></span></a>
       </nav>
     </div>
-    <div class="bar-box"><span class="conn" id="conn" title="">예시 데이터</span><button class="btn sm" id="demoBtn">시연 순서 보기</button></div>
+    <div class="bar-box"><button class="conn" id="conn" title="">예시 데이터</button><button class="btn sm" id="demoBtn">시연 순서 보기</button></div>
   </header>
   <main class="main" id="view"></main>
 </div>
@@ -429,7 +429,7 @@ function home(){
     const mid=(y1+y2)/2;$('#bwp').setAttribute('d',Math.abs(x1-x2)<1?`M${x1},${y1} V${y2}`:rpath([[x1,y1],[x1,mid],[x2,mid],[x2,y2]],12));
     $('#bwa').setAttribute('cx',x1);$('#bwa').setAttribute('cy',y1);$('#bwa').setAttribute('r',5)};
   let raf=0;const follow=ms=>{const t0=performance.now();cancelAnimationFrame(raf);const f=()=>{wire();if(performance.now()-t0<ms)raf=requestAnimationFrame(f)};f()};
-  const apply=(v,anim)=>{stg.classList.toggle('anim',!!anim);stg.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.s})`;VIEW=v;placeTab();follow(anim?600:0)};
+  const apply=(v,anim)=>{stg.classList.toggle('anim',!!anim);stg.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.s})`;VIEW=v;placeTab();follow(500)};  // 꼬리가 미끄러지는 0.45초 동안 선도 따라 그린다
   // 오른쪽 64px는 줌 버튼 자리로 비워 둔다
   const fit=anim=>{const w=vp.clientWidth-64,h=vp.clientHeight,s=Math.min(1.1,Math.max(.4,Math.min((w-32)/SW,(h-40)/SH)));apply({s,x:Math.max(16,(w-SW*s)/2),y:Math.max(8,(h-SH*s)/2)},anim)};
   // 꼬리는 이전 자리에서 새 자리로 미끄러지듯 이동
@@ -812,8 +812,8 @@ window.addEventListener('hashchange',()=>setTimeout(guideSpot,80));
 
 // ═══════════ 백엔드 연동 (team-i-balance/backend) ═══════════
 // 서버에 붙으면 /logs 데이터로 EVENTS·CASES 를 다시 만들고, 안 붙으면 위 예시 데이터를 그대로 쓴다.
-// 서버 주소: ?api=http://host:port → localStorage(apiBase) → http://localhost:8000(백엔드 기본 포트) 순서로 시도.
-const API={base:null,live:false,count:0};
+// 서버 주소: 같은 출처 /api(dev_server.py·vercel.json 프록시) → ?api=http://host:port → localStorage(apiBase) → http://localhost:8000 순서로 시도.
+const API={base:null,live:false,count:0,stats:null,synced:null};
 const TYPE_KO={NAME:'이름',PHONE:'전화번호',EMAIL:'이메일',ADDRESS:'주소',ID_NUMBER:'주민등록번호',ID:'주민등록번호',ACCOUNT:'계좌번호',CARD:'카드번호',DOB:'생년월일',
   USERNAME:'아이디',IP_ADDRESS:'IP 주소',BUSINESS_NUMBER:'사업자번호',API_KEY:'API 키',ACCESS_TOKEN:'액세스 토큰',PASSWORD:'비밀번호'};
 const GRADE_IN={public_O:'O',sensitive_S:'S',confidential_C:'C'};
@@ -823,7 +823,7 @@ async function apiGet(path,ms=2500){
 }
 function apiCandidates(){
   const q=new URLSearchParams(location.search).get('api');let st=null;try{st=localStorage.getItem('apiBase')}catch(e){}
-  return [q,st,'http://localhost:8000'].filter(Boolean).map(u=>u.replace(/\/$/,''));
+  return ['/api',q,st,'http://localhost:8000'].filter(Boolean).map(u=>u.replace(/\/$/,''));
 }
 // 서버 이벤트 1건 → 콘솔 이벤트. 서버는 원문·직원·AI를 저장하지 않으므로 그 칸은 비워 둔다.
 function fromServer(ev){
@@ -857,13 +857,35 @@ async function connect(){
       NOW=new Date();LOADED=Date.now();
       EVENTS.length=0;evs.map(fromServer).forEach(e=>EVENTS.push(e));EVENTS.sort((a,b)=>b.time-a.time);
       rebuildCases();
-      Object.assign(API,{live:true,count:evs.length});return true;
+      let stats=null;try{stats=await apiGet('/logs/stats')}catch(e){}
+      Object.assign(API,{live:true,count:evs.length,stats,synced:new Date()});return true;
     }catch(e){/* 다음 후보 */}
   }
   API.base=null;return false;
 }
+const QUEUE_KO={real_violation:'실제 위반',violation_candidate:'위반 후보(업무상 필요)',detection_improve:'탐지 개선(오탐)',pre_warning:'사전 경고'};
+async function apiPost(path){const r=await fetch(API.base+path,{method:'POST'});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||r.status);return j}
+// 연결 상태를 누르면: 서버 주소·전체 통계·다시 불러오기·로그 암호화 내보내기
+function serverPanel(){
+  const st=API.stats, pct=x=>Math.round((x||0)*100)+'%';
+  openModal({title:API.live?'백엔드 서버':'서버에 연결되지 않았어요',noCancel:!API.live,ok:API.live?'다시 불러오기':'닫기',
+    html:API.live?`<div class="kv"><span>주소</span><b>${API.base==='/api'?'/api (같은 주소 프록시 → 백엔드)':esc(API.base)}</b></div>
+      <div class="kv"><span>불러온 시각</span><b>${fmt(API.synced)}</b></div>
+      <div class="kv"><span>최근 7일 이벤트</span><b>${API.count}건</b></div>
+      ${st?`<label class="f">서버 전체 통계</label>
+      <div class="kv"><span>전체</span><b>${st.total}건</b></div>
+      <div class="kv"><span>수용률 · 되돌림률</span><b>${pct(st.acceptance_rate)} · ${pct(st.revert_rate)}</b></div>
+      ${Object.entries(st.by_queue).map(([k,v])=>`<div class="kv"><span>${QUEUE_KO[k]||k}</span><b>${v}건</b></div>`).join('')||'<div class="kv"><span>큐</span><b>아직 없어요</b></div>'}`:''}
+      <div class="mt"><button class="btn sm" id="expBtn">로그 암호화 내보내기</button></div>
+      <p class="mt" id="expOut">보안팀 공개키로 암호화한 파일을 서버에 만들어요.</p>`
+      :`<p>예시 데이터를 보여주고 있어요. tools/dev_server.py 로 열거나 주소 뒤에 ?api=http://서버:포트 를 붙여 주세요.</p>`,
+    onOk:async()=>{if(!API.live)return;if(await connect()){route();connBadge();toast(`서버 데이터 ${API.count}건을 다시 불러왔어요`)}else{connBadge();toast('서버에 연결하지 못했어요')}}});
+  const b=$('#expBtn');if(b)b.onclick=async()=>{b.disabled=true;$('#expOut').textContent='내보내는 중…';
+    try{const r=await apiPost('/logs/export');$('#expOut').innerHTML=`${r.exported}건을 내보냈어요 · 키 지문 <code>${esc(String(r.public_key_fingerprint).slice(0,16))}…</code>`}
+    catch(e){$('#expOut').textContent='내보내지 못했어요: '+e.message}finally{b.disabled=false}};
+}
 function connBadge(){
-  const el=$('#conn');if(!el)return;
+  const el=$('#conn');if(!el)return;el.onclick=serverPanel;el.setAttribute('role','button');el.tabIndex=0;
   el.className='conn '+(API.live?'on':'off');
   el.textContent=API.live?`서버 연결됨 · ${API.count}건`:'예시 데이터';
   el.title=API.live?`${API.base} · 최근 7일 /logs/events`:'서버에 연결하지 못해 예시 데이터를 보여줘요. 주소 뒤에 ?api=http://서버:포트 를 붙이면 그 서버로 연결해요';

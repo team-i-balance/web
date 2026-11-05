@@ -690,3 +690,8 @@ button.wn.sel:hover{background:linear-gradient(180deg,#2c2619,#221f1a)}
 .conn:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--text-disabled)}
 .conn.on{color:var(--text-primary)}
 .conn.on:before{background:var(--text-success)}
+button.conn{background:none;font:inherit;cursor:pointer}
+button.conn:hover{background:var(--bg-subtle)}
+.kv{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--border-default);font-size:14px;line-height:20px}
+.kv span{color:var(--text-secondary)}
+.kv b{font-weight:600;text-align:right;word-break:break-all}
