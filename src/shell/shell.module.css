@@ -67,3 +67,40 @@
 .keys dt { display: flex; gap: 4px; }
 .keys dd { margin: 0; color: var(--sub); }
 .keysH { grid-column: 1 / -1; font-size: var(--t-12); font-weight: 700; color: var(--mute); margin-top: 6px; }
+
+/* ── 새 디자인(?look=next): 위 막대는 한 줄 도구 막대, 메뉴 선택은 강조색 2px 밑줄, 로고 칸 없음 */
+:global([data-look='next']) .app { gap: 12px; }
+:global([data-look='next']) .top {
+  gap: 16px; min-height: 48px; padding: 0 max(16px, env(safe-area-inset-right, 0px));
+  margin: -12px calc(-1 * max(16px, env(safe-area-inset-right, 0px))) 0; background: var(--surface); border-bottom: 1px solid var(--line);
+}
+:global([data-look='next']) .brand { gap: 8px; }
+:global([data-look='next']) .logo { width: auto; height: auto; border-radius: 0; background: none; color: var(--fg); }
+:global([data-look='next']) .logo svg { width: 16px; height: 16px; }
+:global([data-look='next']) .brandT { font-size: 14px; font-weight: 600; letter-spacing: 0; }
+:global([data-look='next']) .nav { gap: 20px; padding: 0; background: none; border-radius: 0; align-self: stretch; margin-left: 8px; }
+:global([data-look='next']) .navA { height: 100%; padding: 0; border-radius: 0; gap: 6px; font-weight: 500; }
+:global([data-look='next']) .navA[aria-current='page'] { background: none; box-shadow: inset 0 -2px 0 var(--acc); color: var(--fg); }
+:global([data-look='next']) .search { width: 240px; height: 32px; border-radius: 4px; box-shadow: none; background: var(--bg); }
+:global([data-look='next']) .conn { height: 32px; padding: 0 10px; gap: 6px; border-radius: 4px; font-weight: 500; }
+:global([data-look='next']) .connDot { width: 6px; height: 6px; }
+:global([data-look='next']) .live .connDot, :global([data-look='next']) :is(.offline, .auth) .connDot { box-shadow: none; }
+@media (max-width: 1240px) { :global([data-look='next']) .search { width: 32px; } }
+@media (max-width: 1060px) { :global([data-look='next']) .nav { gap: 14px; } :global([data-look='next']) .navA { padding: 0; } }
+@media (max-width: 860px) {
+  :global([data-look='next']) .app { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+  :global([data-look='next']) .bottom { padding-top: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  :global([data-look='next']) .tab { padding: 8px 0; gap: 2px; font-size: 12px; font-weight: 500; border-radius: 0; }
+  :global([data-look='next']) .tab[aria-current='page'] { color: var(--fg); background: none; box-shadow: inset 0 2px 0 var(--acc); }
+  :global([data-look='next']) .tab[aria-current='page'] svg { color: var(--acc); }
+  :global([data-look='next']) .tabN { top: 6px; left: calc(50% + 10px); }
+}
+
+:global([data-look='next']) .palIn { gap: 8px; padding: 0 16px; }
+:global([data-look='next']) .palIn input { height: 44px; font-size: 14px; }
+:global([data-look='next']) .palList { padding: 4px 0; }
+:global([data-look='next']) .palGroup [cmdk-group-heading] { padding: 8px 16px 4px; font-weight: 500; }
+:global([data-look='next']) .palItem { height: 36px; padding: 0 16px; gap: 10px; border-radius: 0; font-size: 13px; }
+:global([data-look='next']) .palItem[data-selected='true'] { background: var(--acc-tile); box-shadow: inset 2px 0 0 var(--acc); }
+:global([data-look='next']) .keysH { font-weight: 500; }
+:global([data-look='next']) .keys dt { gap: 6px; }

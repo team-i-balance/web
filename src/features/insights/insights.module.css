@@ -50,3 +50,35 @@ details summary { cursor: pointer; font-size: var(--t-12); color: var(--mute); }
 .log td small { color: var(--mute); }
 .log td > span { margin-left: 6px; }
 .nowrap { white-space: nowrap; }
+
+/* ── 새 디자인(?look=next): 수치 4개는 한 패널 안 칸으로, 막대는 중립색 */
+:global([data-look='next']) .head { padding: 0; gap: 16px; }
+:global([data-look='next']) .head h1 { font-size: 18px; font-weight: 600; }
+:global([data-look='next']) .head p { font-size: 13px; margin-top: 4px; }
+:global([data-look='next']) .tiles { gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+:global([data-look='next']) .tile { padding: 16px; gap: 4px; border: 0; border-radius: 0; box-shadow: none; background: none; }
+:global([data-look='next']) .tile + .tile { border-left: 1px solid var(--line); }
+:global([data-look='next']) .tile span { font-size: 12px; font-weight: 500; }
+:global([data-look='next']) .tile b { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; font-variant-numeric: tabular-nums; }
+:global([data-look='next']) .card { padding: 16px; gap: 12px; border-radius: 6px; box-shadow: none; }
+:global([data-look='next']) .card h2 { font-size: 14px; font-weight: 600; }
+:global([data-look='next']) .axis { font-size: 12px; font-family: var(--mono); }
+:global([data-look='next']) .tip { border-radius: 4px; padding: 4px 8px; }
+:global([data-look='next']) .tip b { font-weight: 600; }
+:global([data-look='next']) .hb { font-size: 13px; }
+:global([data-look='next']) .hb > span:first-child { font-weight: 500; }
+:global([data-look='next']) .track { height: 8px; border-radius: 0; background: var(--surface-2); }
+:global([data-look='next']) .track i { border-radius: 0; }
+:global([data-look='next']) .warn { font-weight: 600; }
+:global([data-look='next']) .queues { gap: 0 24px; border-top: 1px solid var(--line); }
+:global([data-look='next']) .q { padding: 8px 0; border-radius: 0; background: none; border-bottom: 1px solid var(--line); }
+:global([data-look='next']) .q b { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+:global([data-look='next']) .log th { height: 36px; padding: 0 12px; font-weight: 500; background: var(--surface-2); }
+:global([data-look='next']) .log td { height: 40px; padding: 6px 12px; }
+:global([data-look='next']) .log td:first-child { font-family: var(--mono); font-size: 12px; }
+:global([data-look='next']) .log td:first-child > span { font-family: var(--font); }
+@media (max-width: 1100px) {
+  :global([data-look='next']) .tile:nth-child(3) { border-left: 0; }
+  :global([data-look='next']) .tile:nth-child(n + 3) { border-top: 1px solid var(--line); }
+}
+@media (max-width: 520px) { :global([data-look='next']) .tile b { font-size: 18px; } }

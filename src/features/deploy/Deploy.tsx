@@ -3,7 +3,7 @@ import { MonitorCheck, RefreshCw, History } from 'lucide-react'
 import clsx from 'clsx'
 import { S, useStore } from '../../domain/store'
 import { acksNow, historyFromServer, reasonKo, refreshAcks } from '../../api/policy'
-import { Button, Empty, Meter, Tag } from '../../ds'
+import { Button, Empty, Id, Meter, Tag } from '../../ds'
 import { openDialog } from '../dialogs'
 import { fmt } from '../../lib/util'
 import d from './deploy.module.css'
@@ -27,9 +27,9 @@ export default function Deploy() {
           : <>
             <div className={d.ver}><b>{P.version}</b><span>{P.deployed ? `${P.deployed} 배포` : '서버에 배포됨'}</span></div>
             <dl className={d.kv}>
-              <dt>서명 키</dt><dd>{live ? S.api.pol?.keyid ?? '—' : 'console-demo'}</dd>
+              <dt>서명 키</dt><dd><Id>{live ? S.api.pol?.keyid ?? '—' : 'console-demo'}</Id></dd>
               <dt>규칙</dt><dd>{P.learned.length}개 · 탐지 항목 {P.entities.filter(e => e.on).length}개 켬</dd>
-              {live && S.api.pol?.sha && <><dt>번들 해시</dt><dd>{S.api.pol.sha}</dd></>}
+              {live && S.api.pol?.sha && <><dt>번들 해시</dt><dd><Id>{S.api.pol.sha}</Id></dd></>}
             </dl>
           </>}
       </section>

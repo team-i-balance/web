@@ -34,3 +34,34 @@
 .kv dd { margin: 0; font-family: var(--mono); font-size: var(--t-12); overflow-wrap: anywhere; }
 @media (max-width: 960px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 600px) { .card { padding: 18px 16px; } .stats { grid-template-columns: 1fr; } }
+
+/* ── 새 디자인(?look=next): 같은 모양 칸 나열 대신 한 줄 수치 + 구분선 */
+:global([data-look='next']) .card { padding: 16px; gap: 16px; border-radius: 6px; box-shadow: none; }
+:global([data-look='next']) .ch h2 { font-size: 14px; font-weight: 600; }
+:global([data-look='next']) .ver { gap: 12px; }
+:global([data-look='next']) .ver b { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; font-family: var(--mono); }
+:global([data-look='next']) .ver span { font-size: 13px; }
+:global([data-look='next']) .stats { gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+:global([data-look='next']) .stat { padding: 10px 16px; border-radius: 0; background: none; gap: 2px; }
+:global([data-look='next']) .stat:first-child { padding-left: 0; }
+:global([data-look='next']) .stat + .stat { border-left: 1px solid var(--line); }
+:global([data-look='next']) .stat span { font-weight: 500; }
+:global([data-look='next']) .stat b { font-size: 18px; font-weight: 600; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+:global([data-look='next']) .stat.bad b { color: var(--warn); }
+:global([data-look='next']) .stat.good b { color: var(--fg); }
+:global([data-look='next']) .reasons { gap: 0; }
+:global([data-look='next']) .reason { padding: 8px 0; border-radius: 0; background: none; color: var(--fg); font-weight: 400; border-bottom: 1px solid var(--line); }
+:global([data-look='next']) .reason span:last-child { font-variant-numeric: tabular-nums; color: var(--warn); font-weight: 500; }
+:global([data-look='next']) .pending { padding: 8px 8px 8px 16px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); box-shadow: none; }
+:global([data-look='next']) .pending b { color: var(--fg); font-weight: 600; }
+:global([data-look='next']) .pending span { color: var(--sub); font-size: 13px; }
+:global([data-look='next']) .hi { grid-template-columns: 96px minmax(0, 1fr); padding: 12px 0; }
+:global([data-look='next']) .hv b { font-size: 14px; font-weight: 600; font-family: var(--mono); letter-spacing: 0; }
+:global([data-look='next']) .hv span { font-family: var(--mono); }
+:global([data-look='next']) .hc { gap: 4px; font-size: 13px; }
+:global([data-look='next']) .kv dd { font-family: var(--font); font-size: 13px; }
+@media (max-width: 600px) {
+  :global([data-look='next']) .card { padding: 16px; }
+  :global([data-look='next']) .stat { padding: 8px 0; }
+  :global([data-look='next']) .stat + .stat { border-left: 0; border-top: 1px solid var(--line); }
+}
