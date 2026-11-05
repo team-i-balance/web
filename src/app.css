@@ -745,3 +745,38 @@ button.conn:hover{background:var(--bg-subtle)}
   .nc-r{padding:8px 12px}
   .nc-who b,.nc-t{font-size:17px;line-height:24px}
 }
+
+/* ═══ 다듬기 3회차: 작은 화면·접근성 ═══ */
+:root{--text-disabled:#7d808a}
+.btn.dbtn small{white-space:normal}
+.btn.dbtn kbd{top:12px;transform:none}
+.it:focus-visible,.wn:focus-visible,.nx:focus-visible,.pn:focus-visible,a:focus-visible,.conn:focus-visible{outline:2px solid var(--border-focus);outline-offset:2px}
+.empty .btn{margin-top:4px}
+/* 오탐 신고 표: 좁은 화면에서는 행을 카드로 */
+.fpt td.pick,.fpt th.pick{width:44px;padding-right:0}
+.bulkbar{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 16px;border:1px solid var(--border-strong);border-radius:var(--radius-md);background:var(--bg-subtle)}
+.bulkbar .sub{margin-right:auto}
+@media (max-width:900px){
+  .fpt thead{display:none}
+  .fpt,.fpt tbody,.fpt tr,.fpt td{display:block;width:100%}
+  .fpt tr{position:relative;padding:14px 16px 14px 52px;border:1px solid var(--border-default);border-radius:var(--radius-md);margin-bottom:8px}
+  .fpt td{height:auto;padding:2px 0;border:0;text-align:left!important;white-space:normal!important}
+  .fpt td.pick{position:absolute;left:16px;top:16px;width:auto}
+  .fpt td.acts{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  .fpt td.cnt-cell:before{content:"신고 ";color:var(--text-secondary)}
+}
+/* 폰: 판단 버튼은 세로로, 트레이 여백 줄이기 */
+@media (max-width:600px){
+  .nc-a{flex-direction:column}
+  .nc-a>.btn{width:100%;min-width:0}
+  .nc-h,.nc-b{padding-left:16px;padding-right:16px}
+  .stp{margin-left:16px;margin-right:16px}
+  .topbar .bar-box{flex-wrap:wrap}
+}
+@media (max-width:600px){
+  .tray-board .zoom{display:none}
+  .nc-a .kbd-hint,.btn.dbtn kbd{display:none}
+  .btn.dbtn{padding-right:20px;min-height:56px}
+  .nc-a{position:static;box-shadow:none}
+}
+@media (hover:none){.nc-a .kbd-hint,.btn.dbtn kbd{display:none}.btn.dbtn{padding-right:20px}}

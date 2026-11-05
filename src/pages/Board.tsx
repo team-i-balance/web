@@ -131,8 +131,18 @@ export default function Board() {
   }
   const fit = (anim = false) => {
     const el = vp.current; if (!el) return
-    const w = el.clientWidth - 64, h = el.clientHeight, s = Math.min(1.1, Math.max(.4, Math.min((w - 32) / SW, (h - 40) / SH)))
-    apply({ s, x: Math.max(16, (w - SW * s) / 2), y: Math.max(8, (h - SH * s) / 2) }, anim)
+    const w = el.clientWidth - 64, h = el.clientHeight, s = Math.min(1.1, Math.max(.66, Math.min((w - 32) / SW, (h - 40) / SH)))
+    let x = Math.max(16, (w - SW * s) / 2)
+    if (SW * s > w - 16) { // 다 안 들어가면 고른 노드가 가운데 오게 (나머지는 끌어서 보기)
+      const sel = stage.current?.querySelector<HTMLElement>('.wn.sel'), c = sel ? sel.offsetLeft + sel.offsetWidth / 2 : SW / 2
+      x = Math.min(16, Math.max(w - SW * s - 16, w / 2 - c * s))
+    }
+    let y = Math.max(8, (h - SH * s) / 2)
+    if (SH * s > h - 8) { // 세로로도 넘치면 고른 노드(아래 줄 할 일)가 다 보이게
+      const sel = stage.current?.querySelector<HTMLElement>('.wn.sel'), b = sel ? sel.offsetTop + sel.offsetHeight + 16 : SH
+      y = Math.min(8, h - b * s)
+    }
+    apply({ s, x, y }, anim)
   }
   const zoomAt = (ns: number, mx: number, myy: number) => {
     const v = view.current!; ns = Math.min(2, Math.max(.35, ns))
@@ -159,6 +169,8 @@ export default function Board() {
   }, [])
 
   const hasNext = SEL === 'pol' ? P.learned.length > 0 : Q.length > 1 || (SEL === 'req' && wait.length > 0)
+  const other = QUEUE_ORDER.find(k => k !== SEL && work[k])
+  const nextWork = other ? <button className="btn sm" onClick={() => select(other)}>다음 할 일: {QUEUE_NAME[other]} {work[other]}건</button> : null
   // ── 트레이 내용
   const types = (c: Case) => typesOf(c).join('·')
   const kbdHint = (t: string) => <div className="kbd-hint">{t}</div>
@@ -181,7 +193,7 @@ export default function Board() {
           </>}
         {kbdHint(SEL === 'req' ? '1·2·3 판단 · ↑↓ 다른 건 · Z 되돌리기' : '1·2 판단 · ↑↓ 다른 건 · Z 되돌리기')}
       </div>
-    </> : <div className="empty"><b>{SEL === 'req' ? '결론 낼 건이 없어요' : '확인할 건이 없어요'}</b>{S.api.live && !S.api.count && <span className="sub">서버에 최근 7일 이벤트가 아직 없어요</span>}</div>
+    </> : <div className="empty"><b>{SEL === 'req' ? '결론 낼 건이 없어요' : '확인할 건이 없어요'}</b>{S.api.live && !S.api.count && <span className="sub">서버에 최근 7일 이벤트가 아직 없어요</span>}{nextWork}</div>
     next = <>
       {(Q as Case[]).filter(x => x !== c).map(x => <button key={x.id} className="nx" data-pick={x.id} onClick={() => pickItem(x.id)}><b>{x.user}</b><span>{types(x)} → {x.ev.ai}</span><em>{ago(x.time)}</em></button>)}
       {SEL === 'req' && wait.length > 0 && <>
@@ -200,7 +212,7 @@ export default function Board() {
         <button className="btn dbtn" aria-keyshortcuts="2" onClick={() => exclude(g)}><span>탐지 제외 검토</span><small>이 값만 앞으로 안 잡도록 정책 초안에 추가</small><kbd>2</kbd></button>
         {kbdHint('1·2 판단 · ↑↓ 다른 값 · Z 되돌리기')}
       </div>
-    </> : <div className="empty"><b>처리할 신고가 없어요</b></div>
+    </> : <div className="empty"><b>처리할 신고가 없어요</b>{nextWork}</div>
     next = (Q as FpGroup[]).filter(x => x !== g).map(x => <button key={groupKey(x)} className="nx" data-pick={groupKey(x)} onClick={() => pickItem(groupKey(x))}><b>{partial(x.type, x.value)}</b><span>{x.type}</span><em>{x.refs.length}회</em></button>)
   } else {
     big = eff ? <>
@@ -210,7 +222,7 @@ export default function Board() {
     </> : P.changes.length ? <>
       <div className="qlist">{P.changes.map((c, i) => <div className="chg" key={i}>{c.what}</div>)}</div>
       <div className="nc-a"><button className="btn p" id="pubBtn" onClick={() => openDialog({ kind: 'publish', onDone: () => { S.ui.lastPub = S.policy.version; emit() } })}>서명 후 배포</button></div>
-    </> : <div className="empty"><b>배포할 변경이 없어요</b><span className="sub">{P.version} 적용 중</span></div>
+    </> : <div className="empty"><b>배포할 변경이 없어요</b><span className="sub">{P.version} 적용 중</span>{nextWork}</div>
     next = P.learned.slice().reverse().map((r, i) => <div key={i} className="nx static"><b>{r.type}</b><span>{r.when} → {r.method}</span><em>{r.live ? '적용 중' : '배포 대기'}</em></div>)
   }
 
@@ -224,7 +236,7 @@ export default function Board() {
             const cls = `wn ${x.cls || ''}${SEL === x.id ? ' sel' : ''}${x.act && !x.w ? ' idle' : ''}`
             const inner = <>{x.w ? <span className="wn-n">{x.w}</span> : null}<span className="wn-l">{x.l}</span><span className="wn-v">{x.v}</span><span className="wn-s">{x.s}</span></>
             return x.act || x.go
-              ? <button key={x.id} className={cls} style={{ left: x.x, top: x.y }} onClick={() => select((x.go || x.id) as Queue)} aria-label={`${x.l} ${x.w ? `처리 ${x.w}건` : ''}`}>{inner}</button>
+              ? <button key={x.id} className={cls} style={{ left: x.x, top: x.y }} onClick={() => select((x.go || x.id) as Queue)} aria-pressed={SEL === x.id} aria-label={`${x.l} ${x.v}${x.w ? `, 처리할 일 ${x.w}건` : ''}`}>{inner}</button>
               : <div key={x.id} className={cls} style={{ left: x.x, top: x.y }}>{inner}</div>
           })}
         </div>

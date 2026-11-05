@@ -19,7 +19,15 @@ function Shell({ title, children, ok, onOk, noCancel, okDisabled }: { title: str
     return () => last?.focus?.()
   }, [])
   return (
-    <div className="modal open" role="dialog" aria-modal="true" aria-label={title} onClick={e => { if (e.target === e.currentTarget) closeDialog() }}>
+    <div className="modal open" role="dialog" aria-modal="true" aria-label={title} onClick={e => { if (e.target === e.currentTarget) closeDialog() }}
+      onKeyDown={e => {
+        if (e.key !== 'Tab' || !box.current) return
+        const f = [...box.current.querySelectorAll<HTMLElement>('button:not([disabled]),input,select,textarea,a[href]')]
+        if (!f.length) return
+        const first = f[0], last = f[f.length - 1]
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+      }}>
       <div className="mbox" ref={box}>
         <h3>{title}</h3>
         {children}
