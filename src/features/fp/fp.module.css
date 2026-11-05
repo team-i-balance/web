@@ -59,3 +59,8 @@ tr[data-open] .chev { transform: rotate(180deg); }
   .t tbody tr.cases td, .t[data-tab='done'] tbody tr.cases td { padding: 0 16px 12px; }
   .cases li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 }
+
+/* 직원 사유 칸: 한 줄로 자르고 없으면 흐리게 */
+.why { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.why small { color: var(--mute); }
+.none { color: var(--faint); }

@@ -2,36 +2,15 @@
 import { Fragment, useState } from 'react'
 import { ChevronDown, Flag } from 'lucide-react'
 import clsx from 'clsx'
-import { S, useStore, groupKey, caseById, ago } from '../../domain/store'
+import { S, useStore, groupKey, caseById, ago, fpReasons, fpPeople, known } from '../../domain/store'
 import { useFpModel } from './model'
-import type { FpGroup } from '../../domain/types'
-import { Button, Checkbox, Empty, Hit, LinkButton, Notice, Segmented, Tag, ds } from '../../ds'
+import { Button, Checkbox, Empty, LinkButton, Notice, Segmented, Tag, ds } from '../../ds'
 import { openDialog } from '../dialogs'
 import type { ServerEvent } from '../../api/client'
 import { partial } from '../../lib/util'
 import f from './fp.module.css'
 
 const RES: Record<string, [string, 'ok' | undefined]> = { exclude: ['탐지 제외함', 'ok'], keep: ['탐지 결과 유지', undefined] }
-
-// 문장 조각: 신고된 값은 가린 값 그대로 Hit 로, 다른 값은 '…'. 값을 복원하거나 덧붙이지 않는다
-type Seg = string | { hit: string }
-const tidy = (s: string) => s.replace(/…(?:\s*[,·]\s*…|…)+/g, '…') // 연속 '…'·'…, …'는 하나로
-function sentence(g: FpGroup, n = 0, cut = false): Seg[] {
-  const r = g.refs[n], out: Seg[] = []
-  for (const p of r.e.tpl.split(/(\{\d\})/)) {
-    const m = /^\{(\d)\}$/.exec(p)
-    const seg: Seg = m ? (r.e.items[+m[1]] === r.it ? { hit: partial(g.type, r.it.orig) } : '…') : p
-    const last = out[out.length - 1]
-    if (typeof seg === 'string' && typeof last === 'string') out[out.length - 1] = last + seg
-    else if (seg !== '') out.push(seg)
-  }
-  const segs = out.map(p => (typeof p === 'string' ? tidy(p) : p))
-  // 끝 '…'은 CSS 말줄임이 맡는다
-  const end = segs[segs.length - 1]
-  if (cut && typeof end === 'string') segs[segs.length - 1] = end.replace(/[\s,·]*…\s*$/, '')
-  return segs
-}
-const Sent = ({ segs }: { segs: Seg[] }) => <>{segs.map((p, i) => (typeof p === 'string' ? <Fragment key={i}>{p}</Fragment> : <Hit key={i}>{p.hit}</Hit>))}</>
 
 export default function FalsePositives() {
   useStore()
@@ -55,10 +34,7 @@ export default function FalsePositives() {
           : <Segmented label="상태" value={tab} onChange={setTab} items={[{ k: 'open', t: '처리할 신고', n: counts.open }, { k: 'done', t: '처리함', n: counts.done }]} />}
         </div>
       </div>
-      {noValue > 0 && <Notice tone="warning" title={`값 해시 없이 들어온 오탐 신고 ${noValue}건`}>
-        {keyMissing ? '서버에 값 해시 키(POLICY_VALUE_HASH_KEY)가 없어 같은 값끼리 묶거나 탐지 제외할 수 없어요. 백엔드에 키를 넣으면 이후 신고부터 여기에 모여요.'
-          : '어떤 값을 오탐이라 했는지 서버에 값 해시가 없어 묶거나 탐지 제외할 수 없어요(예전 이벤트이거나 값을 보내지 않은 경우).'} 아래 목록에는 넣지 않았어요.
-      </Notice>}
+      {noValue > 0 && <Notice tone="warning" title={keyMissing ? `서버에 값 해시 키가 없어 오탐 신고 ${noValue}건을 값으로 묶지 못했어요` : `값 정보가 없는 예전 오탐 신고 ${noValue}건은 목록에서 뺐어요`} />}
       <section className={f.page} aria-label="오탐 신고">
       {groups.length ? <div className={f.scroll}><table className={clsx(ds.table, ds.table2, f.t)} data-tab={tab}>
         <colgroup>
@@ -66,7 +42,7 @@ export default function FalsePositives() {
         </colgroup>
         <thead><tr>
           {isOpen && <th className={f.pick}><Checkbox checked={all ? true : sel.length ? 'indeterminate' : false} label="모두 고르기" onChange={toggleAll} /></th>}
-          <th className={f.chevC} aria-hidden="true" /><th>잡힌 값</th><th className="num">신고</th><th>나온 문장</th>
+          <th className={f.chevC} aria-hidden="true" /><th>잡힌 값</th><th className="num">신고</th><th>직원 사유</th>
           {isOpen ? <th aria-label="처리" /> : <th className={f.actH}>결과</th>}
         </tr></thead>
         <tbody>{groups.map(g => {
@@ -76,15 +52,16 @@ export default function FalsePositives() {
             {isOpen && <td className={f.pick}><Checkbox checked={picked.has(k)} label={`${partial(g.type, g.value)} 고르기`} onChange={v => toggle(k, v)} /></td>}
             <td className={f.chevC}><ChevronDown size={16} className={f.chev} aria-hidden="true" /></td>
             <td><div className={f.val}><b>{partial(g.type, g.value)}</b><span>{g.type}{cs.length > 0 && <a className={clsx(ds.tag, ds.tagOutline)} href={`#review/${cs[0]!.id}`}>선택 검토 있음</a>}</span></div></td>
-            <td className={clsx('num', f.cnt)}><b>{g.refs.length}회</b>{(() => { const u = [...g.users].filter(x => x !== '직원 미전송').length; return u > 0 && u < g.refs.length && <span>직원 {u}명</span> })()}</td>
-            <td className={f.sent}><Sent segs={sentence(g, 0, true)} /></td>
+            <td className={clsx('num', f.cnt)}><b>{g.refs.length}회</b>{fpPeople(g) > 0 && fpPeople(g) < g.refs.length && <span>직원 {fpPeople(g)}명</span>}</td>
+            {/* 서버가 값을 다 가려서 무엇인지는 직원이 쓴 사유로 판단한다 */}
+            <td className={f.sent}>{fpReasons(g).length ? <span className={f.why}>{fpReasons(g)[0]}{fpReasons(g).length > 1 && <small> 외 {fpReasons(g).length - 1}개</small>}</span> : <span className={f.none}>사유 글 없음</span>}</td>
             <td><div className={f.acts}>{isOpen
               ? <><Button size="sm" variant="ghost" className={f.exBtn} onClick={() => openDialog({ kind: 'exclude', groupKey: k })}>탐지 제외 검토</Button><Button size="sm" variant="quiet" onClick={() => keep([g])}>탐지 결과 유지</Button></>
               : <Tag tone={RES[g.fp || '']?.[1]} dot>{RES[g.fp || '']?.[0] || '처리함'}</Tag>}</div></td>
           </tr>
-          {ex && <tr className={f.cases}><td colSpan={cols}><ol>{g.refs.map((x, n) => <li key={n} title={`${x.e.dept} · ${x.e.ai}`}>
-            <p><Sent segs={sentence(g, n)} /></p>
-            <span>{x.e.user} · {ago(x.e.time)}{x.e.ver ? ` · 정책 ${x.e.ver}` : ''}</span>
+          {ex && <tr className={f.cases}><td colSpan={cols}><ol>{g.refs.map((x, n) => <li key={n}>
+            <p>{(x.e.server as { reason_text?: string | null } | undefined)?.reason_text || <span className={f.none}>사유 글 없음</span>}</p>
+            <span>{known(x.e.user, x.e.dept, x.e.ai, ago(x.e.time), x.e.ver ? `정책 ${x.e.ver}` : '')}</span>
           </li>)}</ol></td></tr>}
           </Fragment>
         })}</tbody>
