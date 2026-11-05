@@ -7,7 +7,7 @@ import { get, post, fromServer, type ServerEvent } from './client'
 
 interface ServerClose { conclusion: Conclusion; cause: Cause | null; memo: string; rule: string | null; by: string; at: string }
 interface ServerCase { id: string; need: 'required' | 'optional'; status: 'open' | 'closed'; event: ServerEvent; close: ServerClose | null }
-interface ServerHistory { id: number; operation: 'close' | 'reopen'; conclusion: Conclusion | null; memo: string | null; rule: string | null; by: string; at: string }
+interface ServerHistory { id: number; operation: 'close' | 'reopen'; conclusion: Conclusion | null; cause: Cause | null; memo: string | null; rule: string | null; by: string; at: string }
 interface Page { items: ServerCase[]; next_cursor: string | null }
 
 const who = (by: string) => (by === 'unauthenticated' ? '보안팀' : by)
@@ -25,7 +25,7 @@ function toCase(x: ServerCase): Case {
   const timeline: TimelineEntry[] = []
   if (x.event.reason_requested_at) timeline.push({ t: new Date(x.event.reason_requested_at), who: '시스템', cls: 'sys', what: '직원에게 사유 요청' })
   if (reason && x.event.reason_requested_at) timeline.push({ t: reason.at, who: ev.user, cls: 'emp', what: '사유 제출', quote: x.event.reason_text })
-  return { id: x.id, ev, need: x.need === 'required' ? 'req' : 'opt', time: ev.time, user: ev.user, dept: ev.dept, items: ev.items, file: null, status: x.status, reason, close, timeline }
+  return { id: x.id, ev, need: x.need === 'required' ? 'req' : 'opt', time: ev.time, user: ev.user, dept: ev.dept, items: ev.items, file: ev.file, status: x.status, reason, close, timeline }
 }
 
 async function all(queue: 'required' | 'optional' | 'closed', max = 10) {
@@ -59,6 +59,7 @@ export async function loadCaseDetail(c: Case) {
 
 // ── 서버 저장
 const queue = new Map<string, Promise<unknown>>()
+const mine = new Set<string>() // 이 화면에서 종결해 서버에 저장된 건(되돌리기는 이것만 다시 연다)
 function enqueue(id: string, job: () => Promise<unknown>) {
   const next = (queue.get(id) || Promise.resolve()).then(job, job)
   queue.set(id, next)
@@ -72,12 +73,30 @@ function onClose(c: Case) {
   const x = c.close
   if (!S.api.live || !x) return
   enqueue(c.id, () => post(`/cases/${c.id}/close`, { conclusion: x.k, cause: x.cause, memo: x.memo || '사유 확인', rule: x.rule })
-    .then(() => { if (c.timeline.length) loadCaseDetail(c) })
+    .then(() => { mine.add(c.id); if (c.timeline.length) loadCaseDetail(c) })
     .catch(e => refresh(/CASE_ALREADY_CLOSED/.test(String(e)) ? '다른 보안팀원이 먼저 처리했어요 · 최신 상태로 바꿨어요' : `서버에 저장하지 못했어요 (${(e as Error).message})`)))
 }
-function onReopen(c: Case) {
+function onReopen(c: Case, undo = false) {
   if (!S.api.live) return
-  enqueue(c.id, () => post(`/cases/${c.id}/reopen`).catch(e => refresh(/CASE_ALREADY_OPEN/.test(String(e)) ? '이미 열려 있어요 · 최신 상태로 바꿨어요' : `서버에 저장하지 못했어요 (${(e as Error).message})`)))
+  enqueue(c.id, () => {
+    // 내 종결이 저장되지 않았으면(다른 보안팀원이 먼저 처리 등) 되돌리기로 남의 결론을 열지 않는다
+    if (undo && !mine.has(c.id)) return refresh('이 건은 다른 보안팀원의 결론이라 되돌리지 않았어요')
+    mine.delete(c.id)
+    return post(`/cases/${c.id}/reopen`).catch(e => refresh(/CASE_ALREADY_OPEN/.test(String(e)) ? '이미 열려 있어요 · 최신 상태로 바꿨어요' : `서버에 저장하지 못했어요 (${(e as Error).message})`))
+  })
+}
+// 선택 검토 일괄 종결: /cases/close-bulk 로 100건씩(한 묶음은 전부 되거나 전부 안 됨)
+function onCloseMany(cs: Case[]) {
+  if (!S.api.live || !cs.length) return
+  const memo = cs[0].close?.memo || '사유 확인 — 업무 범위 내 사용'
+  for (let i = 0; i < cs.length; i += 100) {
+    const part = cs.slice(i, i + 100), ids = part.map(c => c.id)
+    const job = Promise.all(ids.map(id => queue.get(id))).then(() => post<{ items: unknown[] }>('/cases/close-bulk', { ids, conclusion: 'legit', memo }))
+      .then(() => ids.forEach(id => mine.add(id)))
+      .catch(e => refresh(`일괄 종결을 저장하지 못했어요 (${(e as Error).message}) · 최신 상태로 바꿨어요`))
+    ids.forEach(id => queue.set(id, job))
+  }
 }
 hooks.close = onClose
 hooks.reopen = onReopen
+hooks.closeMany = onCloseMany

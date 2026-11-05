@@ -112,7 +112,7 @@ export default function Insights() {
         <h2>최근 입력<small>{E.length}건 중 {Math.min(more, E.length)}건 · 최신순</small></h2>
         {E.length ? <div className={i.tbox}><table className={i.log}><thead><tr><th>시각</th><th>직원</th><th>대상 AI</th><th>잡힌 항목</th><th>등급</th><th>처리</th></tr></thead><tbody>
           {E.slice(0, more).map(e => <tr key={e.id}>
-            <td className={i.nowrap}>{md(e.time)} {pad(e.time.getHours())}:{pad(e.time.getMinutes())}</td>
+            <td className={i.nowrap}>{md(e.time)} {pad(e.time.getHours())}:{pad(e.time.getMinutes())}{e.test && <Tag tone="warn">시험</Tag>}</td>
             <td className={i.nowrap}>{e.user}<small> {e.dept}</small></td>
             <td className={i.nowrap}>{e.ai === 'AI 미전송' ? '—' : e.ai}{e.file && <Tag>{e.file.name}</Tag>}</td>
             <td>{[...new Set(e.items.map(x => x.type))].join(', ') || '—'}</td>

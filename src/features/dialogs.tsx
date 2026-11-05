@@ -1,7 +1,7 @@
 // 대화상자: 결론 내기 · 탐지 제외(오른쪽 패널) · 서명 후 배포 · 변경 내용 · 고유 단어 추가 · 일괄 종결 · 서버
 import { useState, type ReactNode } from 'react'
 import { TriangleAlert } from 'lucide-react'
-import { S, emit, useStore, caseById, closeCase, addRule, suggestRule, change, fpGroups, groupKey, fpExclude, publish, nextVersion, addDict, ent, toast, type Dialog } from '../domain/store'
+import { S, emit, useStore, hooks, caseById, closeCase, addRule, suggestRule, change, fpGroups, groupKey, fpExclude, publish, nextVersion, addDict, ent, toast, type Dialog } from '../domain/store'
 import { CAUSES, CONCLUSION, METHODS } from '../domain/seed'
 import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, partial } from '../lib/util'
@@ -16,9 +16,9 @@ export const closeDialog = () => { S.ui.dialog = null; emit() }
 export const openDialog = (d: Dialog) => { S.ui.dialog = d; emit() }
 
 const Note = ({ warn, children }: { warn?: boolean; children: ReactNode }) => <div className={warn ? f.warn : f.note}>{warn && <TriangleAlert size={15} />}<div>{children}</div></div>
-const Foot = ({ ok, onOk, busy, okLabel }: { ok: string; onOk: () => void; busy?: boolean; okLabel?: string }) => <>
+const Foot = ({ ok, onOk, busy, okLabel, disabled }: { ok: string; onOk: () => void; busy?: boolean; okLabel?: string; disabled?: boolean }) => <>
   <Button variant="ghost" onClick={closeDialog}>취소</Button>
-  <Button variant="primary" onClick={onOk} disabled={busy}>{busy ? okLabel : ok}</Button>
+  <Button variant="primary" onClick={onOk} disabled={busy || disabled}>{busy ? okLabel : ok}</Button>
 </>
 
 function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) {
@@ -98,11 +98,13 @@ function Exclude({ groupKey: key, onDone }: { groupKey: string; onDone?: () => v
   const [err, setErr] = useState(false)
   if (!g) return null
   const wk = new Date(+S.now - 7 * 864e5), less = g.refs.filter(r => r.e.time >= wk).length
-  const ok = () => { if (!why.trim()) { setErr(true); return } fpExclude(g, why.trim()); S.ui.dialog = null; onDone?.(); emit() }
+  const noHash = g.value.includes('#nohash-') // 서버가 값 해시를 주지 않아 PC가 이 값을 알아볼 수 없다
+  const ok = () => { if (noHash) return; if (!why.trim()) { setErr(true); return } fpExclude(g, why.trim()); S.ui.dialog = null; onDone?.(); emit() }
   return (
-    <Modal open sheet onClose={closeDialog} title="탐지 제외" desc="정책 초안에 추가돼요. 서명 후 배포하면 직원 PC에 적용돼요." foot={<Foot ok="초안에 추가하기" onOk={ok} />}>
+    <Modal open sheet onClose={closeDialog} title="탐지 제외" desc="정책 초안에 추가돼요. 서명 후 배포하면 직원 PC에 적용돼요." foot={<Foot ok="초안에 추가하기" onOk={ok} disabled={noHash} />}>
       <div className={f.valueCard}><span className={f.mut}>{g.type}</span><b className={f.big}>{partial(g.type, g.value)}</b></div>
       <KV rows={[['범위', '정확히 이 값만'], ['근거', `오탐 신고 ${g.refs.length}회 · 직원 ${g.users.size}명`], ['효과', `최근 7일 기준 ${less}건이 덜 잡혀요`]]} />
+      {noHash && <Note warn>이 신고에는 서버의 값 해시가 없어 제외 규칙을 만들 수 없어요. 직원 앱이 값 해시를 보내야 해요.</Note>}
       {PERSONAL.includes(g.type) && <Note warn>{g.type}은 개인정보예요. 회사 대표번호처럼 공개된 값일 때만 제외하세요.</Note>}
       <Field label="제외 사유" htmlFor="why" error={err && '제외 사유를 적어 주세요'}>
         <Input id="why" autoFocus placeholder="예: 회사 대표번호 (홈페이지 공개)" value={why} aria-invalid={err} onChange={e => { setWhy(e.target.value); setErr(false) }} onKeyDown={e => { if (e.key === 'Enter') ok() }} />
@@ -115,7 +117,7 @@ export const ChangeList = () => <ul className={f.changes}>{S.policy.changes.map(
 
 function Bulk({ ids }: { ids: string[] }) {
   const [memo, setMemo] = useState('사유 확인 — 업무 범위 내 사용')
-  const ok = () => { ids.forEach(id => { const c = caseById(id); if (c) closeCase(c, { k: 'legit', cause: null, memo, rule: null }) }); S.ui.picked.clear(); S.ui.dialog = null; toast(`${ids.length}건을 종결했어요`) }
+  const ok = () => { const cs = ids.map(caseById).filter((c): c is NonNullable<typeof c> => !!c); cs.forEach(c => closeCase(c, { k: 'legit', cause: null, memo, rule: null }, false)); hooks.closeMany?.(cs); S.ui.picked.clear(); S.ui.dialog = null; toast(`${ids.length}건을 종결했어요`) }
   return (
     <Modal open onClose={closeDialog} title={`선택 검토 ${ids.length}건 문제 없음`} desc="정당한 업무 사용으로 종결해요" foot={<Foot ok="종결하기" onOk={ok} />}>
       <Field label="판단 근거" htmlFor="bmemo"><TextArea id="bmemo" value={memo} onChange={e => setMemo(e.target.value)} /></Field>
@@ -167,7 +169,7 @@ function Server() {
   const reload = async () => { S.ui.dialog = null; emit(); toast((await connect()) ? `서버 데이터 ${S.api.count}건을 불러왔어요` : '서버에 연결하지 못했어요') }
   const exp = async () => {
     setBusy(true); setOut('내보내는 중…')
-    try { const r = await post<{ exported: number; public_key_fingerprint: string }>('/logs/export'); setOut(<>{r.exported}건을 내보냈어요 · 키 지문 <code>{String(r.public_key_fingerprint).slice(0, 16)}…</code></>) }
+    try { const r = await post<{ exported: number; public_key_fingerprint: string }>('/logs/export?limit=10000'); setOut(<>{r.exported}건을 내보냈어요 · 키 지문 <code>{String(r.public_key_fingerprint).slice(0, 16)}…</code></>) }
     catch (e) { setOut('내보내지 못했어요: ' + (e as Error).message) }
     finally { setBusy(false) }
   }
@@ -183,7 +185,7 @@ function Server() {
       <KV rows={[
         ['주소', a.base === '/api' ? '같은 주소 프록시 → 백엔드' : a.base],
         ['불러온 시각', a.synced ? fmt(a.synced) : '—'],
-        ['최근 7일', `${a.count}건`],
+        ['최근 7일', `${a.count}건${a.truncated ? ' (너무 많아 일부만 불러옴)' : ''}`],
         ...(st ? [['서버 전체', `${st.total}건`], ['수용률 · 되돌림률', `${pct(st.acceptance_rate)} · ${pct(st.revert_rate)}`]] as [string, string][] : []),
       ]} />
       <label className={f.checkRow} style={{ justifyContent: 'space-between' }}><span><b>시험 이벤트 포함</b><br /><small style={{ color: 'var(--mute)' }}>흐름도·현황 숫자에만 들어가요. 검토 건은 되지 않아요</small></span>

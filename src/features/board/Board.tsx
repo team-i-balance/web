@@ -83,8 +83,9 @@ export default function Board() {
   const pickItem = (k: string) => { S.ui.cur[SEL] = k; emit() }
   const allOk = () => {
     const list = [...opt]
-    list.forEach(c => closeCase(c, { k: 'legit', cause: null, memo: '사유 확인', rule: null }))
-    undoToast(`선택 검토 ${list.length}건 문제 없음`, () => { list.forEach(c => { c.status = 'open'; c.close = null; c.timeline.pop(); hooks.reopen?.(c) }); S.ui.sel = 'opt' })
+    list.forEach(c => closeCase(c, { k: 'legit', cause: null, memo: '사유 확인 — 업무 범위 내 사용', rule: null }, false))
+    hooks.closeMany?.(list)
+    undoToast(`선택 검토 ${list.length}건 문제 없음`, () => { list.forEach(c => { c.status = 'open'; c.close = null; c.timeline.pop(); hooks.reopen?.(c, true) }); S.ui.sel = 'opt' })
     advanceBoard()
   }
 
@@ -112,10 +113,10 @@ export default function Board() {
   const N = [
     { id: 'in', l: 'AI 입력', v: E.length, s: '최근 7일' },
     { id: 'conv', l: '개인정보 변환', v: sens, s: `공개 ${pub} · 기밀 차단 ${conf}` },
-    { id: 'raw', l: '원문 전송', v: lastPub && fresh.length ? `${raw} → ${raw - caught}` : raw, s: '사유 선택 건너뜀', danger: raw > 0, go: 'req' as Queue },
+    { id: 'raw', l: '원문 전송', v: lastPub && fresh.length ? `${raw} → ${raw - caught}` : raw, s: '7일 · 사유 선택 건너뜀', danger: raw > 0, go: 'req' as Queue },
     { id: 'fp', l: '오탐 신고', v: fps.length, s: '잘못 잡힌 값', q: 'fp' as Queue },
     { id: 'opt', l: '선택 검토', v: opt.length, s: '사유 남기고 보냄', q: 'opt' as Queue },
-    { id: 'req', l: '필수 검토', v: req.length, s: `판단 가능 ${ready.length} · 사유 대기 ${wait.length}`, q: 'req' as Queue },
+    { id: 'req', l: '필수 검토', v: req.length, s: `지금 열린 건 · 판단 ${ready.length} · 사유 대기 ${wait.length}`, q: 'req' as Queue },
     { id: 'pol', l: '재발 방지 배포', v: P.changes.length ? `대기 ${P.changes.length}` : P.version, s: P.changes.length ? '서명 후 배포' : pc ?? '적용 중', q: 'pol' as Queue },
   ]
   const [sx] = POS[SEL]
@@ -224,7 +225,7 @@ export default function Board() {
   return (
     <div className={b.board}>
       <section className={b.flow} aria-label="흐름도" data-coach="flow">
-        <div className={b.flowHead}>흐름 · 최근 7일</div>
+        <div className={b.flowHead}>흐름 · 최근 7일{S.api.live && S.api.includeTest && <Tag tone="warn">시험 이벤트 포함</Tag>}{S.api.truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
         <div className={b.scroller} ref={scroller} onScroll={e => setScrollX(e.currentTarget.scrollLeft)}>
           <div className={b.stageBox} style={{ width: boxW, height: SH * scale + TOP, marginLeft: off, marginRight: off }}>
             <div className={b.stage} style={{ width: SW, height: SH, top: TOP, transform: `scale(${scale})` }}>

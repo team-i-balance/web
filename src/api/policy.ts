@@ -10,7 +10,7 @@ const THRESHOLDS = { confidential: 0.45, personal: 0.35, high_confidence: 0.7 }
 const REASON_KO: Record<string, string> = { bad_type: '형식 오류', bad_signature: '서명 불일치', unsupported_schema: '모르는 형식', wrong_org: '다른 조직', rollback: '이전 버전', expired: '만료', model_mismatch: '모델 불일치' }
 
 interface Envelope { payloadType: string; payload: string; signatures: { keyid: string; sig: string }[] }
-interface Payload { version: number; dict?: { h: string; type?: string }[]; exclude?: { h: string }[]; rules?: { id: string; label: string; description: string; grade: string; action: string }[]; types?: Record<string, { on?: boolean }> }
+interface Payload { version: number; types?: Record<string, { on?: boolean; grade?: 'O' | 'S' | 'C'; method?: string }>; dict?: { h: string; type?: string }[]; exclude?: { h: string }[]; rules?: { id: string; label: string; description: string; grade: string; action: string }[] }
 
 async function sha256(s: string) {
   const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
@@ -35,9 +35,11 @@ const decode = (b64: string): Payload => JSON.parse(new TextDecoder().decode(Uin
 async function loadAcks() {
   type A = NonNullable<NonNullable<typeof S.api.pol>['acks']>
   const n = +S.policy.version.slice(1)
-  try {
-    if (n > 0) { const r = await get<A>(`/policy/${n}/acks`); if (S.api.pol) S.api.pol.acks = r; return }
-  } catch { /* 예전 서버: 전체 요약으로 */ }
+  if (n > 0) {
+    // 다른 버전 응답과 섞인 전체 요약으로 바꾸지 않는다
+    try { const r = await get<A>(`/policy/${n}/acks`); if (S.api.pol) S.api.pol.acks = r } catch { if (S.api.pol) S.api.pol.acks = null }
+    return
+  }
   try { const r = await get<{ summary: A }>('/policy/acks'); if (S.api.pol) S.api.pol.acks = r.summary } catch { /* 현황은 없어도 된다 */ }
 }
 
@@ -70,7 +72,12 @@ export async function loadPolicy() {
     // 배포본에는 고유 단어·제외 값이 해시로만 있다. 예시 데이터를 비우고 해시를 그대로 들고 있다가 다시 배포할 때 보낸다
     P.dict = (p.dict || []).map(d => ({ term: `⟦h=${d.h}⟧`, alias: '', type: d.type || '프로젝트 코드명' }))
     P.exclude = (p.exclude || []).map(x => ({ term: `⟦h=${x.h}⟧`, why: '', from: '서버 배포본' }))
-    Object.entries(p.types || {}).forEach(([name, t]) => { const e = ent(name); if (e && typeof t.on === 'boolean') e.on = t.on })
+    Object.entries(p.types || {}).forEach(([name, t]) => {
+      const e = ent(name); if (!e) return
+      if (typeof t.on === 'boolean') e.on = t.on
+      if (t.grade) e.grade = t.grade
+      if (t.method) e.method = t.method as Policy['entities'][number]['method']
+    })
     S.api.pol.keyid = env.signatures[0]?.keyid ?? null
   } catch (e) {
     if ((e as Error).message !== '404') throw e
@@ -79,6 +86,15 @@ export async function loadPolicy() {
   P.deployed = ''; P.changes = []
   S.history = []
   await Promise.all([loadAcks(), loadHistory(), loadDraft()])
+  markExcluded()
+}
+
+// 탐지 제외한 값(정책·초안의 hmac 해시)과 같은 오탐 신고는 '제외함'으로 둔다. 서버에 오탐 판단 기록이 없어서 정책으로 되살린다
+function markExcluded() {
+  const hashOf = (t: string) => (t.startsWith('⟦h=hmac:') ? t.slice(8, -1) : t.startsWith('⟦=') ? t.slice(t.indexOf('#') + 1, -1) : null)
+  const ex = new Set(S.policy.exclude.map(x => hashOf(x.term)).filter(Boolean))
+  if (!ex.size) return
+  S.events.forEach(e => e.items.forEach(it => { if (it.fp === 'open' && ex.has(hashOf(it.orig))) it.fp = 'exclude' }))
 }
 
 // ── 정책 초안 (/policy/draft, 백엔드 docs/policy-draft-api.md)
@@ -100,6 +116,7 @@ function applyDraft(d: DraftOut) {
 async function loadDraft() {
   try { applyDraft(await get<DraftOut>('/policy/draft', 5000)); draftOn = true } catch { draftOn = false }
 }
+let conflicted = false
 async function saveDraft() {
   if (!draftOn || !S.api.live) return
   const P = S.policy
@@ -110,7 +127,7 @@ async function saveDraft() {
     etag = d.etag
   } catch (e) {
     const m = (e as Error).message
-    if (/CONFLICT|PRECONDITION|409|428/.test(m)) { await loadDraft(); emit(); toast('다른 보안팀원이 정책 초안을 바꿨어요 · 최신 초안을 불러왔어요') }
+    if (/CONFLICT|PRECONDITION|409|428/.test(m)) { conflicted = true; await loadDraft(); emit(); toast('다른 보안팀원이 정책 초안을 먼저 바꿨어요 · 최신 초안을 불러왔으니 확인해 주세요') }
     else toast(`정책 초안을 서버에 저장하지 못했어요 (${m})`)
   }
 }
@@ -121,14 +138,17 @@ export function scheduleDraftSave() {
   timer = window.setTimeout(() => { timer = 0; saving = saving.then(saveDraft) }, 300)
 }
 async function flushDraft() {
+  conflicted = false
   if (timer) { clearTimeout(timer); timer = 0; saving = saving.then(saveDraft) }
   await saving
+  return !conflicted
 }
 hooks.draft = scheduleDraftSave
 
 // 서명 후 배포: 서버가 version+1 로 서명해 저장한다. 성공하면 서버가 매긴 버전을 돌려준다.
 export async function publishToServer(): Promise<string> {
-  await flushDraft()
+  // 저장하다 다른 사람 초안과 부딪혔으면, 확인하지 않은 초안을 배포하지 않는다
+  if (!(await flushDraft())) throw new Error('다른 보안팀원이 바꾼 초안을 불러왔어요. 내용을 확인한 뒤 다시 배포해 주세요')
   const r = await post<{ version: number; keyid: string; bundle_sha256: string }>('/policy/publish', { payload: await buildPayload(S.policy) }, draftOn && etag ? { 'If-Match': etag } : {})
   if (S.api.pol) { S.api.pol.keyid = r.keyid; S.api.pol.sha = r.bundle_sha256 }
   S.policy.deployed = fmt(new Date())
@@ -137,7 +157,12 @@ export async function publishToServer(): Promise<string> {
 
 export async function refreshAcks() { await loadAcks(); emit() }
 // 서버에 배포한 직후: 새 버전 기준 현황과 기록을 다시 읽는다
-export async function afterServerPublish() { await Promise.all([loadAcks(), loadHistory(), loadDraft()]); emit() }
+export async function afterServerPublish() {
+  await Promise.all([loadAcks(), loadHistory(), loadDraft()])
+  // 배포하면 서버 초안이 비워진다. 화면 복원용 상태(평문·등급·변환 방식)를 빈 변경 목록과 함께 다시 저장해 둔다
+  if (draftOn) await saveDraft()
+  markExcluded(); emit()
+}
 
 // 예시 데이터 모드의 PC 적용 현황: 40대 중 38대 적용, 2대는 모델이 옛 버전이라 거부
 type Acks = NonNullable<NonNullable<typeof S.api.pol>['acks']>

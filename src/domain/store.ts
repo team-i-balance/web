@@ -34,7 +34,7 @@ export const S = {
     { version: 'v11', at: new Date('2026-10-21T10:12:00'), changes: [{ what: '자동 변환 추가: 은행명 바로 뒤에 오는 숫자 묶음 → 계좌번호 대체', src: 'INC-2391' }, { what: '탐지 제외 추가: "02-1234-5678" (회사 대표번호)', src: '오탐 신고' }], server: false },
     { version: 'v12', at: new Date('2026-10-28T14:02:00'), changes: [{ what: '자동 변환 추가: "CU-"로 시작하는 6자리 고객번호 → 고객ID 대체', src: 'INC-2440' }, { what: '사업자번호 탐지 끔', src: '직접 수정' }], server: false },
   ] as { version: string; at: Date; changes: PolicyChange[]; server: boolean }[],
-  api: { includeTest: (() => { try { return localStorage.getItem('includeTest') === '1' } catch { return false } })(), state: 'connecting' as 'connecting' | 'live' | 'offline' | 'auth' | 'off', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
+  api: { truncated: false, includeTest: (() => { try { return localStorage.getItem('includeTest') === '1' } catch { return false } })(), state: 'connecting' as 'connecting' | 'live' | 'offline' | 'auth' | 'off', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
   ui: {
     sel: null as Queue | null,
     cur: {} as Partial<Record<Queue, string>>,
@@ -126,12 +126,13 @@ export function publish(nv = nextVersion()) {
 
 // ── 사건 처리
 // 서버 모드에서 판단을 저장하는 고리(api/cases.ts 가 채운다). 화면 상태를 바꾼 뒤 부른다.
-export const hooks: { close?: (c: Case) => void; reopen?: (c: Case) => void; draft?: () => void } = {}
+// reopen 의 undo=true 는 '방금 내가 한 판단 되돌리기'(내 종결이 서버에 저장됐을 때만 다시 연다)
+export const hooks: { close?: (c: Case) => void; closeMany?: (cs: Case[]) => void; reopen?: (c: Case, undo?: boolean) => void; draft?: () => void } = {}
 const log = (c: Case, what: string, quote?: string | null) => c.timeline.push({ t: clock(), who: ME, cls: 'me', what, quote })
-export function closeCase(c: Case, res: { k: Conclusion; cause: Cause | null; memo: string; rule: string | null }) {
+export function closeCase(c: Case, res: { k: Conclusion; cause: Cause | null; memo: string; rule: string | null }, sync = true) {
   c.status = 'closed'; c.close = { ...res, by: ME, at: clock() }
   log(c, `종결 · ${CONCLUSION[res.k][0]}${res.rule ? ' · 자동 변환 등록' : ''}`, res.memo && res.memo !== '사유 확인' ? res.memo : null)
-  hooks.close?.(c)
+  if (sync) hooks.close?.(c)
 }
 export function suggestRule(c: Case, type?: string) {
   const leaked = c.items.filter(i => i.status !== 'conv'), it = (type && c.items.find(i => i.type === type)) || leaked.find(i => i.reason === '업무상 필요') || leaked[0] || c.items[0]
@@ -159,7 +160,7 @@ export function quickClose(c: Case, k: Conclusion | 'ok') {
   const ruled = S.policy.learned.length > nL
   undoToast(`${c.user} · ${label}${ruled ? ' · 규칙 추가돼 배포 대기' : ''}`, () => {
     c.status = 'open'; c.close = null; c.timeline.pop(); S.policy.learned.length = nL; S.policy.changes.length = nC
-    hooks.reopen?.(c); if (ruled) hooks.draft?.()
+    hooks.reopen?.(c, true); if (ruled) hooks.draft?.()
     S.ui.sel = c.need === 'opt' ? 'opt' : 'req'; S.ui.cur[S.ui.sel] = c.id
   })
 }

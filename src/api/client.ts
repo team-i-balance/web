@@ -12,7 +12,8 @@ export interface ServerEvent {
   reason_text?: string | null; reason_requested_at?: string | null; reason_at?: string | null
   // 이슈 #21(PR #36)이 들어오면 채워진다
   user_id?: string | null; dept?: string | null; target_ai?: string | null
-  source?: 'text' | 'file' // #32: 엑셀 파일 검사·차단·보호본 다운로드도 이벤트로 남는다
+  source?: 'text' | 'file'
+  test?: boolean // #32: 엑셀 파일 검사·차단·보호본 다운로드도 이벤트로 남는다
   items?: { type: string; decision: 'converted' | 'reverted' | 'raw'; reason?: string | null; value_hash?: string | null; preview?: string | null }[]
 }
 
@@ -32,7 +33,9 @@ export async function get<T>(path: string, ms = 2500): Promise<T> {
 export async function post<T>(path: string, body?: unknown, headers: Record<string, string> = {}, method = 'POST'): Promise<T> {
   const r = await fetch(S.api.base + path, body === undefined ? { method, headers } : { method, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) })
   const j = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error((j as { detail?: string }).detail || String(r.status))
+  // FastAPI 422 는 detail 이 배열이다: 첫 항목의 위치와 메시지로 보여 준다
+  const d = (j as { detail?: unknown }).detail
+  if (!r.ok) throw new Error(typeof d === 'string' ? d : Array.isArray(d) && d[0] ? `${(d[0].loc || []).slice(1).join('.')} ${d[0].msg}`.trim() : String(r.status))
   return j as T
 }
 
@@ -57,7 +60,7 @@ export function fromServer(ev: ServerEvent): AiEvent {
     ? ev.items.map(it => {
       const type = TYPE_KO[it.type] || it.type, r = ko(it.reason) ?? (it.decision === 'reverted' ? rsn : null)
       if (!ent(type)) S.policy.entities.push({ name: type, grade: 'S', method: '대체', sample: '', on: true })
-      return { type, orig: `⟦=${it.preview ?? ''}#${it.value_hash ?? ev.id + type}⟧`, method: ent(type)?.method ?? '대체', conv: '(변환됨)',
+      return { type, orig: `⟦=${it.preview ?? ''}#${it.value_hash ?? 'nohash-' + ev.id + '-' + type}⟧`, method: ent(type)?.method ?? '대체', conv: '(변환됨)',
         status: grade !== 'S' ? null : it.decision === 'raw' ? 'raw' : it.decision === 'reverted' ? 'revert' : 'conv',
         reason: it.decision === 'reverted' ? r : null, fp: it.decision === 'reverted' && r === '오탐' ? 'open' : null }
     })
@@ -67,7 +70,7 @@ export function fromServer(ev: ServerEvent): AiEvent {
   const h = (ev.content_hash || String(ev.id)).slice(0, 4)
   return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || `직원 ${h}`, dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: ev.source === 'file' ? { name: '엑셀 파일', meta: [] } : null,
     tpl: ev.source === 'file' ? '엑셀 파일 · 내용은 서버에 저장하지 않아요' : '본문은 서버에 저장하지 않아요', items, grade, action,
-    conf: ev.detection_confidence === 'high' ? 0.95 : 0.6, ver: '', server: ev } // 서버 이벤트에는 당시 정책 버전이 없다
+    conf: ev.detection_confidence === 'high' ? 0.95 : ev.detection_confidence === 'medium' ? 0.75 : 0.5, ver: '', server: ev, test: !!ev.test } // 서버 이벤트에는 당시 정책 버전이 없다
 }
 function casesFrom(events: AiEvent[]): Case[] {
   return events.filter(e => e.grade === 'S' && (e.action === 'raw' || (e.action === 'revert' && e.items.some(i => i.reason === '업무상 필요')))).map(e => ({
@@ -79,12 +82,14 @@ function casesFrom(events: AiEvent[]): Case[] {
 
 // 기간 이벤트를 끝까지 읽는다(/logs/events 의 cursor 페이지 넘김). 예전 서버는 cursor 를 무시하므로 같은 페이지가 오면 멈춘다.
 async function allEvents(from: Date, max = 20): Promise<ServerEvent[]> {
+  S.api.truncated = false
   const q = new URLSearchParams({ limit: '1000', start: from.toISOString(), ...(S.api.includeTest ? { include_test: 'true' } : {}) }), out: ServerEvent[] = []
   for (let i = 0; i < max; i++) {
     const page = await get<ServerEvent[]>('/logs/events?' + q, 8000)
     if (out.length && page.length && page[0].id >= out[out.length - 1].id) break
     out.push(...page)
     if (page.length < 1000) break
+    if (i === max - 1) S.api.truncated = true // 너무 많아 일부만 읽었다
     q.set('cursor', String(page[page.length - 1].id))
   }
   return out

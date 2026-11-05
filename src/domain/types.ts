@@ -31,6 +31,7 @@ export interface AiEvent {
   conf: number
   ver: string
   server?: unknown
+  test?: boolean // 서버의 시험 이벤트(#27)
 }
 
 export interface CaseReason { text: string; at: Date; when: string; pick?: string }
