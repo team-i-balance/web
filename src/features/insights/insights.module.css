@@ -45,7 +45,7 @@ details summary { cursor: pointer; font-size: var(--t-12); color: var(--mute); }
 
 .tbox { overflow-x: auto; }
 .log { width: 100%; min-width: 640px; font-size: var(--t-13); }
-.log th { text-align: left; font-size: var(--t-12); font-weight: 600; color: var(--mute); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.log th { text-align: left; font-size: var(--t-12); font-weight: 600; color: var(--fg); background: var(--well); padding: 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .log td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .log td small { color: var(--mute); }
 .log td > span { margin-left: 6px; }

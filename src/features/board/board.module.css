@@ -23,8 +23,7 @@ button.tile:hover { background: var(--hover); }
 .act:hover { border-color: var(--line-2); transform: translateY(-1px); }
 .act.idle { box-shadow: none; }
 .act.idle .nv { color: var(--sub); }
-.sel { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg), var(--sh-2); }
-.selNow { border-color: var(--acc); background: var(--acc-tile); box-shadow: 0 0 0 5px var(--acc-ring), var(--sh-2); }
+.sel, .selNow { border-color: var(--acc); background: var(--acc-tile); box-shadow: inset 0 0 0 1px var(--acc); } /* Devs 선택 카드: 옅은 강조 면 + 강조 테두리 */
 .selNow .nl { color: var(--acc-ink); font-weight: 700; }
 .nl { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: var(--t-12); color: var(--sub); font-weight: 600; }
 .nb { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
@@ -46,7 +45,7 @@ button.tile:hover { background: var(--hover); }
 .panel { flex: 1; min-height: 360px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; }
 .panel.solo { grid-template-columns: minmax(0, 1fr); }
 .main { position: relative; display: flex; flex-direction: column; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-2); }
-.mainNow { border-top: 3px solid var(--acc); }
+.mainNow { border-color: color-mix(in srgb, var(--acc) 55%, var(--line)); } /* 지금 처리할 곳: 한쪽만 두꺼운 선 대신 얇은 강조 테두리 */
 .ph { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 18px 24px 0; }
 .ph h2 { font-size: var(--t-18); font-weight: 700; }
 .pips { display: flex; gap: 4px; align-items: center; }

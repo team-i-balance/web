@@ -130,25 +130,26 @@
 .segItem:hover { color: var(--fg); }
 .segItem[aria-selected='true'] { background: var(--seg-on); color: var(--fg); box-shadow: var(--sh-1); }
 
-/* ── 단계 바 */
-.steps { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: var(--t-12); }
-.step { display: inline-flex; align-items: center; gap: 6px; color: var(--mute); white-space: nowrap; }
+/* ── 단계 바(Devs 단계 알약): 지난 단계는 체크, 지금 단계는 강조 테두리 + 채운 번호, 다음 단계는 흐린 번호 */
+.steps { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: var(--t-12); }
+.step { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 4px; border: 1px solid var(--line-2); border-radius: var(--r-full); color: var(--mute); white-space: nowrap; }
 .step em { font-style: normal; color: var(--faint); }
 .stepDot {
-  width: 16px; height: 16px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center;
-  border: 1.5px solid var(--line-2); color: transparent;
+  width: 20px; height: 20px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--well); color: var(--mute); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
 }
-.stepDone { color: var(--sub); }
-.stepDone .stepDot { border: 0; background: var(--ok-soft); color: var(--ok); }
-.stepNow { color: var(--acc-ink); font-weight: 700; }
-.stepNow .stepDot { border: 0; background: var(--acc); box-shadow: 0 0 0 3px var(--acc-ring); }
-.stepLine { width: 14px; height: 1.5px; border-radius: 1px; background: var(--line-2); flex: none; }
-.stepLineDone { background: var(--ok); opacity: 0.5; }
+.stepDone { background: var(--well); border-color: transparent; color: var(--sub); }
+.stepDone .stepDot { background: var(--chip); color: var(--sub); }
+.stepNow { border-color: var(--acc); color: var(--fg); font-weight: 600; background: var(--acc-tile); }
+.stepNow .stepDot { background: var(--acc); color: var(--acc-on); }
+.stepLine { flex: none; color: var(--faint); }
+.stepLineDone { color: var(--mute); }
 
 /* ── 빈 상태 */
 .empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: var(--s-8); }
 .emptyCenter { align-items: center; text-align: center; margin: auto; }
-.emptyIcon { width: 40px; height: 40px; border-radius: var(--r-lg); background: var(--well); color: var(--mute); display: flex; align-items: center; justify-content: center; }
+.emptyIcon { color: var(--mute); display: flex; } /* Devs: 아이콘을 칸에 넣지 않는다 */
+.emptyIcon svg { width: 24px; height: 24px; }
 .emptyTitle { font-size: var(--t-18); font-weight: 700; letter-spacing: -0.02em; }
 .emptyText { color: var(--sub); font-size: var(--t-14); }
 .emptyActs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }

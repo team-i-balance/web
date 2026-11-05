@@ -3,7 +3,7 @@ import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode, type Anch
 import * as RSwitch from '@radix-ui/react-switch'
 import * as RCheck from '@radix-ui/react-checkbox'
 import * as RTip from '@radix-ui/react-tooltip'
-import { Check, Minus, CircleCheck, CircleX, TriangleAlert, CircleAlert, Info } from 'lucide-react'
+import { Check, ChevronRight, Minus, CircleCheck, CircleX, TriangleAlert, CircleAlert, Info } from 'lucide-react'
 import clsx from 'clsx'
 import type { Case } from '../domain/types'
 import { partial } from '../lib/util'
@@ -125,9 +125,9 @@ export function StepBar({ steps, label = '이 건의 단계' }: { steps: Step[];
     <ol className={s.steps} aria-label={label}>
       {steps.map(([t, st, sub], i) => (
         <li key={t} style={{ display: 'contents' }}>
-          {i > 0 && <span aria-hidden="true" className={clsx(s.stepLine, st !== 'next' && s.stepLineDone)} />}
+          {i > 0 && <ChevronRight size={16} aria-hidden="true" className={s.stepLine} />}
           <span className={clsx(s.step, st === 'done' && s.stepDone, st === 'now' && s.stepNow)} aria-current={st === 'now' ? 'step' : undefined}>
-            <span className={s.stepDot}>{st === 'done' && <Check size={10} strokeWidth={3.5} />}</span>{t}{sub && <em>{sub}</em>}
+            <span className={s.stepDot}>{st === 'done' ? <Check size={12} strokeWidth={3} /> : i + 1}</span>{t}{sub && <em>{sub}</em>}
           </span>
         </li>
       ))}
