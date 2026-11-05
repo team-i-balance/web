@@ -286,7 +286,7 @@ const waiting=()=>openOf('req').filter(c=>!c.reason);
 function curTask(){const T=tasks();return T.find(t=>t.k===FK&&t.items.length)||T.find(t=>t.items.length)||null}
 function renderDock(){const d=$('#dock');d&&d.remove()}
 function excludeModal(g,done){
-  openModal({title:'탐지 제외',html:`<p><b>${esc(partial(g.type,g.value))}</b> 값은 배포 후 탐지하지 않아요.</p>
+  openModal({title:'탐지 제외 검토',html:`<div class="kv"><span>값</span><b>${esc(partial(g.type,g.value))}</b></div><div class="kv"><span>범위</span><b>정확히 이 값만 · ${g.type}</b></div><div class="kv"><span>근거</span><b>오탐 신고 ${g.refs.length}회 · 직원 ${g.users.size}명</b></div><div class="kv"><span>적용</span><b>정책 초안에 추가 → 서명 후 배포하면 적용</b></div>
     ${['이름','주민등록번호','카드번호','계좌번호','전화번호','이메일','주소'].includes(g.type)?`<div class="note w mt"><div>공개된 값일 때만 제외하세요</div></div>`:''}
     <label class="f">제외 사유</label><input type="text" name="why" placeholder="예: 회사 대표번호 (홈페이지 공개)"><div class="err">제외 사유를 적어 주세요.</div>`,ok:'제외에 추가하기',validate:f=>!!f.why,
     onOk:f=>{POLICY.exclude.unshift({term:g.value,why:f.why,from:`오탐 신고 ${g.refs.length}회`,draft:true});change(`탐지 제외 추가: "${partial(g.type,g.value)}" (${f.why})`,'오탐 신고');g.refs.forEach(r=>r.it.fp='exclude');badges();done();toast('추가했어요 · 서명 후 배포하면 적용돼요')}});
@@ -298,11 +298,13 @@ function publishModal(done){
       P.version=nv;P.deployed=fmt(clock());P.changes=[];badges();done();toast(`${nv}를 서명해 배포했어요`)}});
 }
 // 작업판: 흐름도 노드가 곧 대기열. 노드를 누르면 옆 패널에서 바로 처리한다.
-let SEL=null, LASTPUB=null, CUR={}, ADV=false;
+const NAMEQ={req:'필수 검토',opt:'선택 검토',fp:'오탐 신고',pol:'재발 방지 배포'};
+const DECIDE=[['violation','위반으로 기록','위반 이력이 남아요'],['legit','이번 건 예외 인정','같은 입력 자동 변환 규칙 초안이 생겨요'],['fp','오탐으로 기록','탐지 개선 목록으로 가요']];
+let KEYLOCK=0, TAILX=40, TAILSET=false, SEL=null, LASTPUB=null, CUR={}, ADV=false;
 function undoToast(msg,undo){
   let t=$('#utoast');if(!t){t=document.createElement('div');t.id='utoast';t.className='utoast';t.setAttribute('role','status');document.body.appendChild(t)}
   t.innerHTML=`<span>${msg}</span>${undo?'<button class="btn sm ghost" id="uBtn">되돌리기</button>':''}`;t.classList.add('show');
-  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),6000);
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),10000);
   if(undo)$('#uBtn').onclick=()=>{undo();t.classList.remove('show');home();badges()};
 }
 function home(){
@@ -317,7 +319,7 @@ function home(){
   const work={req:ready.length,pol:P.changes.length,fp:fps.length,opt:opt.length};
   const ORDER=['req','pol','fp','opt'];
   if(!SEL) SEL=ORDER.find(k=>work[k])||'req';
-  if(ADV&&!work[SEL]&&!(SEL==='pol'&&LASTPUB)){const nx=ORDER.find(k=>work[k]);if(nx)SEL=nx}
+  if(ADV&&!work[SEL]&&!(SEL==='pol'&&LASTPUB)){const was=SEL,nx=ORDER.find(k=>work[k]);if(nx){SEL=nx;setTimeout(()=>{const u=$('#utoast span');if(u&&!u.dataset.nx){u.dataset.nx=1;u.textContent+=` · ${NAMEQ[was]} 끝, 다음은 ${NAMEQ[nx]}`}},0)}}
   ADV=false;
 
   // ── 흐름도 (스테이지 1216×300): 위 줄은 흐름, 아래 줄은 할 일 노드 4개가 트레이 위에 나란히
@@ -328,7 +330,7 @@ function home(){
     {id:'raw',x:740,y:AY,l:'원문 전송',v:LASTPUB&&fresh.length?`${raw} → ${raw-caught}`:raw,s:'사유 선택 건너뜀',cls:'danger',go:'req'},
     {id:'fp',x:140,y:BY,l:'오탐 신고',v:fps.length,s:'잘못 잡힌 값',w:work.fp,act:1},
     {id:'opt',x:380,y:BY,l:'선택 검토',v:opt.length,s:'사유 남기고 보냄',w:work.opt,act:1},
-    {id:'req',x:740,y:BY,l:'필수 검토',v:req.length,s:`사유 도착 ${ready.length} · 대기 ${wait.length}`,w:work.req,act:1},
+    {id:'req',x:740,y:BY,l:'필수 검토',v:req.length,s:`판단 가능 ${ready.length} · 사유 대기 ${wait.length}`,w:work.req,act:1},
     {id:'pol',x:1040,y:BY,l:'재발 방지 배포',v:P.changes.length?`대기 ${P.changes.length}`:P.version,s:P.changes.length?'서명 후 배포':'적용 중',w:work.pol,act:1},
   ];
   const EG=[
@@ -354,7 +356,7 @@ function home(){
   const keyOf=x=>SEL==='fp'?x.type+'|'+x.value:SEL==='pol'?'pol':x.id;
   let cur=Q.find(x=>keyOf(x)===CUR[SEL])||Q[0]||null; if(cur) CUR[SEL]=keyOf(cur);
   const ci=cur?Q.indexOf(cur):-1;
-  const prog=Q.length>1?`<div class="prog">${Q.slice(0,12).map((_,i)=>`<i class="${i===ci?'on':''}"></i>`).join('')}<span>${ci+1} / ${Q.length}</span></div>`:'';
+  const prog=Q.length>1?`<div class="prog">${Q.slice(0,12).map((_,i)=>`<i class="${i===ci?'on':''}"></i>`).join('')}<span>${Q.length}건 중 ${ci+1}번째</span></div>`:'';
   const TITLE={req:'필수 검토',opt:'선택 검토',fp:'오탐 신고',pol:'재발 방지 배포'}[SEL];
   const eff=SEL==='pol'&&LASTPUB&&fresh.length&&!P.changes.length;
   let BIG='',NEXT='',TA='';
@@ -362,19 +364,20 @@ function home(){
     if(SEL==='opt'&&opt.length) TA='<button class="btn sm" id="allOk">모두 문제 없음</button>';
     BIG=cur?`<div class="nc-who"><b>${cur.user}</b><span class="sub">${cur.dept} · ${ago(cur.time)}</span><a class="qi-more" href="#review/${cur.id}">자세히</a></div>
       <div class="nc-t">${types(cur)} → ${cur.ev.ai}</div>
+      <div class="nc-p">전송 당시 정책 ${cur.ev.ver} · ${[...new Set(cur.items.filter(i=>i.status!=='conv').map(i=>i.type))].map(t=>`${t} <b>${(ent(t)||{}).method||'—'}</b> 필요`).join(' · ')}</div>
       <div class="nc-x">${sentHtml(cur)}</div>
-      <div class="nc-r">“${esc(cur.reason.text)}”</div>
+      <div class="nc-r"><span class="nc-l">직원이 낸 설명</span>${esc(cur.reason.text)}</div>
       <div class="nc-a">${SEL==='req'
-        ?[['violation','위반'],['legit','예외 인정'],['fp','오탐']].map(([k,t])=>`<button class="btn" data-q="${k}" data-id="${cur.id}">${t}</button>`).join('')
-        :`<button class="btn" data-q="violation" data-id="${cur.id}">위반</button><button class="btn p" data-q="legit0" data-id="${cur.id}">문제 없음</button>`}</div>`
+        ?DECIDE.map(([k,t,d],i)=>`<button class="btn dbtn" data-q="${k}" data-id="${cur.id}" aria-keyshortcuts="${i+1}"><span>${t}</span><small>${d}</small><kbd>${i+1}</kbd></button>`).join('')
+        :`<button class="btn dbtn" data-q="violation" data-id="${cur.id}" aria-keyshortcuts="1"><span>위반</span><small>위반으로 기록</small><kbd>1</kbd></button><button class="btn p dbtn" data-q="legit0" data-id="${cur.id}" aria-keyshortcuts="2"><span>문제 없음</span><small>정당한 업무 사용으로 종결</small><kbd>2</kbd></button>`}<div class="kbd-hint">1·2·3 판단 · ↑↓ 다른 건 · Z 되돌리기</div></div>`
       :`<div class="empty"><b>${SEL==='req'?'결론 낼 건이 없어요':'확인할 건이 없어요'}</b></div>`;
     NEXT=Q.filter(x=>x!==cur).map(c=>`<button class="nx" data-pick="${c.id}"><b>${c.user}</b><span>${types(c)} → ${c.ev.ai}</span><em>${ago(c.time)}</em></button>`).join('')
-      +(SEL==='req'&&wait.length?`<div class="nx-h">사유 대기 ${wait.length}</div>`+wait.map(c=>`<div class="nx dim"><b>${c.user}</b><span>${types(c)} → ${c.ev.ai}</span><button class="btn sm ghost" data-q="demo" data-id="${c.id}">사유 도착 (데모)</button></div>`).join(''):'');
+      +(SEL==='req'&&wait.length?`<div class="nx-h">사유 대기 ${wait.length}</div>`+wait.map(c=>`<div class="nx dim"><b>${c.user}</b><span>${types(c)} → ${c.ev.ai}</span>${API.live?'':`<button class="btn sm ghost" data-q="demo" data-id="${c.id}">사유 도착시키기 · 데모</button>`}</div>`).join(''):'');
   }else if(SEL==='fp'){
     const sent=g=>{const r=g.refs[0];return esc(r.e.tpl.replace(/\{(\d)\}/g,(_,j)=>r.e.items[j]===r.it?'⟪'+partial(g.type,r.it.orig)+'⟫':'…'))};
     BIG=cur?`<div class="nc-who"><b>${esc(partial(cur.type,cur.value))}</b><span class="sub">${cur.type} · 신고 ${cur.refs.length}회</span></div>
       <div class="nc-x">${sent(cur)}</div>
-      <div class="nc-a"><button class="btn" data-q="keep" data-g="${ci}">정탐 유지</button><button class="btn p" data-q="exclude" data-g="${ci}">탐지 제외</button></div>`
+      <div class="nc-a"><button class="btn dbtn" data-q="keep" data-g="${ci}" aria-keyshortcuts="1"><span>탐지 결과 유지</span><small>실제 개인정보가 맞아요</small><kbd>1</kbd></button><button class="btn dbtn" data-q="exclude" data-g="${ci}" aria-keyshortcuts="2"><span>탐지 제외 검토</span><small>이 값만 앞으로 안 잡도록 정책 초안에 추가</small><kbd>2</kbd></button><div class="kbd-hint">1·2 판단 · ↑↓ 다른 값 · Z 되돌리기</div></div>`
       :'<div class="empty"><b>처리할 신고가 없어요</b></div>';
     NEXT=Q.map((g,i)=>g===cur?'':`<button class="nx" data-pick="${keyOf(g)}"><b>${esc(partial(g.type,g.value))}</b><span>${g.type}</span><em>${g.refs.length}회</em></button>`).join('');
   }else{
@@ -405,7 +408,7 @@ function home(){
     <div class="zoom"><button class="btn sm ghost" data-z="1" aria-label="확대">+</button><button class="btn sm ghost" data-z="0">맞춤</button><button class="btn sm ghost" data-z="-1" aria-label="축소">−</button></div></div>
     <svg class="bwire" id="bwire" aria-hidden="true"><path id="bwp"/><circle id="bwa" r="0"/></svg>
     <div class="tray" id="tray">
-      <span class="tail" id="tab"></span>
+      <span class="tail" id="tab" style="left:${TAILX}px"></span>
       <div class="tray-in">
         <section class="nowc" aria-label="지금 한 건">
           <div class="nc-h"><h2 class="h20">${TITLE}</h2>${prog}${TA}</div>
@@ -421,13 +424,16 @@ function home(){
   const vp=$('#vp'), stg=$('#stage'), bd=$('.tray-board'), tab=$('#tab'), tray=$('#tray');
   const off=()=>{$('#bwp').setAttribute('d','');$('#bwa').setAttribute('r',0)};
   const placeTab=()=>{const el=stg.querySelector('.wn.sel');if(!el)return;const b=tray.getBoundingClientRect(),r=el.getBoundingClientRect();
-    tab.style.left=Math.min(Math.max(r.left+r.width/2-b.left,40),b.width-40)+'px'};
+    const first=!TAILSET;if(first)tab.style.transition='none';
+    TAILX=Math.min(Math.max(r.left+r.width/2-b.left,40),b.width-40);tab.style.left=TAILX+'px';
+    if(first){tab.getBoundingClientRect();tab.style.transition='';TAILSET=true}};
   const wire=()=>{const el=stg.querySelector('.wn.sel');if(!el)return off();
     const b=bd.getBoundingClientRect(),r=el.getBoundingClientRect(),v=vp.getBoundingClientRect(),t=tab.getBoundingClientRect();
     if(r.bottom<v.top||r.top>v.bottom||r.right<v.left||r.left>v.right)return off();
     const x1=r.left+r.width/2-b.left,y1=Math.min(r.bottom,v.bottom)-b.top,x2=t.left+t.width/2-b.left,y2=t.top+t.height/2-b.top;
-    const mid=(y1+y2)/2;$('#bwp').setAttribute('d',Math.abs(x1-x2)<1?`M${x1},${y1} V${y2}`:rpath([[x1,y1],[x1,mid],[x2,mid],[x2,y2]],12));
+    const mid=(y1+y2)/2;$('#bwp').setAttribute('d',Math.abs(x1-x2)<4?`M${x1},${y1} V${y2}`:rpath([[x1,y1],[x1,mid],[x2,mid],[x2,y2]],12));
     $('#bwa').setAttribute('cx',x1);$('#bwa').setAttribute('cy',y1);$('#bwa').setAttribute('r',5)};
+  tab.addEventListener('transitionend',()=>wire());
   let raf=0;const follow=ms=>{const t0=performance.now();cancelAnimationFrame(raf);const f=()=>{wire();if(performance.now()-t0<ms)raf=requestAnimationFrame(f)};f()};
   const apply=(v,anim)=>{stg.classList.toggle('anim',!!anim);stg.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.s})`;VIEW=v;placeTab();follow(500)};  // 꼬리가 미끄러지는 0.45초 동안 선도 따라 그린다
   // 오른쪽 64px는 줌 버튼 자리로 비워 둔다
@@ -583,7 +589,7 @@ function casePath(c){
 function revCell(b){
   if(!b||b.n<3) return '<span class="muted">—</span>';
   const r=pct(b.rev,b.n), hi=r>=30;
-  return `<span class="rbar ${hi?'hi':''}"><i><span style="width:${Math.min(100,r*2)}%"></span></i><b style="font-variant-numeric:tabular-nums">${r}%</b>${hi?'<span class="pill req">높음</span>':''}</span>`;
+  return `<span class="rbar ${hi?'hi':''}"><i><span style="width:${Math.min(100,r*2)}%"></span></i><b style="font-variant-numeric:tabular-nums">${r}%</b><span class="sub">${b.rev}/${b.n}건</span>${hi?'<span class="pill req">30% 넘음</span>':''}</span>`;
 }
 
 function sentHtml(c){
@@ -593,9 +599,9 @@ function sentHtml(c){
 }
 function actions(c){
   if(c.status==='closed') return `<button class="btn" data-a="reopen">다시 열기</button>`;
-  if(!c.reason) return `<button class="btn ghost" data-a="demo">사유 도착시키기 (데모)</button><button class="btn" data-a="close">사유 없이 결론 내기</button>`;
-  if(c.need==='opt') return `<button class="btn" data-a="close">결론 내기</button><button class="btn p" data-a="ok">문제 없음으로 종결</button>`;
-  return `<button class="btn p" data-a="close">결론 내기</button>`;
+  if(!c.reason) return `${API.live?'':'<button class="btn ghost" data-a="demo">사유 도착시키기 · 데모</button>'}<button class="btn" data-a="close">사유 없이 결론 내기</button>`;
+  if(c.need==='opt') return `<button class="btn ghost" data-a="close">세부 설정으로 결론</button><button class="btn" data-a="q-violation">위반</button><button class="btn p" data-a="ok">문제 없음으로 종결</button>`;
+  return `<button class="btn ghost" data-a="close">세부 설정으로 결론</button>`+DECIDE.map(([k,t])=>`<button class="btn" data-a="q-${k}">${t}</button>`).join('');
 }
 function log(c,what,quote){c.timeline.push({t:clock(),who:ME,cls:'me',what,quote})}
 function bindDetail(c){
@@ -607,6 +613,8 @@ function bindDetail(c){
     if(a==='demo'){c.reason={text:c.history.length?'협력사 요청 메일에 실제 값이 들어가야 해서 그대로 보냈습니다. 변환본으로는 상대가 확인할 수 없었습니다.':pick(LATE_REASON),at:clock(),when:'요청 받고 제출'};
       c.timeline.push({t:clock(),who:c.user,cls:'emp',what:'사유 제출',quote:c.reason.text});re();toast('직원 사유가 도착했어요');return}
     if(a==='close') closeModal(c,re);
+    if(a.startsWith('q-')){const k=a.slice(2),nL=POLICY.learned.length,nC=POLICY.changes.length;quickClose(c,k,true);re();
+      undoToast(`${c.user} · ${{violation:'위반',legit:'예외 인정',fp:'오탐'}[k]}${POLICY.learned.length>nL?' · 규칙 추가돼 배포 대기':''}`,()=>{c.status='open';c.close=null;POLICY.learned.length=nL;POLICY.changes.length=nC;re()})}
   });
 }
 function quickClose(c,k,silent){
@@ -692,14 +700,14 @@ function fp(){
     ${groups.map((g,i)=>{const r=g.refs[0];const cs=g.refs.map(x=>caseById('INC-'+x.e.id)).filter(Boolean);return`<tr><td style="white-space:nowrap"><b>${esc(partial(g.type,g.value))}</b></td><td style="white-space:nowrap">${g.type}</td>
       <td class="num" style="white-space:nowrap">${g.refs.length}회</td>
       <td style="min-width:240px"><div class="cell-sub">${esc(r.e.tpl.replace(/\{(\d)\}/g,(_,j)=>r.e.items[j]===r.it?'⟪'+partial(g.type,r.it.orig)+'⟫':'…'))}</div>${cs.length?`<a class="cell-sub" href="#review/${cs[0].id}">선택 검토에도 있어요</a>`:''}</td>
-      <td class="num" style="white-space:nowrap">${fpTab==='open'?`<button class="btn sm" data-kp="${i}">정탐 유지하기</button> <button class="btn sm" data-x="${i}">탐지 제외하기</button>`:`<span class="pill">${RES[g.fp][0]}</span>`}</td></tr>`}).join('')}
+      <td class="num" style="white-space:nowrap">${fpTab==='open'?`<button class="btn sm" data-kp="${i}">탐지 결과 유지</button> <button class="btn sm" data-x="${i}">탐지 제외 검토</button>`:`<span class="pill">${RES[g.fp][0]}</span>`}</td></tr>`}).join('')}
     </tbody></table></div>`:`<div class="empty"><b>${fpTab==='open'?'처리할 신고가 없어요':'아직 처리한 신고가 없어요'}</b><span class="sub">직원이 "오탐"으로 되돌리면 여기에 모여요</span></div>`}
     </div>
   </section>`;
   $('#ftabs').onclick=e=>{const k=e.target.closest('button')?.dataset.k;if(k){fpTab=k;fp()}};
   const mark=(g,s)=>g.refs.forEach(r=>r.it.fp=s);
   $$('[data-x]').forEach(b=>b.onclick=()=>excludeModal(groups[b.dataset.x],()=>{fp();badges()}));
-  $$('[data-kp]').forEach(b=>b.onclick=()=>{mark(groups[b.dataset.kp],'keep');fp();badges();toast('정탐으로 유지했어요')});
+  $$('[data-kp]').forEach(b=>b.onclick=()=>{mark(groups[b.dataset.kp],'keep');fp();badges();toast('탐지 결과를 유지했어요')});
 }
 
 // ═══════════ 4. 변환 정책 ═══════════
@@ -710,7 +718,7 @@ function policy(){
   const draft=x=>x.draft||x.live===false?'<span class="pill draft">배포 대기</span>':'';
   $('#view').innerHTML=`
   <section class="card">
-    <div class="card-h"><div><h1 class="t32">변환 정책</h1><p class="d">${P.changes.length?`배포 대기 ${P.changes.length}건 · 서명 후 배포하면 ${nv}가 돼요`:`${P.version} 적용 중 · ${P.deployed} 배포`}</p></div>
+    <div class="card-h"><div><h1 class="t32">변환 정책</h1><p class="d">${P.changes.length?`현재 적용 ${P.version} · 편집 중 변경 ${P.changes.length}개 — 서명 후 배포해야 직원 PC에 ${nv}로 적용돼요`:`현재 적용 ${P.version} · ${P.deployed} 배포 · 바꾸면 초안으로 쌓여요`}</p></div>
       ${P.changes.length?`<div class="row"><button class="btn ghost" id="showChg">변경 내용 보기</button><button class="btn p" id="pub">서명 후 배포하기</button></div>`:''}</div>
     <div class="polhead"><div class="pipe">${(()=>{const dr=k=>P.changes.some(c=>k.test(c.what));
       const ns=[['p1','기본 템플릿',`${P.entities.filter(e=>e.on).length}개 항목`,/탐지 (켬|끔)|등급:|변환 방식:/],['p2','자동 변환',`${P.learned.length}개 규칙`,/자동 변환/],['p3','회사 고유 단어',`${P.dict.length}개`,/고유 단어/],['p4','탐지 제외',`${P.exclude.length}개`,/탐지 제외/],['p6','파일 사본',`숨은 정보 ${Object.values(P.meta).filter(Boolean).length}종`,/파일 사본/]];
@@ -718,7 +726,7 @@ function policy(){
         +`<span class="pe ${P.changes.length?'lit':''}"></span><div class="pn ship ${P.changes.length?'now':''}"><span class="lab">서명 · 배포</span><span class="v">${P.changes.length?`대기 ${P.changes.length}건 → ${nv}`:`${P.version} 적용 중`}</span></div>`})()}</div></div>
     <div class="card-b" id="polBody"><div class="psecs">
   ${sec('p1','탐지 항목과 변환 방식','첫 규칙 세트예요. <b>민감</b>은 AI가 문맥을 놓치지 않는 평문으로 바꿔 보내고, <b>기밀</b>은 외부 전송을 막고 사내 AI로 안내해요.',
-    `<div class="scroll"><table class="nw"><thead><tr><th>사용</th><th>항목</th><th>등급</th><th>변환 방식</th><th>결과 예시</th><th>되돌림률</th></tr></thead><tbody>
+    `<div class="scroll"><table class="nw"><thead><tr><th>사용</th><th>항목</th><th>등급</th><th>변환 방식</th><th>결과 예시</th><th>원문 되돌림률 · 7일</th></tr></thead><tbody>
     ${P.entities.map((e,i)=>`<tr><td><label class="switch"><input type="checkbox" data-on="${i}" ${e.on?'checked':''} aria-label="${e.name} 탐지"><span></span></label></td>
       <td><b>${e.name}</b></td>
       <td><select class="sel" data-g="${i}" aria-label="${e.name} 등급">${['O','S','C'].map(g=>`<option value="${g}" ${e.grade===g?'selected':''}>${GRADE[g]}</option>`).join('')}</select></td>
@@ -810,6 +818,15 @@ document.addEventListener('keydown',e=>{if(GI<0||$('#modal').classList.contains(
 window.addEventListener('hashchange',()=>setTimeout(guideSpot,80));
 
 
+// 작업판 단축키: 1·2·3 판단, ↑↓ 다른 건, Z 되돌리기 (입력 중·창이 열려 있을 땐 무시)
+document.addEventListener('keydown',e=>{
+  if(location.hash&&location.hash!=='#home'||$('#modal').classList.contains('open')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||e.metaKey||e.ctrlKey||e.altKey)return;
+  const bs=$$('.nc-a .dbtn');
+  if(/^[1-3]$/.test(e.key)&&bs[+e.key-1]){e.preventDefault();if(Date.now()<KEYLOCK)return;KEYLOCK=Date.now()+450;bs[+e.key-1].click();return}
+  if((e.key==='z'||e.key==='Z')&&$('#utoast.show #uBtn')){e.preventDefault();$('#uBtn').click();return}
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){const p=$$('.nexts [data-pick]');if(!p.length)return;e.preventDefault();(e.key==='ArrowDown'?p[0]:p[p.length-1]).click()}
+});
+
 // ═══════════ 백엔드 연동 (team-i-balance/backend) ═══════════
 // 서버에 붙으면 /logs 데이터로 EVENTS·CASES 를 다시 만들고, 안 붙으면 위 예시 데이터를 그대로 쓴다.
 // 서버 주소: 같은 출처 /api(dev_server.py·vercel.json 프록시) → ?api=http://host:port → localStorage(apiBase) → http://localhost:8000 순서로 시도.
@@ -822,7 +839,8 @@ async function apiGet(path,ms=2500){
   try{const r=await fetch(API.base+path,{signal:ctl.signal});if(!r.ok)throw new Error(r.status);return await r.json()}finally{clearTimeout(t)}
 }
 function apiCandidates(){
-  const q=new URLSearchParams(location.search).get('api');let st=null;try{st=localStorage.getItem('apiBase')}catch(e){}
+  const q=new URLSearchParams(location.search).get('api');if(q==='off')return []; // ?api=off: 예시 데이터로만
+  let st=null;try{st=localStorage.getItem('apiBase')}catch(e){}
   return ['/api',q,st,'http://localhost:8000'].filter(Boolean).map(u=>u.replace(/\/$/,''));
 }
 // 서버 이벤트 1건 → 콘솔 이벤트. 서버는 원문·직원·AI를 저장하지 않으므로 그 칸은 비워 둔다.

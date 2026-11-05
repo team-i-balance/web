@@ -695,3 +695,53 @@ button.conn:hover{background:var(--bg-subtle)}
 .kv{display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid var(--border-default);font-size:14px;line-height:20px}
 .kv span{color:var(--text-secondary)}
 .kv b{font-weight:600;text-align:right;word-break:break-all}
+
+/* ═══ 다듬기 1회차 ═══ */
+/* 판단 버튼: 이름 + 결과 한 줄 + 단축키 */
+.btn.dbtn{height:auto;min-height:64px;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:10px 44px 10px 20px;position:relative;text-align:left;border-radius:var(--radius-md)}
+.btn.dbtn span{font-weight:600}
+.btn.dbtn small{font-size:12px;line-height:16px;color:var(--text-secondary);font-weight:400}
+.btn.p.dbtn small{color:var(--text-on-primary);opacity:.75}
+.btn.dbtn kbd{position:absolute;right:14px;top:50%;transform:translateY(-50%);min-width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--border-strong);border-radius:6px;font:600 12px var(--font-ui);color:var(--text-secondary);background:var(--bg-canvas)}
+.btn.p.dbtn kbd{border-color:rgba(26,16,0,.35);background:transparent;color:var(--text-on-primary)}
+.kbd-hint{font-size:12px;line-height:16px;color:var(--text-tertiary)}
+/* 정책: 위쪽 단계 줄이 스크롤 내용과 겹치지 않게, 서명·배포 칸은 늘어나지 않게 */
+.polhead{position:relative;z-index:2;background:var(--bg-surface);padding-bottom:16px;border-bottom:1px solid var(--border-default)}
+.pipe .pn,.pipe .pn.ship{flex:0 0 auto;min-width:128px}
+#polBody th{position:sticky;top:0;z-index:1;background:var(--bg-surface)}
+
+/* ═══ 다듬기 2회차 ═══ */
+.nc-r,.nc-p{display:flex;flex-direction:column;gap:2px}
+.nc-l{font-size:12px;line-height:16px;color:var(--text-tertiary);font-weight:500}
+.nc-p{font-size:14px;line-height:20px;color:var(--text-secondary);padding:0 2px}
+/* 앰버는 지금 처리할 곳에만: 목록 선택·사유 대기는 중립 */
+.it.on{background:var(--bg-neutral,#2a2b30);box-shadow:inset 2px 0 0 #c9cbd2;border-color:var(--border-strong)}
+.it .r .wait{color:var(--text-secondary);font-weight:600}
+/* 낮은 화면: 흐름도를 줄여 트레이(판단)에 높이를 준다 */
+@media (max-height:800px){
+  .tray-board .bd-vp{flex:0 0 34%;min-height:180px}
+  .stp em{display:none}
+  .nc-who b,.nc-t{font-size:18px;line-height:26px}
+}
+/* 판단 버튼은 트레이 아래에 붙어 있고, 위 내용만 스크롤 */
+.nc-a{position:sticky;bottom:0;z-index:2;background:var(--bg-surface);padding:12px 0 4px;margin-top:0;box-shadow:0 -12px 16px -8px var(--bg-surface)}
+.nc-a .kbd-hint{grid-column:1/-1;padding-top:2px}
+.nc-b{padding-bottom:12px}
+.nc-a{display:flex;flex-wrap:wrap;gap:8px}
+.nc-a>.btn{flex:1 1 0;min-width:140px}
+.nc-a .kbd-hint{flex-basis:100%}
+.nc-p{display:block;margin-top:-6px}
+.nc-p b{color:var(--text-primary);font-weight:600}
+@media (max-height:960px){
+  .tray-board .bd-vp{flex:0 0 36%;min-height:190px}
+  .stp{margin-bottom:10px}
+  .stp em{display:none}
+  .nc-h{padding-top:18px;padding-bottom:6px}
+  .nc-b{gap:8px}
+}
+@media (max-height:760px){
+  .tray-board .bd-vp{flex:0 0 29%;min-height:160px}
+  .stp{margin-bottom:6px}
+  .nc-r{padding:8px 12px}
+  .nc-who b,.nc-t{font-size:17px;line-height:24px}
+}
