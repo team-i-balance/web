@@ -132,3 +132,5 @@
 :global([data-look='next']) .next { padding: 8px 8px 8px 12px; border-radius: 4px; background: var(--surface-2); box-shadow: none; color: var(--fg); font-weight: 500; }
 @media (max-width: 860px) { :global([data-look='next']) .foot { border-radius: 0; } }
 @media (max-width: 600px) { :global([data-look='next']) .dh, :global([data-look='next']) .dbody { padding-left: 16px; padding-right: 16px; } :global([data-look='next']) .foot { padding: 12px 16px; } }
+:global([data-look='next']) .table td:first-child { white-space: nowrap; }
+:global([data-look='next']) .table { min-width: 420px; }

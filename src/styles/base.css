@@ -34,7 +34,7 @@ mark { background: none; color: inherit; }
 @keyframes tipIn { from { opacity: 0; transform: translateY(2px); } }
 
 /* ── 새 디자인(?look=next) */
-:root[data-look='next'] body { font-size: 14px; line-height: 1.5; }
+:root[data-look='next'] body { font-size: 14px; line-height: 1.5; word-break: keep-all; overflow-wrap: anywhere; }
 :root[data-look='next'] :is(h1, h2, h3) { line-height: 1.25; letter-spacing: -0.01em; }
 :root[data-look='next'] :is(b, strong) { font-weight: 600; }
 :root[data-look='next'] a:not([class]) { color: var(--acc); text-decoration: none; }
