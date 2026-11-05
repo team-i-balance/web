@@ -2,37 +2,41 @@
 
 생성형 AI 입력정보 사전 점검 도우미의 **보안팀 화면**이다. 직원 PC에서 올라온 이벤트를 흐름도로 보여 주고, 원문을 그대로 보낸 건을 판단하고, 재발 방지 규칙을 서명해 배포한다.
 
-빌드 없는 정적 페이지(HTML · CSS · JS 한 파일)다.
+React 18 + Vite 6 + TypeScript.
 
 ## 실행
 
 ```bash
-# 배포된 백엔드에 붙여서 (같은 주소 /api → 백엔드 프록시)
-python3 tools/dev_server.py            # http://localhost:5320
-BACKEND_URL=http://localhost:8000 python3 tools/dev_server.py   # 로컬 백엔드에 붙일 때
+npm install
+cp .env.example .env.local   # BACKEND_URL 확인
+npm run dev                  # http://localhost:5320
 ```
 
-백엔드 CORS가 콘솔 주소를 허용하지 않아도 되도록, 콘솔은 같은 주소의 `/api`를 먼저 부른다.
-`tools/dev_server.py`(로컬)와 `vercel.json`의 rewrites(Vercel 배포)가 `/api/*`를 백엔드로 넘긴다.
+| 명령 | 하는 일 |
+|---|---|
+| `npm run dev` | 개발 서버(5320). `/api` 를 `BACKEND_URL` 로 넘긴다 |
+| `npm run build` | 타입 검사 + `dist/` 빌드 |
+| `npm run preview` | 빌드 결과 확인(같은 `/api` 프록시) |
 
-## 백엔드 연결
+주소 뒤에 `?api=off` 를 붙이면 백엔드 없이 예시 데이터로만 돈다(발표·시연용).
 
-[team-i-balance/backend](https://github.com/team-i-balance/backend)의 `/health`, `/logs/events`에 붙는다.
+## 환경변수
 
-- 서버 주소는 같은 주소 `/api` → `?api=http://서버:포트` → 브라우저에 저장한 값(`localStorage.apiBase`) → `http://localhost:8000` 순서로 시도한다.
-- 연결되면 오른쪽 위에 **서버 연결됨 · N건**이 뜨고, 최근 7일 이벤트로 흐름도·대기열을 다시 만든다. 누르면 서버 전체 통계(`/logs/stats`), 다시 불러오기, 로그 암호화 내보내기(`/logs/export`)가 있다.
-- 연결하지 못하면 **예시 데이터**로 돌아간다(발표·시연용).
+| 이름 | 필수 | 설명 |
+|---|---|---|
+| `BACKEND_URL` | 예 | 백엔드 주소. 예: `http://13.193.207.69:8501` |
 
-로컬에서 백엔드를 띄우고 예시 이벤트를 넣는 방법:
+브라우저 코드에는 들어가지 않는다(`VITE_` 접두사 없음). 브라우저는 같은 주소의 `/api` 만 부르고, 개발에서는 Vite 프록시가, 배포에서는 `api/[...path].ts`(Vercel 함수)가 `BACKEND_URL` 로 넘긴다. 그래서 백엔드가 `http` 이거나 CORS 가 콘솔 주소를 허용하지 않아도 된다.
 
-```bash
-# backend 레포에서
-ALLOWED_ORIGINS=http://localhost:5310 uvicorn main:app --port 8000
-# 이 레포에서 (localhost 주소만 받는다)
-python3 tools/seed_local_backend.py http://localhost:8000
-```
+## 배포 (Vercel)
 
-### 지금 연결된 것과 아직 없는 것
+1. Vercel 에서 `team-i-balance/web` 을 import — Framework Preset 은 **Vite**(자동 감지)
+2. Environment Variables 에 `BACKEND_URL` 추가
+3. Deploy
+
+오른쪽 위에 **서버 연결됨 · N건** 이 뜨면 연동 성공이다. 누르면 서버 전체 통계(`/logs/stats`), 다시 불러오기, 로그 암호화 내보내기(`/logs/export`)가 있다.
+
+## 백엔드 연동 상태
 
 | 콘솔 기능 | 상태 |
 |---|---|
@@ -46,19 +50,18 @@ python3 tools/seed_local_backend.py http://localhost:8000
 
 | 경로 | 내용 |
 |---|---|
-| `index.html` | 화면과 동작 전부. 맨 아래 `백엔드 연동` 절이 서버 연결부 |
-| `style.css` | 스타일. 맨 위는 라이트 토큰, 뒤쪽 `v15`~ 절에서 다크·앰버 테마로 덮어쓴다 |
-| `fonts/` | Pretendard Variable (SIL OFL 1.1, `Pretendard-OFL.txt`) |
-| `docs/DESIGN-SETTINGS-DARK.md` | 디자인 설정(색·글자·치수·컴포넌트). 직원 쪽 프로그램도 이 기준을 따른다 |
-| `docs/BACKEND-API-GAP.md` | 콘솔 ↔ 백엔드 API 대조와 요청 목록 |
-| `docs/BUNDLE-SPEC.md` | 변환 정책 번들(DSSE) · Ed25519 서명 명세 |
-| `tools/policy_bundle.py` | 번들 서명·검증 참고 구현 (`pip install cryptography`) |
-| `tools/seed_local_backend.py` | 로컬 백엔드에 예시 이벤트 넣기 |
-| `tools/dev_server.py` | 정적 파일 + `/api` 프록시 개발 서버 |
-| `vercel.json` | Vercel 배포 시 `/api/*` → 백엔드 rewrites |
+| `src/domain/` | 타입, 예시 데이터(`seed.ts`), 상태와 처리 동작(`store.ts`) |
+| `src/api/client.ts` | 백엔드 연결, 서버 이벤트 → 콘솔 데이터 변환 |
+| `src/pages/` | 작업판(`Board`), 위반 검토, 오탐 신고, 변환 정책 |
+| `src/ui/` | 대화상자, 알림·되돌리기, 시연 순서, 공통 조각 |
+| `src/app.css` | 스타일. 뒤쪽 `v15`~ 절에서 다크·앰버 테마로 덮어쓴다 |
+| `api/[...path].ts` | Vercel 함수: `/api/*` → `BACKEND_URL` |
+| `public/fonts/` | Pretendard Variable (SIL OFL 1.1, `Pretendard-OFL.txt`) |
+| `docs/` | 디자인 설정(다크), 백엔드 API 대조, 정책 번들·서명 명세 |
+| `tools/` | 번들 서명·검증 참고 구현, 로컬 백엔드 예시 이벤트 넣기 |
 
 ## 화면
 
-- **작업판**: 흐름도 노드가 곧 대기열. 노드를 고르면 아래 트레이에 지금 한 건과 단계 바가 나오고, 위반 · 예외 인정 · 오탐을 한 번에 고른다(되돌리기 가능).
+- **작업판**: 흐름도 노드가 곧 대기열. 노드를 고르면 아래 트레이에 지금 한 건과 단계 바가 나오고, 위반 · 예외 인정 · 오탐을 한 번에 고른다. 단축키 `1·2·3` 판단, `↑↓` 다른 건, `Z` 되돌리기.
 - **위반 검토 / 오탐 신고 / 변환 정책**: 목록·상세·정책 편집.
-- 오른쪽 위 **시연 순서 보기**: 발표용 3단계 안내.
+- 오른쪽 위 **시연 순서 보기**: 발표용 3단계 안내(→ · ← · Esc).

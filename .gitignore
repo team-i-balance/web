@@ -2,3 +2,8 @@
 *.key
 artifact-main.html
 __pycache__/
+node_modules/
+dist/
+.env
+.env.local
+.vercel

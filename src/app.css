@@ -1,5 +1,5 @@
 /* v5 — 디자인 설정(DESIGN-SETTINGS.md): 라이트·아웃라인·무채색, 유채색은 오류·성공·경고에만 */
-@font-face{font-family:"Pretendard";font-weight:45 920;font-style:normal;font-display:swap;src:url(fonts/PretendardVariable.woff2) format("woff2-variations")}
+@font-face{font-family:"Pretendard";font-weight:45 920;font-style:normal;font-display:swap;src:url(/fonts/PretendardVariable.woff2) format("woff2-variations")}
 :root{
   --bg-canvas:#FCFCFD; --bg-surface:#FFFFFF; --bg-subtle:#F4F5F6;
   --bg-primary:#292B2F; --bg-primary-pressed:#44474D; --bg-primary-subtle:#E9EAEC;
