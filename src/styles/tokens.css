@@ -72,7 +72,7 @@
     --hover: #383e45; --press: #42484f; --scrim: rgba(0, 0, 0, 0.56);
     --fg: #f1f3f5; --sub: #adb5bd; --mute: #929aa3; --faint: #7a828b;
     --line: #343a40; --line-2: #495057;
-    --acc: #8b7bff; --acc-on: #0c0d11; --acc-ink: #b3a8ff; --acc-tile: #1b1a2c; --acc-ring: rgba(139, 123, 255, 0.18);
+    --acc: #8b7bff; --acc-on: #0c0d11; --acc-ink: #b3a8ff; --acc-tile: color-mix(in srgb, #8b7bff 14%, #25292d); --acc-ring: rgba(139, 123, 255, 0.18);
     --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
     --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #a99dff;
     --sh-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -86,7 +86,7 @@
   --hover: #383e45; --press: #42484f; --scrim: rgba(0, 0, 0, 0.56);
   --fg: #f1f3f5; --sub: #adb5bd; --mute: #929aa3; --faint: #7a828b;
   --line: #343a40; --line-2: #495057;
-  --acc: #8b7bff; --acc-on: #0c0d11; --acc-ink: #b3a8ff; --acc-tile: #1b1a2c; --acc-ring: rgba(139, 123, 255, 0.18);
+  --acc: #8b7bff; --acc-on: #0c0d11; --acc-ink: #b3a8ff; --acc-tile: color-mix(in srgb, #8b7bff 14%, #25292d); --acc-ring: rgba(139, 123, 255, 0.18);
   --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
   --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #a99dff;
   --sh-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -97,3 +97,17 @@
 @media (prefers-reduced-motion: reduce) {
   :root { --d-1: 0ms; --d-2: 0ms; --d-3: 0ms; }
 }
+
+/* ── 강조색 후보 비교(임시): 주소에 ?acc=ink·blue·teal·devs. 정하면 기본값으로 옮기고 이 블록을 지운다 */
+:root[data-acc='ink'] { --acc: #315a8a; --acc-ink: #26486f; --acc-tile: color-mix(in srgb, #315a8a 8%, #fff); --acc-ring: rgba(49,90,138, 0.16); --focus: #315a8a; }
+@media (prefers-color-scheme: dark) { :root[data-acc='ink']:not([data-theme='light']) { --acc: #8eb4e3; --acc-on: #101216; --acc-ink: #b5cff0; --acc-tile: color-mix(in srgb, #8eb4e3 14%, #25292d); --acc-ring: rgba(142,180,227, 0.2); --focus: #8eb4e3; } }
+:root[data-acc='ink'][data-theme='dark'] { --acc: #8eb4e3; --acc-on: #101216; --acc-ink: #b5cff0; --acc-tile: color-mix(in srgb, #8eb4e3 14%, #25292d); --acc-ring: rgba(142,180,227, 0.2); --focus: #8eb4e3; }
+:root[data-acc='blue'] { --acc: #2563eb; --acc-ink: #1d4fc4; --acc-tile: color-mix(in srgb, #2563eb 8%, #fff); --acc-ring: rgba(37,99,235, 0.16); --focus: #2563eb; }
+@media (prefers-color-scheme: dark) { :root[data-acc='blue']:not([data-theme='light']) { --acc: #6ea0ff; --acc-on: #101216; --acc-ink: #a3c2ff; --acc-tile: color-mix(in srgb, #6ea0ff 14%, #25292d); --acc-ring: rgba(110,160,255, 0.2); --focus: #6ea0ff; } }
+:root[data-acc='blue'][data-theme='dark'] { --acc: #6ea0ff; --acc-on: #101216; --acc-ink: #a3c2ff; --acc-tile: color-mix(in srgb, #6ea0ff 14%, #25292d); --acc-ring: rgba(110,160,255, 0.2); --focus: #6ea0ff; }
+:root[data-acc='teal'] { --acc: #0e7c86; --acc-ink: #0a5f67; --acc-tile: color-mix(in srgb, #0e7c86 8%, #fff); --acc-ring: rgba(14,124,134, 0.16); --focus: #0e7c86; }
+@media (prefers-color-scheme: dark) { :root[data-acc='teal']:not([data-theme='light']) { --acc: #3cc8c8; --acc-on: #101216; --acc-ink: #8ee3e3; --acc-tile: color-mix(in srgb, #3cc8c8 14%, #25292d); --acc-ring: rgba(60,200,200, 0.2); --focus: #3cc8c8; } }
+:root[data-acc='teal'][data-theme='dark'] { --acc: #3cc8c8; --acc-on: #101216; --acc-ink: #8ee3e3; --acc-tile: color-mix(in srgb, #3cc8c8 14%, #25292d); --acc-ring: rgba(60,200,200, 0.2); --focus: #3cc8c8; }
+:root[data-acc='devs'] { --acc: #9a4ee6; --acc-ink: #7726bf; --acc-tile: color-mix(in srgb, #9a4ee6 8%, #fff); --acc-ring: rgba(154,78,230, 0.16); --focus: #9a4ee6; }
+@media (prefers-color-scheme: dark) { :root[data-acc='devs']:not([data-theme='light']) { --acc: #bc72f4; --acc-on: #101216; --acc-ink: #d6a6fa; --acc-tile: color-mix(in srgb, #bc72f4 14%, #25292d); --acc-ring: rgba(188,114,244, 0.2); --focus: #bc72f4; } }
+:root[data-acc='devs'][data-theme='dark'] { --acc: #bc72f4; --acc-on: #101216; --acc-ink: #d6a6fa; --acc-tile: color-mix(in srgb, #bc72f4 14%, #25292d); --acc-ring: rgba(188,114,244, 0.2); --focus: #bc72f4; }

@@ -17,3 +17,12 @@ export function toggleTheme() {
   try { localStorage.setItem(KEY, t) } catch { /* 저장소를 못 쓰면 이번 창에서만 */ }
   emit()
 }
+
+// 강조색 후보 비교(임시): ?acc=ink·blue·teal·devs. 이 창 안에서는 주소가 바뀌어도 유지하고, ?acc=violet 이면 지금 색으로 돌아온다
+const ACC = 'console-acc', ACCS = ['ink', 'blue', 'teal', 'devs']
+export function initAccent() {
+  const q = new URLSearchParams(location.search).get('acc')
+  let v = q
+  try { if (q) { if (ACCS.includes(q)) sessionStorage.setItem(ACC, q); else sessionStorage.removeItem(ACC) } else v = sessionStorage.getItem(ACC) } catch { /* 저장소를 못 쓰면 주소만 본다 */ }
+  if (v && ACCS.includes(v)) document.documentElement.dataset.acc = v
+}
