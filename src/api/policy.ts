@@ -1,7 +1,7 @@
 // 변환 정책 배포 (team-i-balance/backend /policy)
 // 서명·버전 번호는 서버가 매긴다. 콘솔은 payload(docs/BUNDLE-SPEC.md 3절)만 보낸다.
 import type { Policy } from '../domain/types'
-import { S, ent, emit } from '../domain/store'
+import { S, ent, emit, hooks, toast } from '../domain/store'
 import { fmt } from '../lib/util'
 import { get, post } from './client'
 
@@ -22,7 +22,7 @@ export async function buildPayload(P: Policy) {
   return {
     schema: 1, org: ORG, thresholds: THRESHOLDS,
     rules: P.learned.map((r, i) => ({ id: `r-${i + 1}`, label: r.type.slice(0, 15), description: r.when.slice(0, 40), grade: ent(r.type)?.grade === 'C' ? 'C' : 'S', action: r.method })),
-    types: Object.fromEntries(P.entities.map(e => [e.name, { on: e.on }])),
+    types: Object.fromEntries(P.entities.map(e => [e.name, { on: e.on, grade: e.grade, method: e.method }])),
     dict: await Promise.all(P.dict.map(async d => ({ h: await sha256(d.term), type: d.type }))),
     exclude: await Promise.all(P.exclude.map(async x => ({ h: await sha256(x.term) }))),
   }
@@ -74,12 +74,58 @@ export async function loadPolicy() {
   }
   P.deployed = ''; P.changes = []
   S.history = []
-  await Promise.all([loadAcks(), loadHistory()])
+  await Promise.all([loadAcks(), loadHistory(), loadDraft()])
 }
+
+// ── 정책 초안 (/policy/draft, 백엔드 docs/policy-draft-api.md)
+// 고칠 때마다 서버 초안에 저장해 새로고침·다른 보안팀원과 공유한다. 화면을 되살리는 데 필요한 평문(고유 단어·제외 값)은
+// 초안의 console 칸에만 두고, 배포할 때는 해시만 담은 payload 를 보낸다(평문은 PC 번들에 들어가지 않는다).
+interface DraftOut { payload: (Record<string, unknown> & { console?: ConsoleState }) | null; changes: { what: string; src: string }[]; has_draft: boolean; etag: string }
+interface ConsoleState { entities: Policy['entities']; learned: Policy['learned']; dict: Policy['dict']; exclude: Policy['exclude']; meta: Policy['meta'] }
+let etag: string | null = null, timer = 0, saving: Promise<void> = Promise.resolve()
+export let draftOn = false
+
+function applyDraft(d: DraftOut) {
+  etag = d.etag
+  const c = d.payload?.console
+  if (!d.has_draft || !c) return
+  const P = S.policy
+  P.entities = c.entities; P.learned = c.learned; P.dict = c.dict; P.exclude = c.exclude; P.meta = c.meta
+  P.changes = d.changes.map(x => ({ what: x.what, src: x.src }))
+}
+async function loadDraft() {
+  try { applyDraft(await get<DraftOut>('/policy/draft', 5000)); draftOn = true } catch { draftOn = false }
+}
+async function saveDraft() {
+  if (!draftOn || !S.api.live) return
+  const P = S.policy
+  const console: ConsoleState = { entities: P.entities, learned: P.learned, dict: P.dict, exclude: P.exclude, meta: P.meta }
+  try {
+    const d = await post<DraftOut>('/policy/draft', { payload: { ...(await buildPayload(P)), console }, changes: P.changes.slice(-500).map(c => ({ what: c.what.slice(0, 2000), src: (c.src || '직접 수정').slice(0, 128) })) },
+      etag ? { 'If-Match': etag } : {}, 'PUT')
+    etag = d.etag
+  } catch (e) {
+    const m = (e as Error).message
+    if (/CONFLICT|PRECONDITION|409|428/.test(m)) { await loadDraft(); emit(); toast('다른 보안팀원이 정책 초안을 바꿨어요 · 최신 초안을 불러왔어요') }
+    else toast(`정책 초안을 서버에 저장하지 못했어요 (${m})`)
+  }
+}
+// 바꿀 때마다 부르지만, 잇따른 변경은 묶어서 한 번에 순서대로 보낸다
+export function scheduleDraftSave() {
+  if (!draftOn || !S.api.live) return
+  clearTimeout(timer)
+  timer = window.setTimeout(() => { timer = 0; saving = saving.then(saveDraft) }, 300)
+}
+async function flushDraft() {
+  if (timer) { clearTimeout(timer); timer = 0; saving = saving.then(saveDraft) }
+  await saving
+}
+hooks.draft = scheduleDraftSave
 
 // 서명 후 배포: 서버가 version+1 로 서명해 저장한다. 성공하면 서버가 매긴 버전을 돌려준다.
 export async function publishToServer(): Promise<string> {
-  const r = await post<{ version: number; keyid: string; bundle_sha256: string }>('/policy/publish', { payload: await buildPayload(S.policy) }, )
+  await flushDraft()
+  const r = await post<{ version: number; keyid: string; bundle_sha256: string }>('/policy/publish', { payload: await buildPayload(S.policy) }, draftOn && etag ? { 'If-Match': etag } : {})
   if (S.api.pol) { S.api.pol.keyid = r.keyid; S.api.pol.sha = r.bundle_sha256 }
   S.policy.deployed = fmt(new Date())
   return 'v' + r.version
@@ -87,7 +133,7 @@ export async function publishToServer(): Promise<string> {
 
 export async function refreshAcks() { await loadAcks(); emit() }
 // 서버에 배포한 직후: 새 버전 기준 현황과 기록을 다시 읽는다
-export async function afterServerPublish() { await Promise.all([loadAcks(), loadHistory()]); emit() }
+export async function afterServerPublish() { await Promise.all([loadAcks(), loadHistory(), loadDraft()]); emit() }
 
 // 예시 데이터 모드의 PC 적용 현황: 40대 중 38대 적용, 2대는 모델이 옛 버전이라 거부
 type Acks = NonNullable<NonNullable<typeof S.api.pol>['acks']>

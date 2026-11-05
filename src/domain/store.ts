@@ -103,7 +103,7 @@ export function toast(msg: string) { S.ui.toast = { id: ++tid, msg }; emit() }
 export function undoToast(msg: string, undo?: () => void) { S.ui.utoast = { id: ++tid, msg, undo }; emit() }
 
 // ── 정책 변경 (서명 후 배포 전까지는 초안)
-export const change = (what: string, src = '직접 수정') => { S.policy.changes.push({ what, src }) }
+export const change = (what: string, src = '직접 수정') => { S.policy.changes.push({ what, src }); hooks.draft?.() }
 export function setEntityOn(i: number, on: boolean) { const e = S.policy.entities[i]; e.on = on; change(`${e.name} 탐지 ${on ? '켬' : '끔'}`); emit() }
 export function setEntityGrade(i: number, g: 'O' | 'S' | 'C') {
   const e = S.policy.entities[i], b = e.grade
@@ -126,7 +126,7 @@ export function publish(nv = nextVersion()) {
 
 // ── 사건 처리
 // 서버 모드에서 판단을 저장하는 고리(api/cases.ts 가 채운다). 화면 상태를 바꾼 뒤 부른다.
-export const hooks: { close?: (c: Case) => void; reopen?: (c: Case) => void } = {}
+export const hooks: { close?: (c: Case) => void; reopen?: (c: Case) => void; draft?: () => void } = {}
 const log = (c: Case, what: string, quote?: string | null) => c.timeline.push({ t: clock(), who: ME, cls: 'me', what, quote })
 export function closeCase(c: Case, res: { k: Conclusion; cause: Cause | null; memo: string; rule: string | null }) {
   c.status = 'closed'; c.close = { ...res, by: ME, at: clock() }
@@ -159,7 +159,7 @@ export function quickClose(c: Case, k: Conclusion | 'ok') {
   const ruled = S.policy.learned.length > nL
   undoToast(`${c.user} · ${label}${ruled ? ' · 규칙 추가돼 배포 대기' : ''}`, () => {
     c.status = 'open'; c.close = null; c.timeline.pop(); S.policy.learned.length = nL; S.policy.changes.length = nC
-    hooks.reopen?.(c)
+    hooks.reopen?.(c); if (ruled) hooks.draft?.()
     S.ui.sel = c.need === 'opt' ? 'opt' : 'req'; S.ui.cur[S.ui.sel] = c.id
   })
 }

@@ -49,7 +49,7 @@ npm run dev                  # http://localhost:5320
 | 서명 후 배포 | `/policy/publish`(버전·서명은 서버), 시작할 때 `/policy/latest` 로 버전·규칙·항목 켬/끔을 맞춘다. 고유 단어·탐지 제외 값은 sha256 해시로 보낸다 |
 | 배포 기록 · PC 적용 | `/policy/history`, `/policy/{버전}/acks` |
 | 직원·부서·대상 AI, 잡힌 값 | 서버에 아직 없음(이슈 #21) — 칸을 비워 둔다 |
-| 정책 초안 | 브라우저 안에만 있음 — 새로고침하면 사라진다 |
+| 정책 초안 | `/policy/draft` — 고칠 때마다 `If-Match` 로 저장(잇따른 변경은 묶어 순서대로), 409 면 최신 초안을 불러온다. 화면 복원용 평문(고유 단어·제외 값)은 초안의 `console` 칸에만 두고, 배포는 해시만 담은 payload 를 `If-Match` 와 함께 보낸다 |
 
 빠진 API와 제안은 [docs/BACKEND-API-GAP.md](docs/BACKEND-API-GAP.md), 정책 번들·서명 형식은 [docs/BUNDLE-SPEC.md](docs/BUNDLE-SPEC.md)에 있다.
 

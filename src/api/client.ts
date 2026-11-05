@@ -28,8 +28,8 @@ export async function get<T>(path: string, ms = 2500): Promise<T> {
     return (await r.json()) as T
   } finally { clearTimeout(t) }
 }
-export async function post<T>(path: string, body?: unknown): Promise<T> {
-  const r = await fetch(S.api.base + path, body === undefined ? { method: 'POST' } : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+export async function post<T>(path: string, body?: unknown, headers: Record<string, string> = {}, method = 'POST'): Promise<T> {
+  const r = await fetch(S.api.base + path, body === undefined ? { method, headers } : { method, headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) })
   const j = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error((j as { detail?: string }).detail || String(r.status))
   return j as T
