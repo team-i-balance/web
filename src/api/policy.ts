@@ -50,9 +50,12 @@ export async function loadActive(ok?: () => boolean) {
 export async function applyOnServer(n: number): Promise<string | null> {
   const env = await get<Envelope>(`/policy/${n}`, 5000)
   const r = await post<{ accepted: boolean; reason: string }>('/policy/deploy', { bundle: env })
+  // 거절 사유는 서버에 남지 않으니 이 화면에 기억해 둔다(배포 화면 안내에 보임)
+  lastReject = r.accepted ? null : { version: n, reason: r.reason }
   await loadActive(); emit()
   return r.accepted ? null : r.reason
 }
+export let lastReject: { version: number; reason: string } | null = null
 
 // 배포 기록(/policy/history). 이 브라우저에서 배포한 버전은 무엇이 바뀌었는지까지 남겨 둔 것을 쓴다
 interface HistoryItem { version: number; sha256: string; stored_at: string | null; rule_count: number }
@@ -64,7 +67,7 @@ export async function loadHistory(ok?: () => boolean) {
     const local = new Map(S.history.filter(h => h.server).map(h => [h.version, h]))
     S.history = items.sort((a, b) => a.version - b.version).map(h => {
       const v = 'v' + h.version, l = local.get(v)
-      return { version: v, at: h.stored_at ? new Date(h.stored_at) : l?.at ?? new Date(0), changes: l?.changes ?? [{ what: `자동 변환 규칙 ${h.rule_count}개 · 바뀐 내용은 '이 버전 내용 보기'에서`, src: '' }], server: true }
+      return { version: v, sha: h.sha256, at: h.stored_at ? new Date(h.stored_at) : l?.at ?? new Date(0), changes: l?.changes ?? [{ what: `자동 변환 규칙 ${h.rule_count}개 · 바뀐 내용은 '이 버전 내용 보기'에서`, src: '' }], server: true }
     })
     const last = items.find(h => 'v' + h.version === S.policy.version)
     if (last?.stored_at) S.policy.deployed = fmt(new Date(last.stored_at))

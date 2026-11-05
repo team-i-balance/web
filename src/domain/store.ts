@@ -28,7 +28,7 @@ export const S = {
   cases: [] as Case[],
   // 배포 기록: 서버 /policy/history 로 채운다
   history: [
-  ] as { version: string; at: Date; changes: PolicyChange[]; server: boolean }[],
+  ] as { version: string; sha?: string; at: Date; changes: PolicyChange[]; server: boolean }[],
   api: { truncated: false, state: 'connecting' as 'connecting' | 'live' | 'offline' | 'auth', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy, stale: false },
   ui: {
     sel: null as Queue | null,

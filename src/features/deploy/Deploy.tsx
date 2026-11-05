@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { ServerCog, RefreshCw, History, ChevronDown } from 'lucide-react'
 import { S, useStore } from '../../domain/store'
-import { applyLatest, historyFromServer, loadVersion, refreshActive, serverBehind, type VersionView } from '../../api/policy'
+import { applyLatest, historyFromServer, lastReject, loadVersion, reasonKo, refreshActive, serverBehind, type VersionView } from '../../api/policy'
 import { Button, Empty, Notice, Tag, ds } from '../../ds'
 import { openDialog } from '../dialogs'
 import { fmt } from '../../lib/util'
@@ -40,7 +40,9 @@ export default function Deploy() {
             </div>
             {behind && <Notice tone="warning" title={`최신 배포 ${P.version}가 서버에 적용되지 않았어요`}
               actions={<Button variant="now" disabled={busy} onClick={apply}>{busy ? '적용하는 중…' : `${P.version} 서버에 적용하기`}</Button>}>
-              <p>배포는 저장만 되고 적용이 빠졌던 버전이에요. 적용하기 전에 아래 배포 기록에서 내용을 확인해 주세요.</p>
+              {lastReject?.version === +P.version.slice(1)
+                ? <p>서버가 이 버전을 거절했어요({reasonKo(lastReject.reason)}). 다시 적용해도 같은 사유로 거절될 수 있어요.</p>
+                : <p>서버에 저장만 되고 적용되지 않은 버전이에요. 적용하기 전에 아래 배포 기록에서 내용을 확인해 주세요.</p>}
             </Notice>}
           </div>}
       </section>
@@ -53,7 +55,7 @@ export default function Deploy() {
             const [lab, txt] = splitWhat(c.what)
             return <li key={i}>{lab && <span className={d.cl}>{lab}</span>}<span className={d.ct}>{txt}</span>{c.src && <Tag>{c.src}</Tag>}</li>
           })}</ul>
-          {live && h.server && <VersionDetail n={+h.version.slice(1)} sha={h.version === P.version ? S.api.pol?.sha : undefined} />}
+          {live && h.server && <VersionDetail n={+h.version.slice(1)} sha={h.sha ?? (h.version === P.version ? S.api.pol?.sha : undefined)} />}
         </li>)}</ol> : <Empty icon={<History size={20} />} title={live && !historyFromServer ? '이 브라우저에서 배포한 기록이 없어요' : '아직 배포한 기록이 없어요'} />}
       </section>
     </div>
