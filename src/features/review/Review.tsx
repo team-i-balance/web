@@ -71,7 +71,9 @@ function Detail({ c }: { c: Case }) {
       <div className={r.dbody}>
         <div className={r.col}>
           <section className={r.sec}><h3>직원 사유 {c.reason?.pick && <Tag>{c.reason.pick}</Tag>}</h3>
-            {c.reason ? <blockquote className={r.quote}>{c.reason.text}</blockquote> : <div className={r.note}>직원 사유를 기다리고 있어요</div>}</section>
+            {c.reason?.text ? <blockquote className={r.quote}>{c.reason.text}</blockquote>
+              : c.reason ? <div className={r.note}>사유 글 없이 '{c.reason.pick}'만 골랐어요</div>
+              : <div className={r.note}>사유가 없어요 · 지금 직원 프로그램은 나중에 사유를 낼 방법이 없어요</div>}</section>
           {x && <section className={r.sec}><h3>보안팀 결론</h3>
             <div className={r.verdict}>
               <b><Dot tone={DOT[x.k]} />{CONCLUSION[x.k][0]}</b>
@@ -79,7 +81,7 @@ function Detail({ c }: { c: Case }) {
               {x.memo && <span>판단 근거 · {x.memo}</span>}
               {x.rule && <span>재발 방지 · {x.rule}</span>}
             </div>
-            {(x.rule || S.policy.changes.some(ch => ch.src === c.id)) && S.policy.changes.length > 0 && <Notice tone="now" actions={<><LinkButton size="sm" variant="link" href="#policy">정책에서 보기</LinkButton><Button size="sm" variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button></>}>규칙 초안이 배포를 기다려요 · 아직 서버 탐지에 적용 전</Notice>}
+            {S.policy.changes.some(ch => ch.src === c.id) && <Notice tone="now" actions={<><LinkButton size="sm" variant="link" href="#policy">정책에서 보기</LinkButton><Button size="sm" variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button></>}>규칙 초안이 배포를 기다려요 · 아직 서버 탐지에 적용 전</Notice>}
           </section>}
           <section className={r.sec}><h3>보낸 내용</h3>
             <div className={r.text}><Sentence c={c} /></div>

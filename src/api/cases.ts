@@ -16,7 +16,7 @@ const CONC_KO: Record<Conclusion, string> = { violation: '위반 확정', legit:
 function reasonOf(x: ServerCase): CaseReason | null {
   const e = x.event, pick = e.reason === 'business_need' ? '업무상 필요' : e.reason === 'false_positive' ? '오탐' : undefined
   if (e.reason_text) return { text: e.reason_text, at: new Date(e.reason_at || e.created_at), when: e.reason_requested_at ? '요청 받고 제출' : '전송할 때', pick }
-  if (pick) return { text: `"${pick}"를 골랐어요 (사유 글 없음)`, at: new Date(e.reason_at || e.created_at), when: '전송할 때', pick }
+  if (pick) return { text: '', at: new Date(e.reason_at || e.created_at), when: '전송할 때', pick } // 사유 글은 없고 고른 사유만 있다
   return null
 }
 // 필수·선택은 '보낼 때 사유를 남겼는지'로 나눈다. 서버 need 는 action 으로만 갈라서(send_as_is=required)
@@ -115,7 +115,7 @@ export async function requestReason(c: Case) {
   try {
     const ev = await post<ServerEvent>(`/events/${c.ev.id}/reason-request`)
     if (ev.reason_requested_at) c.timeline.push({ t: new Date(ev.reason_requested_at), who: '보안팀', cls: 'me', what: '직원에게 사유 다시 요청' })
-    toast(`${c.user} 님에게 사유를 다시 요청했어요 · 직원 앱을 열면 다시 물어요`)
+    toast('사유 요청을 다시 남겼어요 · 지금 직원 프로그램은 이 요청을 직원에게 보여 주지 않아요')
   } catch (e) {
     const m = (e as Error).message
     toast(/ALREADY_SUBMITTED/.test(m) ? '이미 사유가 들어왔어요 · 최신 상태로 바꿨어요' : `사유를 다시 요청하지 못했어요 (${m})`)

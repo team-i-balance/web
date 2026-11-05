@@ -118,7 +118,8 @@ export default function Board() {
           <span className={b.actual}>실제: 원문 전송</span>
           <span className={b.polVer}>{c.ev.ver ? `정책 ${c.ev.ver}` : '지금 정책'}</span></p></div>
         <div className={b.reason}><span>직원 사유</span>{c.reason?.text ? <p>{c.reason.text}</p>
-          : <p className={clsx(b.none, b.row)}>{SEL === 'req' ? '사유를 기다리는 중이에요 · 받기 전에도 결론 낼 수 있어요' : '사유 없음'}{SEL === 'req' && <Button size="sm" variant="quiet" onClick={() => requestReason(c)}>사유 다시 요청</Button>}</p>}</div>
+          : c.reason?.pick ? <p>사유 글 없이 '{c.reason.pick}'만 골랐어요</p>
+          : <p className={clsx(b.none, b.row)}>{SEL === 'req' ? '사유가 없어요 · 직원 프로그램은 아직 나중에 사유를 받지 못해요' : '사유 없음'}{SEL === 'req' && <Button size="sm" variant="quiet" onClick={() => requestReason(c)}>사유 다시 요청</Button>}</p>}</div>
         <div className={b.decide} style={{ '--n': SEL === 'req' ? 3 : 2 } as React.CSSProperties} data-coach="decide">
           {SEL === 'req'
             ? DECIDE.map(([k, t, d], i) => <DecideButton key={k} title={t} desc={d} k={String(i + 1)} onClick={() => decideCase(c, k)} />)

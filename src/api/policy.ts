@@ -58,7 +58,7 @@ export async function loadHistory(ok?: () => boolean) {
     const local = new Map(S.history.filter(h => h.server).map(h => [h.version, h]))
     S.history = items.sort((a, b) => a.version - b.version).map(h => {
       const v = 'v' + h.version, l = local.get(v)
-      return { version: v, at: h.stored_at ? new Date(h.stored_at) : l?.at ?? new Date(0), changes: l?.changes ?? [{ what: `자동 변환 규칙 ${h.rule_count}개`, src: h.sha256.replace('sha256:', '').slice(0, 10) }], server: true }
+      return { version: v, at: h.stored_at ? new Date(h.stored_at) : l?.at ?? new Date(0), changes: l?.changes ?? [{ what: `자동 변환 규칙 ${h.rule_count}개 · 바뀐 내용은 '이 버전 내용 보기'에서`, src: '' }], server: true }
     })
     const last = items.find(h => 'v' + h.version === S.policy.version)
     if (last?.stored_at) S.policy.deployed = fmt(new Date(last.stored_at))
@@ -67,7 +67,7 @@ export async function loadHistory(ok?: () => boolean) {
 }
 
 // 버전 하나의 내용(/policy/{n})과 바로 앞 버전 대비 바뀐 점. 값은 해시라 단어·제외 값은 개수만 보여 준다.
-export interface VersionView { keyid: string | null; rules: { label: string; description: string; action: string }[]; on: number; off: string[]; dict: number; exclude: number; changed: string[] }
+export interface VersionView { compared: boolean; keyid: string | null; rules: { label: string; description: string; action: string }[]; on: number; off: string[]; dict: number; exclude: number; changed: string[] }
 const vcache = new Map<number, Envelope>()
 async function envelope(n: number) { let e = vcache.get(n); if (!e) { e = await get<Envelope>(`/policy/${n}`, 5000); vcache.set(n, e) } return e }
 export async function loadVersion(n: number): Promise<VersionView> {
@@ -91,7 +91,7 @@ export async function loadVersion(n: number): Promise<VersionView> {
     }
     diff(prev.dict, p.dict, '회사 고유 단어'); diff(prev.exclude, p.exclude, '탐지 제외')
   }
-  return { keyid: env.signatures[0]?.keyid ?? null, rules: p.rules || [], on: types.filter(([, t]) => t.on !== false).length, off: types.filter(([, t]) => t.on === false).map(([k]) => k), dict: p.dict?.length ?? 0, exclude: p.exclude?.length ?? 0, changed }
+  return { compared: n === 1 || !!prev, keyid: env.signatures[0]?.keyid ?? null, rules: p.rules || [], on: types.filter(([, t]) => t.on !== false).length, off: types.filter(([, t]) => t.on === false).map(([k]) => k), dict: p.dict?.length ?? 0, exclude: p.exclude?.length ?? 0, changed }
 }
 
 // 서버의 최신 배포본을 콘솔 정책에 반영한다. 아직 배포가 없으면 v0(규칙 없음)부터.

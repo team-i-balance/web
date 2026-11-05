@@ -13,6 +13,7 @@ import { Modal } from '../ds/Overlay'
 import f from './dialogs.module.css'
 
 export const PERSONAL = ['이름', '주민등록번호', '카드번호', '계좌번호', '전화번호', '이메일', '주소', '생년월일']
+const SECRET = ['API 키', '비밀번호', '토큰', '사업자번호']
 export const closeDialog = () => { S.ui.dialog = null; emit() }
 export const openDialog = (d: Dialog) => { S.ui.dialog = d; emit() }
 
@@ -108,9 +109,11 @@ function Exclude({ groupKey: key, onDone }: { groupKey: string; onDone?: () => v
   return (
     <Modal open sheet onClose={closeDialog} title="탐지 제외" desc="정책 초안에 추가돼요. 서명 후 배포하면 서버 탐지에 적용돼요." foot={<Foot ok="초안에 추가하기" onOk={ok} disabled={noHash} />}>
       <div className={f.valueCard}><span className={f.mut}>{g.type}</span><b className={f.big}>{partial(g.type, g.value)}</b></div>
-      <KV rows={[['범위', '정확히 이 값만'], ['근거', `오탐 신고 ${g.refs.length}회 · 직원 ${g.users.size}명`], ['효과', `최근 7일 기준 ${less}건이 덜 잡혀요`]]} />
+      {/* 서버는 같은 값(조사가 붙은 형태 포함)을 탐지기·유형과 상관없이 모든 직원에게서 뺀다(backend policy_apply.py) */}
+      <KV rows={[['범위', '이 값(조사가 붙은 형태 포함) · 모든 탐지 유형 · 모든 직원'], ['근거', `오탐 신고 ${g.refs.length}회 · 최근 7일 ${less}회`]]} />
       {noHash && <Note warn>이 신고에는 서버의 값 해시가 없어 제외 규칙을 만들 수 없어요. 직원 앱이 값 해시를 보내야 해요.</Note>}
       {PERSONAL.includes(g.type) && <Note warn>{josa(g.type, '은', '는')} 개인정보예요. 회사 대표번호처럼 공개된 값일 때만 제외하세요.</Note>}
+      {SECRET.includes(g.type) && <Note error>{josa(g.type, '은', '는')} 비밀값일 수 있어요. 제외하면 이 값이 그대로 외부 AI로 나가요.</Note>}
       <Field label="제외 사유" htmlFor="why" error={err && '제외 사유를 적어 주세요'}>
         <Input id="why" autoFocus placeholder="예: 회사 대표번호 (홈페이지 공개)" value={why} aria-invalid={err} onChange={e => { setWhy(e.target.value); setErr(false) }} onKeyDown={e => { if (e.key === 'Enter') ok() }} />
       </Field>
@@ -142,7 +145,7 @@ function AddDict() {
   )
 }
 
-// 서버에 붙어 있으면 /policy/publish 로 서명·저장, 아니면 화면 안에서만 버전을 올린다
+// 서버가 /policy/publish 로 서명·저장하고 /policy/deploy 로 적용한다. 연결이 없으면 배포하지 않는다
 function Publish({ onDone }: { onDone?: () => void }) {
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null)
   const ok = async () => {

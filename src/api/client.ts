@@ -81,7 +81,7 @@ export function casesFrom(events: AiEvent[]): Case[] {
   return events.filter(e => e.grade === 'S' && (e.action === 'raw' || (e.action === 'revert' && e.items.some(i => i.reason === '업무상 필요')))).map(e => ({
     id: 'INC-' + e.id, ev: e, need: sentWithReason(e) ? 'opt' : 'req', time: e.time, user: e.user, dept: e.dept, items: e.items, file: null,
     status: 'open', close: null, timeline: [],
-    reason: !sentWithReason(e) ? null : { pick: '업무상 필요', text: '(직원이 쓴 사유 글은 아직 서버에 없어요)', at: e.time, when: '전송할 때' },
+    reason: !sentWithReason(e) ? null : { pick: '업무상 필요', text: '', at: e.time, when: '전송할 때' },
   }))
 }
 

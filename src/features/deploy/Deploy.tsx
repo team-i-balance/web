@@ -70,7 +70,7 @@ function VersionDetail({ n, sha }: { n: number; sha?: string | null }) {
       {open && (err ? <p className={d.note}>버전 내용을 불러오지 못했어요 · {err}</p> : !v ? <p className={d.note}>불러오는 중…</p> : <>
         <div className={d.vchg}>
           <b>앞 버전 대비</b>
-          {n === 1 ? <span>첫 배포</span> : v.changed.length ? <ul className={d.vlist}>{v.changed.map(c => <li key={c}>{c}</li>)}</ul> : <span>바뀐 점 없음</span>}
+          {n === 1 ? <span>첫 배포</span> : !v.compared ? <span>앞 버전을 불러오지 못해 비교하지 못했어요</span> : v.changed.length ? <ul className={d.vlist}>{v.changed.map(c => <li key={c}>{c}</li>)}</ul> : <span>바뀐 점 없음</span>}
         </div>
         <dl className={d.kv}>
           <div><dt>자동 변환 규칙</dt><dd>{v.rules.length ? <ul className={d.vlist}>{v.rules.map((r, i) => <li key={i}>{r.description} → {r.label} {r.action}</li>)}</ul> : '없음'}</dd></div>

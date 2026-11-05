@@ -154,7 +154,7 @@ export function quickClose(c: Case, k: Conclusion | 'ok') {
   else {
     let rule: string | null = null
     if (k === 'legit') { const s = suggestRule(c); rule = addRule(c, s.type, s.when, s.method) }
-    closeCase(c, { k, cause: k === 'fp' ? null : k === 'legit' ? 'fit' : 'care', memo: { violation: '사유 확인 — 위반', legit: '사유 확인 — 업무상 필요', fp: '개인정보 아님' }[k], rule })
+    closeCase(c, { k, cause: k === 'legit' ? 'fit' : null, /* 빠른 판단에서는 원인을 고르지 않았으니 남기지 않는다 */ memo: { violation: '사유 확인 — 위반', legit: '사유 확인 — 업무상 필요', fp: '개인정보 아님' }[k], rule })
   }
   const label = { violation: '위반', legit: '예외 인정', fp: '오탐', ok: '문제 없음' }[k]
   const ruled = S.policy.learned.length > nL
