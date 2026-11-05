@@ -5,7 +5,7 @@
 //   BACKEND_CA     (선택) 백엔드 인증서 PEM. 없으면 api/_backend-ca.ts 를 쓴다. 인증서 검증은 끄지 않는다.
 // Edge 런타임은 IP 주소로 요청을 막으므로 Node 런타임으로 둔다.
 import { Agent, fetch } from 'undici'
-import { BACKEND_CA } from './_backend-ca'
+import { BACKEND_CA } from './_backend-ca.js'
 
 const pinned = new Agent({ connect: { ca: process.env.BACKEND_CA || BACKEND_CA } })
 
