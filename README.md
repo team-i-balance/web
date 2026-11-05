@@ -42,7 +42,7 @@ npm run dev                  # http://localhost:5320
 
 | 콘솔 기능 | API |
 |---|---|
-| 흐름도 숫자, 오탐 신고 | `/logs/events` 최근 7일로 계산, `/logs/stats` |
+| 흐름도 숫자, 오탐 신고, 현황 | `/logs/events` 최근 30일을 `cursor` 로 끝까지 받아 계산. 현황의 서버 집계는 `/logs/stats?start&end`(행동별 `by_action` 포함) |
 | 필수·선택 검토 목록과 결론 | `/cases`(열린 건·종결 건), 판단은 `/cases/{id}/close`, 되돌리기·다시 열기는 `/cases/{id}/reopen`. 같은 건 요청은 순서대로 보낸다 |
 | 처리 기록 | `/cases/{id}` 의 `history` |
 | 직원 사유 | 이벤트의 `reason_text` · `reason_at` (직원 앱이 `/events/{id}/reason` 으로 제출) |

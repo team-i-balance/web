@@ -76,6 +76,21 @@ function casesFrom(events: AiEvent[]): Case[] {
   }))
 }
 
+// 기간 이벤트를 끝까지 읽는다(/logs/events 의 cursor 페이지 넘김). 예전 서버는 cursor 를 무시하므로 같은 페이지가 오면 멈춘다.
+async function allEvents(from: Date, max = 20): Promise<ServerEvent[]> {
+  const q = new URLSearchParams({ limit: '1000', start: from.toISOString() }), out: ServerEvent[] = []
+  for (let i = 0; i < max; i++) {
+    const page = await get<ServerEvent[]>('/logs/events?' + q, 8000)
+    if (out.length && page.length && page[0].id >= out[out.length - 1].id) break
+    out.push(...page)
+    if (page.length < 1000) break
+    q.set('cursor', String(page[page.length - 1].id))
+  }
+  return out
+}
+// 기간 통계(/logs/stats?start&end). 분모가 그 기간 전체라 목록 개수 제한과 상관없다.
+export const periodStats = (days: number) => get<ServerStats>('/logs/stats?' + new URLSearchParams({ start: new Date(Date.now() - days * 864e5).toISOString(), end: new Date().toISOString() }), 5000)
+
 export async function connect(): Promise<boolean> {
   const cands = candidates()
   S.api.state = cands.length ? 'connecting' : 'off'; emit()
@@ -84,16 +99,15 @@ export async function connect(): Promise<boolean> {
     try {
       const h = await get<{ status: string }>('/health')
       if (h.status !== 'ok') continue
-      const start = new Date(Date.now() - 7 * 864e5).toISOString()
-      const evs = await get<ServerEvent[]>('/logs/events?limit=1000&start=' + encodeURIComponent(start), 5000)
+      const evs = await allEvents(new Date(Date.now() - 30 * 864e5))
       S.now = new Date(); S.loaded = Date.now()
       S.events = evs.map(fromServer).sort((a, b) => +b.time - +a.time)
       S.cases = (await loadCases().catch(() => null)) ?? casesFrom(S.events)
       S.ui.sel = null; S.ui.cur = {}
       let stats: ServerStats | null = null
-      try { stats = await get<ServerStats>('/logs/stats') } catch { /* 통계는 없어도 된다 */ }
+      try { stats = await periodStats(7) } catch { /* 통계는 없어도 된다 */ }
       try { await loadPolicy() } catch { /* 정책 API가 없는 서버면 콘솔 정책 그대로 */ }
-      Object.assign(S.api, { state: 'live', live: true, count: evs.length, stats, synced: new Date() })
+      Object.assign(S.api, { state: 'live', live: true, count: S.events.filter(e => +e.time >= Date.now() - 7 * 864e5).length, stats, synced: new Date() })
       emit()
       return true
     } catch { /* 다음 후보 */ }

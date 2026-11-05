@@ -54,7 +54,7 @@ export const S = {
 }
 // 서버 정책 상태: 마지막 배포 번들과 직원 PC 적용 현황(/policy/latest · /policy/acks)
 export interface ServerPolicy { keyid: string | null; sha: string | null; acks: { devices: number; applied: number; rejected: number; reject_reasons: Record<string, number> } | null }
-export interface ServerStats { total: number; acceptance_rate: number; revert_rate: number; evasion_suspect: number; by_queue: Record<string, number>; by_grade: Record<string, number> }
+export interface ServerStats { total: number; acceptance_rate: number; revert_rate: number; evasion_suspect: number; by_queue: Record<string, number>; by_grade: Record<string, number>; by_action?: Record<string, number> }
 
 let version = 0
 const listeners = new Set<() => void>()

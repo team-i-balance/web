@@ -1,12 +1,14 @@
 // 현황: 기간(7일·30일) 동안 AI 입력·변환·원문 전송·되돌림. 서버에 없는 필드(대상 AI·부서)는 차트를 숨긴다.
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { S, useStore } from '../../domain/store'
-import { QUEUE_KO } from '../../api/client'
+import { QUEUE_KO, periodStats } from '../../api/client'
+import type { ServerStats } from '../../domain/store'
 import { Segmented, Tag } from '../../ds'
 import { pad, pct } from '../../lib/util'
 import i from './insights.module.css'
 
 const DAY = 864e5
+const ACTION_KO: Record<string, string> = { send_transformed: '변환해서 보냄', send_as_is: '원문 그대로 보냄', revert_original: '원문으로 되돌림', cancel: '보내지 않음' }
 const md = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
 
 // 일별 막대: 한 계열만 그리므로 범례 대신 제목이 이름을 맡는다
@@ -60,7 +62,10 @@ export default function Insights() {
   const tmax = Math.max(1, ...byType.map(([, b]) => b.n))
   const byAi = S.api.live ? [] : Object.entries(E.reduce<Record<string, number>>((m, e) => ((m[e.ai] = (m[e.ai] || 0) + 1), m), {})).sort((a, b) => b[1] - a[1])
   const amax = Math.max(1, ...byAi.map(([, v]) => v))
-  const st = S.api.live ? S.api.stats : null
+  // 서버 통계는 고른 기간으로 다시 받는다
+  const [pst, setPst] = useState<ServerStats | null>(null)
+  useEffect(() => { if (S.api.live) periodStats(n).then(setPst, () => setPst(null)) }, [n, S.api.synced])
+  const st = S.api.live ? pst ?? S.api.stats : null
   return (
     <div className={i.wrap}>
       <div className={i.head}>
@@ -92,8 +97,9 @@ export default function Insights() {
             <div className={i.hbars}>{byAi.map(([t, v]) => <div key={t} className={i.hb}><span>{t}</span><span className={i.track}><i style={{ width: `${(v / amax) * 100}%` }} /></span><em>{v}건</em></div>)}</div>
           </section>}
           {st && <section className={i.card}>
-            <h2>서버 전체<small>기간과 상관없이 · /logs/stats</small></h2>
+            <h2>서버 집계<small>{n}일 · 전체 이벤트 기준</small></h2>
             <div className={i.queues}>{Object.entries(st.by_queue).map(([k, v]) => <div key={k} className={i.q}>{QUEUE_KO[k] || k}<b>{v}</b></div>)}</div>
+            {st.by_action && <div className={i.queues}>{Object.entries(st.by_action).map(([k, v]) => <div key={k} className={i.q}>{ACTION_KO[k] || k}<b>{v}</b></div>)}</div>}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}><Tag>수용률 {Math.round(st.acceptance_rate * 100)}%</Tag><Tag>되돌림률 {Math.round(st.revert_rate * 100)}%</Tag>{st.evasion_suspect > 0 && <Tag tone="warn">회피 의심 {st.evasion_suspect}</Tag>}</div>
           </section>}
           {S.api.live && <p className={i.note}>대상 AI와 부서는 서버가 아직 보내지 않아 빼 두었어요.</p>}
