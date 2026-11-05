@@ -1,6 +1,6 @@
 // 백엔드 연동 (team-i-balance/backend)
 // 브라우저는 같은 주소의 /api 만 부른다. 개발은 Vite 프록시, 배포는 api/proxy.ts 가 BACKEND_URL 로 넘긴다.
-// ?api=off 면 예시 데이터로만, ?api=http://host:port 면 그 서버로 바로 붙는다(CORS 허용 필요).
+// ?api=http://host:port 면 그 서버로 바로 붙는다(CORS 허용 필요). 예시 데이터는 없다: 연결이 안 되면 빈 화면이다.
 import type { AiEvent, Case, Grade, Item } from '../domain/types'
 import { S, ent, emit, toast, type ServerStats } from '../domain/store'
 import { loadPolicy } from './policy'
@@ -44,7 +44,6 @@ export async function post<T>(path: string, body?: unknown, headers: Record<stri
 
 function candidates(): string[] {
   const q = new URLSearchParams(location.search).get('api')
-  if (q === 'off') return []
   let stored: string | null = null
   try { stored = localStorage.getItem('apiBase') } catch { /* 저장소를 못 쓰는 환경 */ }
   return ['/api', q, stored].filter((u): u is string => !!u).map(u => u.replace(/\/$/, ''))
@@ -53,7 +52,6 @@ function candidates(): string[] {
 // 서버 이벤트 1건 → 콘솔 이벤트. 서버는 원문·직원·AI를 저장하지 않으므로 그 칸은 비워 둔다.
 export function fromServer(ev: ServerEvent): AiEvent {
   const grade = GRADE_IN[ev.grade] || 'O', types = (ev.detected_types || []).map(t => TYPE_KO[t] || t)
-  types.forEach(t => { if (!ent(t)) S.policy.entities.push({ name: t, grade: grade === 'C' ? 'C' : 'S', method: grade === 'C' ? '—' : '대체', sample: '', on: true }) })
   const action: AiEvent['action'] = grade === 'C' ? 'block' : grade === 'O' ? 'pass'
     : (({ send_transformed: 'sent', send_as_is: 'raw', revert_original: 'revert', cancel: 'cancel' } as Record<string, AiEvent['action']>)[ev.action] || 'sent')
   const rsn = ev.reason === 'false_positive' ? '오탐' : ev.reason === 'business_need' ? '업무상 필요' : null
@@ -62,7 +60,6 @@ export function fromServer(ev: ServerEvent): AiEvent {
   const items: Item[] = ev.items?.length
     ? ev.items.map(it => {
       const type = TYPE_KO[it.type] || it.type, r = ko(it.reason) ?? (it.decision === 'reverted' ? rsn : null)
-      if (!ent(type)) S.policy.entities.push({ name: type, grade: 'S', method: '대체', sample: '', on: true })
       return { type, orig: `⟦=${it.preview ?? ''}#${it.value_hash ?? 'nohash-' + ev.id + '-' + type}⟧`, method: ent(type)?.method ?? '대체', conv: '(변환됨)',
         status: grade !== 'S' ? null : it.decision === 'raw' ? 'raw' : it.decision === 'reverted' ? 'revert' : 'conv',
         reason: it.decision === 'reverted' ? r : null, fp: it.decision === 'reverted' && r === '오탐' ? 'open' : null }
@@ -118,7 +115,7 @@ export function setIncludeTest(v: boolean) {
 export async function connect(): Promise<boolean> {
   const cands = candidates()
   let denied = false // 서버는 살아 있는데 토큰이 없거나 틀림(401·403)
-  S.api.state = cands.length ? 'connecting' : 'off'; emit()
+  S.api.state = 'connecting'; emit()
   for (const base of cands) {
     S.api.base = base
     try {
@@ -138,7 +135,9 @@ export async function connect(): Promise<boolean> {
       return true
     } catch (e) { if (/^40[13]$/.test((e as Error).message)) denied = true /* 다음 후보 */ }
   }
-  S.api.base = null; S.api.live = false; S.api.state = denied ? 'auth' : cands.length ? 'offline' : 'off'
+  // 서버 데이터가 없으면 아무것도 보여 주지 않는다(이전에 읽은 것도 비운다)
+  S.events = []; S.cases = []; S.history = []
+  S.api.base = null; S.api.live = false; S.api.state = denied ? 'auth' : 'offline'
   emit()
   return false
 }

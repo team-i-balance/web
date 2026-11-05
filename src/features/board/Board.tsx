@@ -1,9 +1,9 @@
 // 작업판: 위는 흐름도(노드 = 대기열), 아래는 고른 노드의 '지금 한 건'.
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { ChevronRight, Inbox, RefreshCw, CircleCheck, Database } from 'lucide-react'
+import { ChevronRight, Inbox, RefreshCw, CircleCheck } from 'lucide-react'
 import clsx from 'clsx'
-import { S, useStore, groupKey, QUEUE_ORDER, QUEUE_NAME, ago, ent, demoReason, advanceBoard, type Queue } from '../../domain/store'
+import { S, useStore, groupKey, QUEUE_ORDER, QUEUE_NAME, ago, ent, advanceBoard, type Queue } from '../../domain/store'
 import { useBoardModel } from './model'
 import type { Case, FpGroup } from '../../domain/types'
 import { connect } from '../../api/client'
@@ -69,18 +69,19 @@ export default function Board() {
     { id: 'raw', l: '원문 전송', v: lastPub && fresh.length ? `${raw} → ${raw - caught}` : raw, s: '원문 그대로 보냄', danger: raw > 0, go: 'req' as Queue },
     { id: 'fp', l: '오탐 신고', v: fps.length, s: '잘못 잡힌 값', q: 'fp' as Queue },
     { id: 'opt', l: '선택 검토', v: opt.length, s: '사유 남기고 보냄', q: 'opt' as Queue },
-    { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 대기 ${wait.length}` : '', q: 'req' as Queue },
+    { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 대기 ${wait.length}` : '사유 없이 보냄', q: 'req' as Queue },
     { id: 'pol', l: '재발 방지 배포', v: P.changes.length ? `대기 ${P.changes.length}` : P.version, s: P.changes.length ? '서명 후 배포' : pc ?? '적용 중', q: 'pol' as Queue },
   ]
   // 고른 대기열까지 들어오는 길은 강조색으로 이어 보인다
-  const PATH: Record<Queue, number[]> = { req: [0, 1, 2], opt: [0, 4], fp: [0, 3], pol: [5, 6] }
+  // 원문 전송은 보낼 때 사유를 남겼는지에 따라 선택 검토(남김)와 필수 검토(안 남김)로 갈린다
+  const PATH: Record<Queue, number[]> = { req: [0, 1, 2], opt: [0, 1, 4], fp: [0, 3], pol: [5, 6] }
   const onPath = new Set(PATH[SEL] ?? [])
   const EG: { c: string; p: number[][] }[] = [
     { c: '', p: [[W, my(AY)], [300, my(AY)]] },
     { c: '', p: [[500, my(AY)], [640, my(AY)]] },
     { c: raw ? b.edgeHot : '', p: [[cx(640), AY + H], [cx(640), BY]] },
     { c: '', p: [[330, AY + H], [330, BY]] },
-    { c: '', p: [[470, AY + H], [470, BY]] },
+    { c: '', p: [[700, AY + H], [700, (AY + H + BY) / 2], [cx(420), (AY + H + BY) / 2], [cx(420), BY]] },
     { c: b.edgeLoop, p: [[840, my(BY)], [920, my(BY)]] },
     { c: b.edgeLoop, p: [[cx(920), BY], [cx(920), 14], [400, 14], [400, AY]] },
   ].map((e, i) => (onPath.has(i) ? { ...e, c: clsx(e.c, b.edgePath) } : e))
@@ -91,7 +92,7 @@ export default function Board() {
   const keyHint = (n: string, what = '건') => <span className={b.hint}>{n} 판단 · ↑↓ 다른 {what} · Z 되돌리기</span>
   const other = QUEUE_ORDER.find(k => k !== SEL && work[k])
   const nextWork = serverEmpty
-    ? <><Button icon={<RefreshCw size={16} />} onClick={() => connect()}>다시 불러오기</Button><LinkButton variant="ghost" icon={<Database size={16} />} href="?api=off#home">예시 데이터로 보기</LinkButton></>
+    ? <><Button icon={<RefreshCw size={16} />} onClick={() => connect()}>다시 불러오기</Button></>
     : other ? <Button variant="primary" onClick={() => select(other)}>다음 할 일: {QUEUE_NAME[other]} {work[other]}건<ChevronRight size={16} /></Button> : null
   const empty = (title: string) => (
     <Empty icon={serverEmpty ? <Inbox size={20} /> : <CircleCheck size={20} />} title={serverEmpty ? '서버에 최근 7일 이벤트가 아직 없어요' : title}
@@ -130,9 +131,7 @@ export default function Board() {
       {SEL === 'req' && wait.length > 0 && <>
         <div className={b.sideH}>사유 기다리는 중 <span>{wait.length}</span></div>
         {wait.map(x => <div key={x.id} className={clsx(b.nx, b.wait, ds.quietHost)}><b>{x.user}<small>{ago(x.time)}</small></b><span>{types(x)} → {x.ev.ai}</span>
-          <div className={b.row}>{live
-            ? <><Button size="sm" variant="quiet" onClick={() => requestReason(x)}>사유 다시 요청</Button><Button size="sm" variant="quiet" onClick={() => openDialog({ kind: 'close', caseId: x.id })}>사유 없이 결론</Button></>
-            : <Button size="sm" variant="quiet" onClick={() => demoReason(x)}>사유 도착 · 데모</Button>}</div></div>)}
+          <div className={b.row}><Button size="sm" variant="quiet" onClick={() => requestReason(x)}>사유 다시 요청</Button><Button size="sm" variant="quiet" onClick={() => openDialog({ kind: 'close', caseId: x.id })}>사유 없이 결론</Button></div></div>)}
       </>}
     </>
   } else if (SEL === 'fp') {

@@ -1,5 +1,6 @@
 // 변환 정책 배포 (team-i-balance/backend /policy)
 // 서명·버전 번호는 서버가 매긴다. 콘솔은 payload(docs/BUNDLE-SPEC.md 3절)만 보낸다.
+import { initialPolicy } from '../domain/defaults'
 import type { Policy } from '../domain/types'
 import { S, ent, emit, hooks, toast } from '../domain/store'
 import { fmt } from '../lib/util'
@@ -97,7 +98,7 @@ export async function loadPolicy() {
     const p = decode(env.payload)
     P.version = 'v' + p.version
     P.learned = (p.rules || []).map(r => ({ type: r.label, when: r.description, method: r.action as Policy['learned'][number]['method'], from: '서버', hits: 0, live: true }))
-    // 배포본에는 고유 단어·제외 값이 해시로만 있다. 예시 데이터를 비우고 해시를 그대로 들고 있다가 다시 배포할 때 보낸다
+    // 배포본에는 고유 단어·제외 값이 해시로만 있다. 해시를 그대로 들고 있다가 다시 배포할 때 보낸다
     P.dict = (p.dict || []).map(d => ({ term: `⟦h=${d.h}⟧`, alias: '', type: d.type || '프로젝트 코드명' }))
     P.exclude = (p.exclude || []).map(x => ({ term: `⟦h=${x.h}⟧`, why: '', from: '서버 배포본' }))
     Object.entries(p.types || {}).forEach(([name, t]) => {
@@ -143,7 +144,10 @@ function applyDraft(d: DraftOut) {
   const c = d.console_state ?? d.payload?.console
   if (!c?.entities) return
   const P = S.policy
-  P.entities = c.entities; P.learned = c.learned; P.dict = c.dict; P.exclude = c.exclude; P.meta = c.meta
+  // 탐지 항목은 서버 탐지기에 있는 것만. 예전에 저장된 가상 항목(나이·고객ID 등)은 버리고, 빠진 항목은 기본값으로 채운다
+  const base = initialPolicy().entities
+  P.entities = base.map(b => ({ ...b, ...c.entities.find(e => e.name === b.name), sample: b.sample }))
+  P.learned = c.learned; P.dict = c.dict; P.exclude = c.exclude; P.meta = c.meta
   P.changes = d.has_draft ? d.changes.map(x => ({ what: x.what, src: x.src })) : []
   // 초안이 없으면(배포 뒤) 저장해 둔 규칙·단어는 이미 배포된 것이다
   if (!d.has_draft) { P.learned.forEach(r => (r.live = true)); P.dict.forEach(x => delete x.draft); P.exclude.forEach(x => delete x.draft) }
@@ -197,27 +201,10 @@ export async function afterServerPublish() {
   markExcluded(); emit()
 }
 
-// 예시 데이터 모드의 PC 적용 현황: 40대 중 38대 적용, 2대는 모델이 옛 버전이라 거부
 type Acks = NonNullable<NonNullable<typeof S.api.pol>['acks']>
-let demo: Acks = { devices: 40, applied: 38, rejected: 2, reject_reasons: { model_mismatch: 2 } }
-export const acksNow = (): Acks | null => (S.api.live ? S.api.pol?.acks ?? null : demo)
+export const acksNow = (): Acks | null => (S.api.live ? S.api.pol?.acks ?? null : null)
 export const reasonKo = (k: string) => REASON_KO[k] || k
 
-// 예시 데이터에서 배포하면 PC들이 몇 초에 걸쳐 새 정책을 받아 가는 모습을 보여 준다
-let sim = 0
-export function simulateDemoAcks() {
-  clearInterval(sim)
-  demo = { devices: 40, applied: 0, rejected: 0, reject_reasons: {} }
-  emit()
-  sim = window.setInterval(() => {
-    const left = 40 - demo.applied - demo.rejected
-    if (left <= 0) { clearInterval(sim); return }
-    const n = Math.min(left, 3 + Math.floor(Math.random() * 6))
-    const rj = demo.rejected < 2 && demo.applied > 20 ? 1 : 0
-    demo = { ...demo, applied: demo.applied + n - rj, rejected: demo.rejected + rj, reject_reasons: rj ? { model_mismatch: demo.rejected + rj } : demo.reject_reasons }
-    emit()
-  }, 450)
-}
 
 // 직원 PC 적용 현황 한 줄
 export function pcStatus(): string | null {

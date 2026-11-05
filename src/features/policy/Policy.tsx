@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { S, useStore, metrics, deleteRule, setEntityOn, setEntityGrade, setEntityMethod, deleteDict, deleteExclude, setMeta } from '../../domain/store'
-import { GRADE, METHODS } from '../../domain/seed'
+import { GRADE, METHODS } from '../../domain/defaults'
 import type { Method } from '../../domain/types'
 import { Button, Empty, Select, Switch, Tag, ds } from '../../ds'
 import { openDialog } from '../dialogs'

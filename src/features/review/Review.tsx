@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Inbox, SlidersHorizontal } from 'lucide-react'
 import clsx from 'clsx'
-import { S, emit, useStore, ago, quickClose, reopen, demoReason } from '../../domain/store'
-import { CAUSES, CONCLUSION } from '../../domain/seed'
+import { S, emit, useStore, ago, quickClose, reopen } from '../../domain/store'
+import { CAUSES, CONCLUSION } from '../../domain/defaults'
 import type { Case, Conclusion } from '../../domain/types'
 import { Button, Checkbox, DecideButton, Dot, Empty, LinkButton, Notice, Segmented, Sentence, Tag, ds, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
@@ -47,7 +47,7 @@ function Detail({ c }: { c: Case }) {
   const detail = <Button className={r.detailBtn} icon={<SlidersHorizontal size={16} />} onClick={() => openDialog({ kind: 'close', caseId: c.id })}>세부 설정으로 결론</Button>
   // 판단 버튼: 1·2·3 단축키는 버튼 안 kbd 글자로 찾는다(아래 keydown)
   const actions = closed ? <Button onClick={() => reopen(c)}>다시 열기</Button>
-    : !c.reason ? <>{S.api.live ? <Button variant="ghost" onClick={() => requestReason(c)}>사유 다시 요청</Button> : <Button variant="ghost" onClick={() => demoReason(c)}>사유 도착시키기 · 데모</Button>}<Button variant="primary" onClick={() => openDialog({ kind: 'close', caseId: c.id })}>사유 없이 결론 내기</Button></>
+    : !c.reason ? <><Button variant="ghost" onClick={() => requestReason(c)}>사유 다시 요청</Button><Button variant="primary" onClick={() => openDialog({ kind: 'close', caseId: c.id })}>사유 없이 결론 내기</Button></>
     : c.need === 'opt' ? <><div className={r.decide}>
         <DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" onClick={() => decide('violation')} />
         <DecideButton title="문제 없음" desc="정당한 업무 사용으로 종결해요" k="2" onClick={() => decide('ok')} /></div>{detail}</>

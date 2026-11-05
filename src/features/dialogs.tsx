@@ -1,12 +1,12 @@
 // 대화상자: 결론 내기 · 탐지 제외(오른쪽 패널) · 서명 후 배포 · 변경 내용 · 고유 단어 추가 · 일괄 종결 · 서버
 import { useState, type ReactNode } from 'react'
 import { S, emit, useStore, hooks, caseById, closeCase, addRule, suggestRule, change, fpGroups, groupKey, fpExclude, publish, nextVersion, addDict, ent, toast, type Dialog } from '../domain/store'
-import { CAUSES, CONCLUSION, METHODS } from '../domain/seed'
+import { CAUSES, CONCLUSION, METHODS } from '../domain/defaults'
 import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, josa, partial } from '../lib/util'
 import { QUEUE_KO, connect, post, setIncludeTest } from '../api/client'
-import { afterServerPublish, publishToServer, simulateDemoAcks } from '../api/policy'
-import { Button, Checkbox, Field, Input, KV, Notice, Select, Switch, Tag, TextArea, ds } from '../ds'
+import { afterServerPublish, publishToServer } from '../api/policy'
+import { Button, Checkbox, Field, Input, KV, Notice, Select, Switch, Tag, TextArea } from '../ds'
 import { Modal } from '../ds/Overlay'
 import f from './dialogs.module.css'
 
@@ -25,8 +25,7 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
   const leaked = c.items.filter(i => i.status !== 'conv')
   const types = [...new Set(leaked.map(i => i.type))]
   const s0 = suggestRule(c)
-  const demo = S.ui.guide >= 0
-  const [k, setK] = useState<Conclusion>(c.need === 'opt' || demo ? 'legit' : 'violation')
+  const [k, setK] = useState<Conclusion>(c.need === 'opt' ? 'legit' : 'violation')
   // 원인은 위반일 때만 고른다. 정당한 업무 사용은 '변환 결과가 업무에 맞지 않음'(fit)으로 정해져 있다(빠른 판단 2와 같음)
   const VIOLATION_CAUSES: Cause[] = ['care', 'intent']
   const [vCause, setVCause] = useState<Cause>('care')
@@ -38,7 +37,7 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
   const [method, setMethod] = useState<Method>(s0.method)
   const [ex, setEx] = useState(false)
   const [exi, setExi] = useState(0)
-  const [memo, setMemo] = useState(demo ? '사유 확인 — 변환본이 거래처 업무에 맞지 않아 원문을 보냄. 고의성 없음, 같은 입력은 자동 변환으로 막음' : '')
+  const [memo, setMemo] = useState('')
   const [err, setErr] = useState(false)
   const ruleable = !!cause && !!CAUSES[cause].rule
   const src = c.items.find(i => i.type === type) || sug.item
@@ -152,7 +151,7 @@ function Publish({ onDone }: { onDone?: () => void }) {
         setErr(/signing key/i.test(m) ? '서버의 서명 키를 찾을 수 없어요. 백엔드 담당자에게 알려 주세요' : m); setBusy(false); return
       }
     }
-    S.ui.dialog = null; publish(v); if (S.api.live) afterServerPublish(); else simulateDemoAcks(); onDone?.(); emit()
+    S.ui.dialog = null; publish(v); if (S.api.live) afterServerPublish(); onDone?.(); emit()
   }
   return (
     <Modal open onClose={closeDialog} title={S.api.live ? '서명 후 배포' : `${nextVersion()} 서명 후 배포`}
@@ -176,10 +175,10 @@ function Server() {
     finally { setBusy(false) }
   }
   if (!a.live) return (
-    <Modal open onClose={closeDialog} title={a.state === 'off' ? '예시 데이터로 보는 중' : a.state === 'auth' ? '서버 인증이 필요해요' : '서버에 연결되지 않았어요'}
-      desc="예시 데이터를 보여 주고 있어요" foot={<><Button variant="ghost" onClick={closeDialog}>닫기</Button>{a.state === 'off' ? <a className={ds.btn + ' ' + ds.primary} href="./#home">서버 데이터로 보기</a> : <Button variant="primary" onClick={reload}>다시 연결하기</Button>}</>}>
+    <Modal open onClose={closeDialog} title={a.state === 'auth' ? '서버 인증이 필요해요' : '서버에 연결되지 않았어요'}
+      desc="서버 데이터만 보여 줘요. 연결되면 바로 채워져요" foot={<><Button variant="ghost" onClick={closeDialog}>닫기</Button><Button variant="primary" onClick={reload}>다시 연결하기</Button></>}>
       {a.state === 'auth' ? <Note warn>서버가 보안팀 토큰을 요구해요. 배포 환경의 BACKEND_TOKEN 에 보안팀(security) 토큰을 넣어 주세요.</Note>
-        : a.state !== 'off' && <Note>배포 환경이라면 BACKEND_URL 이 맞는지 확인해 주세요.</Note>}
+        : <Note>배포 환경이라면 BACKEND_URL 이 맞는지 확인해 주세요.</Note>}
     </Modal>
   )
   return (

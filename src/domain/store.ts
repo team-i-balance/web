@@ -1,7 +1,7 @@
 // 앱 상태: 도메인 데이터(정책·이벤트·사건)와 화면 상태를 한곳에 두고, 바꾼 뒤 emit() 으로 다시 그린다.
 import { useSyncExternalStore } from 'react'
 import type { AiEvent, Case, Cause, Conclusion, FpGroup, Method, PolicyChange } from './types'
-import { CONCLUSION, GRADE, LATE_REASON, ME, initialPolicy, pick, seedData } from './seed'
+import { CONCLUSION, GRADE, ME, initialPolicy } from './defaults'
 import { fmt, josa, partial } from '../lib/util'
 
 export type Queue = 'req' | 'opt' | 'fp' | 'pol'
@@ -19,22 +19,17 @@ export type Dialog =
 
 interface UndoToast { id: number; msg: string; undo?: () => void }
 
-const NOW0 = new Date('2026-11-05T16:40:00')
-const policy = initialPolicy()
-const seeded = seedData(policy, NOW0)
 
 export const S = {
-  now: NOW0,
+  now: new Date(),
   loaded: Date.now(),
-  policy,
-  events: seeded.events as AiEvent[],
-  cases: seeded.cases as Case[],
-  // 배포 기록: 예시 데이터는 지난 두 번을 깔아 두고, 서버 모드에서는 이 브라우저에서 배포한 것만 쌓인다
+  policy: initialPolicy(),
+  events: [] as AiEvent[],
+  cases: [] as Case[],
+  // 배포 기록: 서버 /policy/history 로 채운다
   history: [
-    { version: 'v11', at: new Date('2026-10-21T10:12:00'), changes: [{ what: '자동 변환 추가: 은행명 바로 뒤에 오는 숫자 묶음 → 계좌번호 대체', src: 'INC-2391' }, { what: '탐지 제외 추가: "02-1234-5678" (회사 대표번호)', src: '오탐 신고' }], server: false },
-    { version: 'v12', at: new Date('2026-10-28T14:02:00'), changes: [{ what: '자동 변환 추가: "CU-"로 시작하는 6자리 고객번호 → 고객ID 대체', src: 'INC-2440' }, { what: '사업자번호 탐지 끔', src: '직접 수정' }], server: false },
   ] as { version: string; at: Date; changes: PolicyChange[]; server: boolean }[],
-  api: { truncated: false, includeTest: (() => { try { return localStorage.getItem('includeTest') === '1' } catch { return false } })(), state: 'connecting' as 'connecting' | 'live' | 'offline' | 'auth' | 'off', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
+  api: { truncated: false, includeTest: (() => { try { return localStorage.getItem('includeTest') === '1' } catch { return false } })(), state: 'connecting' as 'connecting' | 'live' | 'offline' | 'auth', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
   ui: {
     sel: null as Queue | null,
     cur: {} as Partial<Record<Queue, string>>,
@@ -169,11 +164,6 @@ export function quickClose(c: Case, k: Conclusion | 'ok') {
   })
 }
 export function reopen(c: Case) { c.status = 'open'; c.close = null; log(c, '다시 열기'); hooks.reopen?.(c); emit() }
-export function demoReason(c: Case) {
-  c.reason = { text: pick(LATE_REASON), at: clock(), when: '요청 받고 제출' }
-  c.timeline.push({ t: clock(), who: c.user, cls: 'emp', what: '사유 제출', quote: c.reason.text })
-  toast('직원 사유가 도착했어요')
-}
 export function fpKeep(g: FpGroup) {
   g.refs.forEach(r => (r.it.fp = 'keep'))
   hooks.fpDecide?.(g, 'keep')
