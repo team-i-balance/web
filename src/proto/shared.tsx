@@ -8,7 +8,7 @@ import { partial, rpath } from '../lib/util'
 import './flow.css'
 
 // 시스템 부품은 data-* 를 바깥 요소에 붙이기도 해서, 안쪽 버튼을 찾아 누른다
-const press = (el: HTMLElement | null) => (el && (el.matches('button') ? el : el.querySelector('button'))) as HTMLButtonElement | null
+const press = (el: HTMLElement | null) => (el && (el.matches('button, a') ? el : el.querySelector('button, a'))) as HTMLElement | null
 
 // ── 단축키: 1·2·3 판단([data-decide]), ↑↓ 다른 건. 키는 지금 화면(Board·Review)과 같다.
 export function useDecideKeys(mode: 'board' | 'review') {
