@@ -12,8 +12,9 @@ export interface ServerEvent {
   reason_text?: string | null; reason_requested_at?: string | null; reason_at?: string | null
   // 이슈 #21(PR #36)이 들어오면 채워진다
   user_id?: string | null; dept?: string | null; target_ai?: string | null
-  source?: 'text' | 'file'
-  test?: boolean // #32: 엑셀 파일 검사·차단·보호본 다운로드도 이벤트로 남는다
+  source?: 'text' | 'file' // #32: 엑셀 파일 검사·차단·보호본 다운로드도 이벤트로 남는다
+  test?: boolean // #27: 시험 이벤트
+  policy_version?: number | null // #49: 그 입력을 처리할 때 적용 중이던 정책 버전
   items?: { type: string; decision: 'converted' | 'reverted' | 'raw'; reason?: string | null; value_hash?: string | null; preview?: string | null }[]
 }
 
@@ -71,7 +72,7 @@ export function fromServer(ev: ServerEvent): AiEvent {
   return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || `직원 ${h}`, dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: ev.source === 'file' ? { name: '엑셀 파일', meta: [] } : null,
     // 본문은 서버에 없다. 항목별 가린 값(#21)이 있으면 그것만 이어서 보여 준다
     tpl: (ev.items?.some(i => i.preview) ? items.map((_, i) => `{${i}}`).join('  ') + '  · ' : '') + (ev.source === 'file' ? '엑셀 파일 · 내용은 서버에 저장하지 않아요' : '본문은 서버에 저장하지 않아요'), items, grade, action,
-    conf: ev.detection_confidence === 'high' ? 0.95 : ev.detection_confidence === 'medium' ? 0.75 : 0.5, ver: '', server: ev, test: !!ev.test } // 서버 이벤트에는 당시 정책 버전이 없다
+    conf: ev.detection_confidence === 'high' ? 0.95 : ev.detection_confidence === 'medium' ? 0.75 : 0.5, ver: ev.policy_version != null ? 'v' + ev.policy_version : '', server: ev, test: !!ev.test }
 }
 function casesFrom(events: AiEvent[]): Case[] {
   return events.filter(e => e.grade === 'S' && (e.action === 'raw' || (e.action === 'revert' && e.items.some(i => i.reason === '업무상 필요')))).map(e => ({
