@@ -1,6 +1,6 @@
 // 오탐 신고 판단 (/false-positives, 백엔드 docs/false-positive-api.md)
 // 판단은 값 해시(value_hash) 단위로 서버에 쌓인다(덮어쓰지 않음). 그래서 '탐지 결과 유지'는 되돌리기 10초가 지난 뒤에 보낸다.
-// '탐지 제외'는 정책 초안에도 들어가므로 바로 보낸다.
+// '탐지 제외'는 초안일 때는 보내지 않고, 서명 후 배포한 뒤 syncExcludeDecisions 가 남긴다(초안을 지우면 서버에도 남지 않게).
 import type { FpGroup } from '../domain/types'
 import { S, hooks, toast } from '../domain/store'
 import { get, post } from './client'
@@ -41,7 +41,10 @@ export async function loadFpDecisions() {
     const h = it.fp ? hashOf(it.orig) : null
     if (h && done.has(h)) it.fp = done.get(h)!
   }))
-  // 정책으로 이미 탐지 제외해 배포한 값인데 서버 신고가 아직 열려 있으면 '제외' 판단을 남겨 맞춘다
+  await syncExcludeDecisions()
+}
+// 정책으로 탐지 제외해 배포한 값인데 서버 신고가 아직 열려 있으면 '제외' 판단을 남겨 맞춘다(연결할 때·배포한 뒤)
+export async function syncExcludeDecisions() {
   const ex = publishedExcludes(), open = await get<Group[]>('/false-positives?status=open&limit=1000', 5000).catch(() => [] as Group[])
   for (const g of open) { const h = g.value_hash.toLowerCase(); if (ex.has(h)) await send(h, 'exclude', '배포된 정책의 탐지 제외') }
 }
@@ -55,7 +58,7 @@ function onDecide(g: FpGroup, decision: 'keep' | 'exclude', why?: string) {
   const h = groupHash(g)
   if (!S.api.live || !h) return
   clearTimeout(pending.get(h))
-  if (decision === 'exclude') { pending.delete(h); send(h, decision, why); return }
+  if (decision === 'exclude') { pending.delete(h); return } // 배포한 뒤 syncExcludeDecisions 가 보낸다
   pending.set(h, window.setTimeout(() => { pending.delete(h); send(h, decision, why) }, 10_500))
 }
 function onUndo(g: FpGroup) {

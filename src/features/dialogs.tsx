@@ -4,6 +4,7 @@ import { S, emit, useStore, hooks, caseById, closeCase, addRule, suggestRule, ch
 import { CAUSES, CONCLUSION, METHODS } from '../domain/defaults'
 import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, josa, partial } from '../lib/util'
+import { hashOf, syncExcludeDecisions } from '../api/fp'
 import { QUEUE_KO, connect, post, setIncludeTest } from '../api/client'
 import { afterServerPublish, applyOnServer, publishToServer, reasonKo } from '../api/policy'
 import { EVERY } from '../api/live'
@@ -24,6 +25,7 @@ const Foot = ({ ok, onOk, busy, okLabel, disabled }: { ok: string; onOk: () => v
 function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) {
   const c = caseById(caseId)!
   const leaked = c.items.filter(i => i.status !== 'conv')
+  const hashed = leaked.filter(i => hashOf(i.orig)) // 값 해시가 있어야 서버가 같은 값을 알아본다
   const types = [...new Set(leaked.map(i => i.type))]
   const s0 = suggestRule(c)
   const [k, setK] = useState<Conclusion>(c.need === 'opt' ? 'legit' : 'violation')
@@ -47,8 +49,8 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
     if (!memo.trim()) { setErr(true); return }
     let rule: string | null = null
     if (ruleable && mk) rule = addRule(c, type, w.trim(), method)
-    if (k === 'fp' && ex) {
-      const it = leaked[exi]
+    if (k === 'fp' && ex && hashed[exi]) {
+      const it = hashed[exi]
       S.policy.exclude.unshift({ term: it.orig, why: '위반 검토에서 탐지 오류로 확인', from: c.id, draft: true })
       change(`탐지 제외 추가: ${it.type} "${partial(it.type, it.orig)}"`, c.id)
     }
@@ -82,9 +84,10 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
       </div>}
       {k === 'violation' && <Note>위반은 자동 변환 규칙 없이 결론과 판단 근거만 남겨요.</Note>}
       {k === 'fp' && <div className={f.box}>
-        <label className={f.checkRow}><Checkbox checked={ex} onChange={setEx} label="탐지 제외에 추가" /><b>잘못 잡힌 값을 탐지 제외에 추가</b></label>
-        {ex && <><Select value={exi} onChange={e => setExi(+e.target.value)} aria-label="제외할 값">{leaked.map((i, n) => <option key={n} value={n}>{i.type} · {partial(i.type, i.orig)}</option>)}</Select>
-          {PERSONAL.includes(leaked[exi]?.type) && <Note warn>공개된 값일 때만 제외하세요</Note>}</>}
+        {hashed.length ? <label className={f.checkRow}><Checkbox checked={ex} onChange={setEx} label="탐지 제외에 추가" /><b>잘못 잡힌 값을 탐지 제외에 추가</b></label>
+          : <Note>이 건은 서버에 값 정보가 없어 탐지 제외에 넣을 수 없어요</Note>}
+        {ex && hashed.length > 0 && <><Select value={exi} onChange={e => setExi(+e.target.value)} aria-label="제외할 값">{hashed.map((i, n) => <option key={n} value={n}>{i.type} · {partial(i.type, i.orig)}</option>)}</Select>
+          {PERSONAL.includes(hashed[exi]?.type) && <Note warn>공개된 값일 때만 제외하세요</Note>}</>}
       </div>}
       <Field label="판단 근거" htmlFor="memo" error={err && '판단 근거를 적어 주세요'}>
         <TextArea id="memo" value={memo} aria-invalid={err} onChange={e => { setMemo(e.target.value); setErr(false) }} />
@@ -157,7 +160,7 @@ function Publish({ onDone }: { onDone?: () => void }) {
       const m = (e as Error).message
       setErr(/signing key/i.test(m) ? '서버의 서명 키를 찾을 수 없어요. 백엔드 담당자에게 알려 주세요' : m); setBusy(false); return
     }
-    S.ui.dialog = null; publish(v, msg); afterServerPublish(); onDone?.(); emit()
+    S.ui.dialog = null; publish(v, msg); afterServerPublish().then(syncExcludeDecisions); onDone?.(); emit()
   }
   return (
     <Modal open onClose={closeDialog} title="서명 후 배포"

@@ -68,7 +68,7 @@ export function fromServer(ev: ServerEvent): AiEvent {
     })
     : types.map(type => ({ type, orig: `⟦${type}⟧`, method: ent(type)?.method ?? '대체', conv: '(변환됨)',
       status: grade !== 'S' ? null : action === 'raw' ? 'raw' : action === 'revert' ? 'revert' : 'conv',
-      reason: action === 'revert' ? rsn : null, fp: action === 'revert' && rsn === '오탐' ? 'open' : null }))
+      reason: action === 'revert' ? rsn : null, fp: null })) // 값 해시가 없어 묶거나 제외할 수 없다(오탐 신고 화면에 건수만 알린다)
   const h = (ev.content_hash || String(ev.id)).slice(0, 4)
   return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || `직원 ${h}`, dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: ev.source === 'file' ? { name: '엑셀 파일', meta: [] } : null,
     // 본문은 서버에 없다. 항목별 가린 값(#21)이 있으면 그것만 이어서 보여 준다

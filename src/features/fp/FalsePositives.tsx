@@ -2,11 +2,12 @@
 import { Fragment, useState } from 'react'
 import { ChevronDown, Flag } from 'lucide-react'
 import clsx from 'clsx'
-import { useStore, groupKey, caseById, ago } from '../../domain/store'
+import { S, useStore, groupKey, caseById, ago } from '../../domain/store'
 import { useFpModel } from './model'
 import type { FpGroup } from '../../domain/types'
-import { Button, Checkbox, Empty, Hit, LinkButton, Segmented, Tag, ds } from '../../ds'
+import { Button, Checkbox, Empty, Hit, LinkButton, Notice, Segmented, Tag, ds } from '../../ds'
 import { openDialog } from '../dialogs'
+import type { ServerEvent } from '../../api/client'
 import { partial } from '../../lib/util'
 import f from './fp.module.css'
 
@@ -37,6 +38,8 @@ export default function FalsePositives() {
   const { tab, groups, picked, sel, all, keep, toggle, setTab, counts, clear, toggleAll } = useFpModel()
   const [open, setOpen] = useState<string | null>(null)
   const isOpen = tab === 'open'
+  // 서버 이벤트에 항목(값 해시)이 없는 오탐 신고: 묶을 수 없어 건수만 알린다
+  const noValue = S.events.filter(e => { const v = e.server as ServerEvent | undefined; return v?.reason === 'false_positive' && !v.items?.length }).length
   return (
     <div className={ds.page}>
       <div className={ds.pageHead}>
@@ -51,6 +54,9 @@ export default function FalsePositives() {
           : <Segmented label="상태" value={tab} onChange={setTab} items={[{ k: 'open', t: '처리할 신고', n: counts.open }, { k: 'done', t: '처리함', n: counts.done }]} />}
         </div>
       </div>
+      {noValue > 0 && <Notice tone="warning" title={`값 정보 없이 들어온 오탐 신고 ${noValue}건`}>
+        직원 프로그램이 어떤 값을 오탐이라 했는지 보내지 않아서 값으로 묶거나 탐지 제외할 수 없어요. 아래 목록에는 넣지 않았어요.
+      </Notice>}
       <section className={f.page} aria-label="오탐 신고">
       {groups.length ? <div className={f.scroll}><table className={clsx(ds.table, ds.table2, f.t)} data-tab={tab}>
         <colgroup>
