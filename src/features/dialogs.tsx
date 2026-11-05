@@ -62,7 +62,7 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
   }
   return (
     <Modal open onClose={closeDialog} title={c.reason ? '결론 내기' : '사유 없이 결론 내기'} desc={`${c.user} · ${c.dept} · ${leaked.map(i => i.type).join(', ')} → ${c.ev.ai}`} foot={<Foot ok="종결하기" onOk={ok} />} wide>
-      {c.reason ? <blockquote className={f.quote}>{c.reason.text}</blockquote> : <Note warn>직원 사유가 아직 없어요</Note>}
+      {c.reason?.text ? <blockquote className={f.quote}>{c.reason.text}</blockquote> : c.reason ? <Note>사유 글 없이 '{c.reason.pick}'만 골랐어요</Note> : <Note warn>직원 사유가 없어요</Note>}
       <div className={f.group} role="radiogroup" aria-label="결론">
         {(Object.entries(CONCLUSION) as [Conclusion, [string, string]][]).map(([key, [t, d]]) => (
           <label key={key} className={f.radio} data-on={k === key || undefined}>

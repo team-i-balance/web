@@ -34,7 +34,7 @@ function Row({ x, on, pick }: { x: Case; on: boolean; pick: boolean }) {
       </span>
       <span className={r.when}>{x.ev.ai} · {ago(x.time)}</span>
       {(closed || x.reason) && <span className={r.snip}>
-        {closed ? <><Dot tone={DOT[x.close!.k]}>{CONCLUSION[x.close!.k][0]}</Dot>{x.reason ? ` “${x.reason.text}”` : ' 사유 미제출'}</> : x.reason!.text}
+        {closed ? <><Dot tone={DOT[x.close!.k]}>{CONCLUSION[x.close!.k][0]}</Dot>{x.reason?.text ? ` “${x.reason.text}”` : x.reason ? ` ${x.reason.pick}` : ' 사유 없음'}</> : x.reason?.text || x.reason?.pick || '사유 없음'}
       </span>}
     </a>
   )
