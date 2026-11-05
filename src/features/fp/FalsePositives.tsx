@@ -37,7 +37,7 @@ export default function FalsePositives() {
           const ex = open === k, cols = tab === 'open' ? 5 : 4
           return <Fragment key={k}><tr data-picked={picked.has(k) || undefined} data-open={ex || undefined} className={f.clickRow} onClick={e => { if (!(e.target as HTMLElement).closest('button,a,[role=checkbox]')) setOpen(ex ? null : k) }}>
             {tab === 'open' && <td className={f.pick}><Checkbox checked={picked.has(k)} label={`${partial(g.type, g.value)} 고르기`} onChange={v => toggle(k, v)} /></td>}
-            <td><div className={f.val}><b><ChevronDown size={14} className={f.chev} aria-hidden="true" />{partial(g.type, g.value)}</b><span>{g.type}</span></div></td>
+            <td><div className={f.val}><b><ChevronDown size={16} className={f.chev} aria-hidden="true" />{partial(g.type, g.value)}</b><span>{g.type}</span></div></td>
             <td className={f.cnt}><b>{g.refs.length}회</b><span>직원 {g.users.size}명</span></td>
             <td className={f.sent}>{sentence(g)}{cs.length > 0 && <><br /><a href={`#review/${cs[0]!.id}`}>선택 검토에도 있어요</a></>}</td>
             <td><div className={f.acts}>{tab === 'open'

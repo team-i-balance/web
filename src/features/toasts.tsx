@@ -38,7 +38,7 @@ export function Toasts() {
       <AnimatePresence initial={false}>
         {u && <motion.div key={'u' + u.id} className={o.toast + ' ' + toneCls(u.msg)} {...anim}>
           <Msg m={u.msg} />
-          {u.undo && <button type="button" className={o.toastBtn} onClick={undoLast}><Undo2 size={14} />되돌리기<span className={o.toastKbd}>Z</span></button>}
+          {u.undo && <button type="button" className={o.toastBtn} onClick={undoLast}><Undo2 size={16} />되돌리기<span className={o.toastKbd}>Z</span></button>}
           <i className={o.toastBar} aria-hidden="true" />
         </motion.div>}
         {t && <motion.div key={'t' + t.id} className={o.toast + ' ' + o.plain + ' ' + toneCls(t.msg)} {...anim}><Msg m={t.msg} /></motion.div>}

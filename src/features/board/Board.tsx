@@ -92,11 +92,11 @@ export default function Board() {
   const types = (c: Case) => typesOf(c).join(' · ')
   const other = QUEUE_ORDER.find(k => k !== SEL && work[k])
   const nextWork = serverEmpty
-    ? <><Button icon={<RefreshCw size={15} />} onClick={() => connect()}>다시 불러오기</Button><LinkButton variant="ghost" icon={<Database size={15} />} href="?api=off#home">예시 데이터로 보기</LinkButton></>
-    : other ? <Button variant="primary" onClick={() => select(other)}>다음 할 일: {QUEUE_NAME[other]} {work[other]}건<ChevronRight size={15} /></Button> : null
+    ? <><Button icon={<RefreshCw size={16} />} onClick={() => connect()}>다시 불러오기</Button><LinkButton variant="ghost" icon={<Database size={16} />} href="?api=off#home">예시 데이터로 보기</LinkButton></>
+    : other ? <Button variant="primary" onClick={() => select(other)}>다음 할 일: {QUEUE_NAME[other]} {work[other]}건<ChevronRight size={16} /></Button> : null
   const empty = (title: string) => (
     <Empty icon={serverEmpty ? <Inbox size={20} /> : <CircleCheck size={20} />} title={serverEmpty ? '서버에 최근 7일 이벤트가 아직 없어요' : title}
-      text={serverEmpty ? '직원 PC에서 AI에 입력하면 여기에 모여요' : other ? undefined : '지금 처리할 일이 없어요'}>{nextWork}{!other && !serverEmpty && E.length > 0 && <LinkButton variant="ghost" href="#insights">최근 입력 {E.length}건 보기<ChevronRight size={15} /></LinkButton>}</Empty>
+      text={serverEmpty ? '직원 PC에서 AI에 입력하면 여기에 모여요' : other ? undefined : '지금 처리할 일이 없어요'}>{nextWork}{!other && !serverEmpty && E.length > 0 && <LinkButton variant="ghost" href="#insights">최근 입력 {E.length}건 보기<ChevronRight size={16} /></LinkButton>}</Empty>
   )
 
   let body: ReactNode, side: ReactNode = null, topAction: ReactNode = null, sideTitle = '다음'
@@ -111,7 +111,7 @@ export default function Board() {
           <span className={b.avatar} aria-hidden="true">{c.user.replace(/^직원 /, '').slice(0, 1)}</span>
           <div className={b.whoT}><b>{c.user} <span>{c.dept} · {ago(c.time)}</span></b><span>{types(c)} → <b>{c.ev.ai}</b></span>
             <small>{c.ev.ver ? `전송 당시 정책 ${c.ev.ver} · ` : '지금 정책 기준 · '}{typesOf(c).map(t => `${t} ${ent(t)?.method ?? '—'}`).join(' · ')}</small></div>
-          <a className={b.more} href={`#review/${c.id}`}>자세히<ChevronRight size={14} /></a>
+          <a className={b.more} href={`#review/${c.id}`}>자세히<ChevronRight size={16} /></a>
         </div>
         <div className={b.text}><Sentence c={c} /></div>
         <div className={b.reason}><span>직원 사유</span><p>{c.reason?.text}</p></div>
@@ -153,13 +153,13 @@ export default function Board() {
     side = (Q as FpGroup[]).filter(x => x !== g).map(x => <button key={groupKey(x)} type="button" className={b.nx} data-pick={groupKey(x)} onClick={() => pickItem(groupKey(x))}><b>{partial(x.type, x.value)}<small>{x.refs.length}회</small></b><span>{x.type}</span></button>)
   } else {
     sideTitle = '자동 변환 규칙'
-    const pcRow = pc && <div className={b.row}><Tag tone={acks?.rejected ? 'warn' : acks?.applied ? 'ok' : undefined} dot>{pc}</Tag>{live && <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={() => refreshAcks()}>새로고침</Button>}</div>
+    const pcRow = pc && <div className={b.row}><Tag tone={acks?.rejected ? 'warn' : acks?.applied ? 'ok' : undefined} dot>{pc}</Tag>{live && <Button size="sm" variant="ghost" icon={<RefreshCw size={16} />} onClick={() => refreshAcks()}>새로고침</Button>}</div>
     body = eff ? (
       <div className={b.pb}>
         <div className={b.big}>원문 전송 {raw} → <em>{raw - caught}</em></div>
         <p style={{ color: 'var(--sub)' }}>{lastPub} 배포 · 지난 7일에 이 규칙이 있었다면</p>
         {pcRow}
-        <div className={b.row} style={{ marginTop: 8 }}><Button variant="primary" onClick={finishEffect}>다음 할 일<ChevronRight size={15} /></Button></div>
+        <div className={b.row} style={{ marginTop: 8 }}><Button variant="primary" onClick={finishEffect}>다음 할 일<ChevronRight size={16} /></Button></div>
       </div>
     ) : P.changes.length ? (
       <div className={b.pb}>

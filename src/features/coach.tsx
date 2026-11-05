@@ -51,7 +51,7 @@ export function Coach() {
     <>
       {box && <div className={c.spot} style={{ left: box.left - 6, top: box.top - 6, width: box.width + 12, height: box.height + 12 }} aria-hidden="true" />}
       <aside className={c.card} aria-label="시연 순서">
-        <div className={c.h}><span>시연 {gi + 1} / {STEPS.length}</span><Button variant="ghost" size="sm" iconOnly icon={<X size={15} />} aria-label="시연 닫기" onClick={() => goto(-1)} /></div>
+        <div className={c.h}><span>시연 {gi + 1} / {STEPS.length}</span><Button variant="ghost" size="sm" iconOnly icon={<X size={16} />} aria-label="시연 닫기" onClick={() => goto(-1)} /></div>
         <b className={c.t}>{s.t}</b>
         <p className={c.x}>{s.x}</p>
         <div className={c.f}>

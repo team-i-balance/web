@@ -1,11 +1,11 @@
-// 앱 뼈대: 위쪽 막대(메뉴·찾기·연결 상태·테마), 좁은 화면의 아래쪽 탭, 명령 팔레트, 단축키 안내
-import { useEffect, type ReactNode } from 'react'
+// 앱 뼈대: 왼쪽 사이드바(로고·찾기·메뉴·연결 상태·테마·시연), 좁으면 아이콘만, 휴대폰은 위 막대 + 아래 탭. 명령 팔레트, 단축키 안내
+import { useEffect, useState, type ReactNode } from 'react'
 import { Command } from 'cmdk'
 import { LayoutGrid, ShieldAlert, Flag, SlidersHorizontal, MonitorCheck, ChartColumn, Search, Sun, Moon, Play, Keyboard, RefreshCw, ArrowRight, UserRound, ShieldCheck } from 'lucide-react'
 import clsx from 'clsx'
 import { S, emit, useStore, openOf, fpGroups, boardWork, QUEUE_ORDER, QUEUE_NAME } from '../domain/store'
 import { connect } from '../api/client'
-import { Badge, Button, Kbd, Tip } from '../ds'
+import { Badge, Kbd, Tip } from '../ds'
 import { Modal } from '../ds/Overlay'
 import { partial } from '../lib/util'
 import { ROUTE_NAME, go, type Route } from './route'
@@ -15,9 +15,10 @@ import { undoLast } from '../features/toasts'
 import { toggleCoach } from '../features/coach'
 import sh from './shell.module.css'
 
+// 메뉴 아이콘: Devs 처럼 20px 가는 선
 const ICON: Record<Route, ReactNode> = {
-  home: <LayoutGrid size={16} />, review: <ShieldAlert size={16} />, fp: <Flag size={16} />,
-  policy: <SlidersHorizontal size={16} />, deploy: <MonitorCheck size={16} />, insights: <ChartColumn size={16} />,
+  home: <LayoutGrid size={20} />, review: <ShieldAlert size={20} />, fp: <Flag size={20} />,
+  policy: <SlidersHorizontal size={20} />, deploy: <MonitorCheck size={20} />, insights: <ChartColumn size={20} />,
 }
 
 function navBadge(r: Route): ReactNode {
@@ -28,38 +29,62 @@ function navBadge(r: Route): ReactNode {
   return null
 }
 
-function Conn() {
+const connText = () => {
   const a = S.api
-  const t = a.state === 'live' ? `서버 ${a.count}건` : a.state === 'connecting' ? '연결하는 중' : a.state === 'offline' ? '연결 안 됨 · 예시 데이터' : a.state === 'auth' ? '인증 필요 · 예시 데이터' : '예시 데이터'
-  return (
-    <Tip text={a.state === 'live' ? '서버 상태 보기' : '서버 연결 보기'}>
-      <button type="button" className={clsx(sh.conn, sh[a.state])} onClick={() => openDialog({ kind: 'server' })} aria-label={`데이터: ${t}`}>
-        <i className={sh.connDot} /><span>{t}</span>
-      </button>
-    </Tip>
-  )
+  return a.state === 'live' ? `서버 ${a.count}건` : a.state === 'connecting' ? '연결하는 중' : a.state === 'offline' ? '연결 안 됨 · 예시 데이터' : a.state === 'auth' ? '인증 필요 · 예시 데이터' : '예시 데이터'
+}
+const openPalette = () => { S.ui.palette = true; emit() }
+const Brand = () => (
+  <a className={sh.brand} href="#home" aria-label="입력정보 점검 콘솔 작업판으로">
+    <ShieldCheck size={24} className={sh.logo} aria-hidden="true" /><span className={sh.brandT}>입력정보 점검</span>
+  </a>
+)
+
+// 사이드바가 아이콘만 보이는 폭(861~1240px)
+const RAIL = '(min-width: 861px) and (max-width: 1240px)'
+function useRail() {
+  const [on, setOn] = useState(() => matchMedia(RAIL).matches)
+  useEffect(() => { const m = matchMedia(RAIL), f = () => setOn(m.matches); m.addEventListener('change', f); return () => m.removeEventListener('change', f) }, [])
+  return on
+}
+
+// 사이드바 한 줄: 아이콘 + 글자 (+ 건수). 아이콘만 보일 때는 글자를 툴팁으로
+function Item({ icon, label, right, href, current, onClick, cls, rail }: { icon: ReactNode; label: string; right?: ReactNode; href?: string; current?: boolean; onClick?: () => void; cls?: string; rail: boolean }) {
+  const inner = <>{icon}<span className={sh.itemT}>{label}</span>{right && <span className={sh.itemR}>{right}</span>}</>
+  const el = href
+    ? <a className={clsx(sh.item, cls)} href={href} aria-current={current ? 'page' : undefined} aria-label={label}>{inner}</a>
+    : <button type="button" className={clsx(sh.item, cls)} onClick={onClick} aria-label={label}>{inner}</button>
+  return rail ? <Tip text={label}>{el}</Tip> : el
 }
 
 export function TopBar({ r }: { r: Route }) {
   const routes = Object.keys(ROUTE_NAME) as Route[]
   const dark = currentTheme() === 'dark'
+  const theme = dark ? '라이트 테마' : '다크 테마'
+  const rail = useRail()
   return (
     <>
-      <header className={sh.top}>
-        <a className={sh.brand} href="#home" aria-label="입력정보 점검 콘솔 작업판으로">
-          <span className={sh.logo}><ShieldCheck size={17} strokeWidth={2.4} /></span><span className={sh.brandT}>입력정보 점검</span>
-        </a>
-        <nav className={sh.nav} aria-label="메뉴">
-          {routes.map(k => <a key={k} className={sh.navA} href={'#' + k} aria-current={r === k ? 'page' : undefined}>{ROUTE_NAME[k]}{navBadge(k)}</a>)}
+      <aside className={sh.side} aria-label="메뉴">
+        <div className={sh.sideTop}><Brand /></div>
+        <button type="button" className={sh.search} onClick={openPalette} aria-label="찾기·이동 (⌘K)">
+          <Search size={20} /><span>찾기</span><Kbd>⌘K</Kbd>
+        </button>
+        <nav className={sh.nav}>
+          {routes.map(k => <Item key={k} icon={ICON[k]} label={ROUTE_NAME[k]} right={navBadge(k)} href={'#' + k} current={r === k} rail={rail} />)}
         </nav>
+        <div className={sh.sideFoot}>
+          <Item icon={<i className={clsx(sh.connDot, sh[S.api.state])} />} label={connText()} onClick={() => openDialog({ kind: 'server' })} cls={sh.conn} rail={rail} />
+          <Item icon={dark ? <Sun size={20} /> : <Moon size={20} />} label={theme} onClick={toggleTheme} rail={rail} />
+          <Item icon={<Play size={20} />} label="시연 순서" onClick={toggleCoach} rail={rail} />
+        </div>
+      </aside>
+      <header className={sh.top}>
+        <Brand />
         <div className={sh.tools}>
-          <button type="button" className={sh.search} onClick={() => { S.ui.palette = true; emit() }} aria-label="찾기·이동 (⌘K)">
-            <Search size={15} /><span>건·직원·화면 찾기</span><Kbd>⌘K</Kbd>
-          </button>
-          <Conn />
-          <Tip text={dark ? '라이트 테마' : '다크 테마'}><Button variant="ghost" iconOnly icon={dark ? <Sun size={17} /> : <Moon size={17} />} onClick={toggleTheme} aria-label={dark ? '라이트 테마로' : '다크 테마로'} /></Tip>
-          {S.api.live ? <Tip text="시연 순서"><Button variant="ghost" iconOnly icon={<Play size={16} />} onClick={toggleCoach} aria-label="시연 순서 보기" /></Tip>
-            : <Button size="sm" icon={<Play size={14} />} onClick={toggleCoach}>시연 순서</Button>}
+          <button type="button" className={sh.tool} onClick={openPalette} aria-label="찾기·이동"><Search size={20} /></button>
+          <button type="button" className={sh.tool} onClick={() => openDialog({ kind: 'server' })} aria-label={`데이터: ${connText()}`}><i className={clsx(sh.connDot, sh[S.api.state])} /></button>
+          <button type="button" className={sh.tool} onClick={toggleTheme} aria-label={theme}>{dark ? <Sun size={20} /> : <Moon size={20} />}</button>
+          <button type="button" className={sh.tool} onClick={toggleCoach} aria-label="시연 순서"><Play size={20} /></button>
         </div>
       </header>
       <nav className={sh.bottom} aria-label="메뉴">

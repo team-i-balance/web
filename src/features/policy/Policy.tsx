@@ -61,15 +61,15 @@ export default function Policy() {
               <td>{r.method}</td>
               <td>{/^INC-/.test(r.from) ? <a href={`#review/${r.from}`}>{r.from}</a> : r.from}</td>
               <td style={{ textAlign: 'right' }}>{r.hits ? r.hits.toLocaleString() + '회' : <span className={p.faint}>—</span>}</td>
-              <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={15} />} aria-label={`${r.type} 규칙 삭제`} onClick={() => deleteRule(P.learned.length - 1 - i)} /></td></tr>)}
+              <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={16} />} aria-label={`${r.type} 규칙 삭제`} onClick={() => deleteRule(P.learned.length - 1 - i)} /></td></tr>)}
           </tbody></table> : <p className={p.faint} style={{ padding: '0 12px 14px' }}>아직 규칙이 없어요</p>}</div>
         </section>
 
         <section className={p.sec} id="p-dict">
-          <div className={p.sh}><div><h2>회사 고유 단어</h2><p>프로젝트 코드명처럼 회사 안에서만 쓰는 말</p></div><Button size="sm" icon={<Plus size={15} />} onClick={() => openDialog({ kind: 'addDict' })}>단어 추가</Button></div>
+          <div className={p.sh}><div><h2>회사 고유 단어</h2><p>프로젝트 코드명처럼 회사 안에서만 쓰는 말</p></div><Button size="sm" icon={<Plus size={16} />} onClick={() => openDialog({ kind: 'addDict' })}>단어 추가</Button></div>
           <div className={p.tbox}><table className={p.t}><thead><tr><th>단어</th><th>함께 잡을 표현</th><th>탐지 항목</th><th /></tr></thead><tbody>
             {P.dict.map((d, i) => <tr key={d.term + i}><td className={p.name}>{partial('', d.term)} <Draft on={d.draft} /></td><td className={p.ex}>{d.alias || '—'}</td><td>{d.type}</td>
-              <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={15} />} aria-label={`${partial('', d.term)} 삭제`} onClick={() => deleteDict(i)} /></td></tr>)}
+              <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={16} />} aria-label={`${partial('', d.term)} 삭제`} onClick={() => deleteDict(i)} /></td></tr>)}
           </tbody></table></div>
         </section>
 
@@ -78,7 +78,7 @@ export default function Policy() {
           <div className={p.tbox}><table className={p.t}><thead><tr><th>값</th><th>사유</th><th>근거</th><th /></tr></thead><tbody>
             {P.exclude.map((d, i) => <tr key={d.term + i}><td className={p.name}>{partial('', d.term)} <Draft on={d.draft} /></td><td>{d.why || '—'}</td>
               <td className={p.ex}>{/^INC-/.test(d.from) ? <a href={`#review/${d.from}`}>{d.from}</a> : d.from}</td>
-              <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={15} />} aria-label={`${partial('', d.term)} 제외 취소`} onClick={() => deleteExclude(i)} /></td></tr>)}
+              <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={16} />} aria-label={`${partial('', d.term)} 제외 취소`} onClick={() => deleteExclude(i)} /></td></tr>)}
           </tbody></table></div>
         </section>
 

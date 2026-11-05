@@ -34,3 +34,6 @@ mark { background: none; color: inherit; }
 /* 툴팁 (Radix 포털) */
 .tip { z-index: 80; padding: 6px 10px; border-radius: var(--r-sm); background: var(--fg); color: var(--surface); font-size: var(--t-12); font-weight: 600; box-shadow: var(--sh-2); animation: tipIn var(--d-1) var(--ease); }
 @keyframes tipIn { from { opacity: 0; transform: translateY(2px); } }
+
+/* 아이콘: Devs 처럼 가는 선(기본 2 → 1.5). 일부러 굵게 준 것(체크 표시 등)은 그대로 */
+svg.lucide[stroke-width='2'] { stroke-width: 1.5; }
