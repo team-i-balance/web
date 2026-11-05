@@ -79,7 +79,7 @@ function casesFrom(events: AiEvent[]): Case[] {
 
 // 기간 이벤트를 끝까지 읽는다(/logs/events 의 cursor 페이지 넘김). 예전 서버는 cursor 를 무시하므로 같은 페이지가 오면 멈춘다.
 async function allEvents(from: Date, max = 20): Promise<ServerEvent[]> {
-  const q = new URLSearchParams({ limit: '1000', start: from.toISOString() }), out: ServerEvent[] = []
+  const q = new URLSearchParams({ limit: '1000', start: from.toISOString(), ...(S.api.includeTest ? { include_test: 'true' } : {}) }), out: ServerEvent[] = []
   for (let i = 0; i < max; i++) {
     const page = await get<ServerEvent[]>('/logs/events?' + q, 8000)
     if (out.length && page.length && page[0].id >= out[out.length - 1].id) break
@@ -90,7 +90,14 @@ async function allEvents(from: Date, max = 20): Promise<ServerEvent[]> {
   return out
 }
 // 기간 통계(/logs/stats?start&end). 분모가 그 기간 전체라 목록 개수 제한과 상관없다.
-export const periodStats = (days: number) => get<ServerStats>('/logs/stats?' + new URLSearchParams({ start: new Date(Date.now() - days * 864e5).toISOString(), end: new Date().toISOString() }), 5000)
+export const periodStats = (days: number) => get<ServerStats>('/logs/stats?' + new URLSearchParams({ start: new Date(Date.now() - days * 864e5).toISOString(), end: new Date().toISOString(), ...(S.api.includeTest ? { include_test: 'true' } : {}) }), 5000)
+
+// 시험 이벤트(test=true)는 서버가 기본으로 뺀다(#27). 시연할 때만 켠다. 검토 건(/cases)에는 들어오지 않는다.
+export function setIncludeTest(v: boolean) {
+  S.api.includeTest = v
+  try { localStorage.setItem('includeTest', v ? '1' : '0') } catch { /* 이번 창에서만 */ }
+  return connect()
+}
 
 export async function connect(): Promise<boolean> {
   const cands = candidates()

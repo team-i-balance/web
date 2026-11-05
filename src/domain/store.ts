@@ -34,7 +34,7 @@ export const S = {
     { version: 'v11', at: new Date('2026-10-21T10:12:00'), changes: [{ what: '자동 변환 추가: 은행명 바로 뒤에 오는 숫자 묶음 → 계좌번호 대체', src: 'INC-2391' }, { what: '탐지 제외 추가: "02-1234-5678" (회사 대표번호)', src: '오탐 신고' }], server: false },
     { version: 'v12', at: new Date('2026-10-28T14:02:00'), changes: [{ what: '자동 변환 추가: "CU-"로 시작하는 6자리 고객번호 → 고객ID 대체', src: 'INC-2440' }, { what: '사업자번호 탐지 끔', src: '직접 수정' }], server: false },
   ] as { version: string; at: Date; changes: PolicyChange[]; server: boolean }[],
-  api: { state: 'connecting' as 'connecting' | 'live' | 'offline' | 'off', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
+  api: { includeTest: (() => { try { return localStorage.getItem('includeTest') === '1' } catch { return false } })(), state: 'connecting' as 'connecting' | 'live' | 'offline' | 'off', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
   ui: {
     sel: null as Queue | null,
     cur: {} as Partial<Record<Queue, string>>,
