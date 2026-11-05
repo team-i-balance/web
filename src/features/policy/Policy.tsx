@@ -6,7 +6,7 @@ import type { Method } from '../../domain/types'
 import { Button, Select, Switch, Tag } from '../../ds'
 import { openDialog } from '../dialogs'
 import { pcStatus } from '../../api/policy'
-import { convert, pct } from '../../lib/util'
+import { convert, partial, pct } from '../../lib/util'
 import p from './policy.module.css'
 
 function Rate({ b }: { b?: { n: number; rev: number } }) {
@@ -75,9 +75,9 @@ export default function Policy() {
         <section className={p.sec} id="p-ex">
           <div className={p.sh}><div><h2>탐지 제외</h2><p>오탐 신고에서 공개된 값으로 확인한 것</p></div></div>
           <div className={p.tbox}><table className={p.t}><thead><tr><th>값</th><th>사유</th><th>근거</th><th /></tr></thead><tbody>
-            {P.exclude.map((d, i) => <tr key={d.term + i}><td className={p.name}>{d.term} <Draft on={d.draft} /></td><td>{d.why}</td>
+            {P.exclude.map((d, i) => <tr key={d.term + i}><td className={p.name}>{partial('', d.term)} <Draft on={d.draft} /></td><td>{d.why}</td>
               <td className={p.ex}>{/^INC-/.test(d.from) ? <a href={`#review/${d.from}`}>{d.from}</a> : d.from}</td>
-              <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={15} />} aria-label={`${d.term} 제외 취소`} onClick={() => deleteExclude(i)} /></td></tr>)}
+              <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={15} />} aria-label={`${partial('', d.term)} 제외 취소`} onClick={() => deleteExclude(i)} /></td></tr>)}
           </tbody></table></div>
         </section>
 

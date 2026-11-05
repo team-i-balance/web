@@ -24,7 +24,8 @@ export async function buildPayload(P: Policy) {
     rules: P.learned.map((r, i) => ({ id: `r-${i + 1}`, label: r.type.slice(0, 15), description: r.when.slice(0, 40), grade: ent(r.type)?.grade === 'C' ? 'C' : 'S', action: r.method })),
     types: Object.fromEntries(P.entities.map(e => [e.name, { on: e.on, grade: e.grade, method: e.method }])),
     dict: await Promise.all(P.dict.map(async d => ({ h: await sha256(d.term), type: d.type }))),
-    exclude: await Promise.all(P.exclude.map(async x => ({ h: await sha256(x.term) }))),
+    // 서버 이벤트에서 온 값은 평문이 없으므로 서버가 준 값 해시(HMAC, #21)를 그대로 보낸다
+    exclude: await Promise.all(P.exclude.map(async x => (x.term.startsWith('⟦=') ? { h: 'hmac:' + x.term.slice(x.term.indexOf('#') + 1, -1) } : { h: await sha256(x.term) }))),
   }
 }
 
