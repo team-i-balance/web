@@ -1,13 +1,15 @@
 // 시연 순서(발표용): 3단계. 안내하는 곳을 밝게 띄우고 →·← 로 넘기며 Esc 로 닫는다.
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { X } from 'lucide-react'
-import { S, emit, useStore } from '../domain/store'
+import { S, emit, useStore, boardWork } from '../domain/store'
 import { Button } from '../ds'
 import c from './coach.module.css'
 
+// 판단할 건이 남은 칸(필수 → 오탐 → 선택). 다 끝났으면 필수 검토
+const firstWork = () => { const w = boardWork(); return (['req', 'fp', 'opt'] as const).find(k => w[k]) || 'req' }
 const STEPS = [
-  { pre: () => { S.ui.sel = 'req' }, sel: '[data-coach="flow"]', t: '흐름이 곧 작업판', x: '배지가 붙은 노드가 할 일이에요. 고른 노드 아래에 지금 한 건이 열려요.' },
-  { pre: () => { S.ui.sel = 'req' }, sel: '[data-coach="decide"]', t: '한 건씩 결론', x: '위반 · 예외 인정 · 오탐 중 하나를 누르면 다음 건으로 넘어가요. 1·2·3 키도 돼요.' },
+  { pre: () => { S.ui.sel = firstWork() }, sel: '[data-coach="flow"]', t: '흐름이 곧 작업판', x: '배지가 붙은 노드가 할 일이에요. 고른 노드 아래에 지금 한 건이 열려요.' },
+  { pre: () => { S.ui.sel = firstWork() }, sel: '[data-coach="decide"]', alt: '[data-coach="panel"]', t: '한 건씩 결론', x: '위반 · 예외 인정 · 오탐 중 하나를 누르면 다음 건으로 넘어가요. 1·2·3 키도 돼요.' },
   { pre: () => { S.ui.sel = 'pol' }, sel: '[data-coach="publish"]', alt: '[data-coach="panel"]', t: '서명 후 배포 → 효과', x: '배포하면 원문 전송이 얼마나 줄었는지 바로 보여요.' },
 ]
 

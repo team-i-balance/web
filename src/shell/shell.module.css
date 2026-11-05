@@ -10,7 +10,7 @@
   transition: background var(--d-1) var(--ease), color var(--d-1) var(--ease);
 }
 .navA:hover { color: var(--fg); }
-.navA[aria-current='page'] { background: var(--surface); color: var(--fg); box-shadow: var(--sh-1); }
+.navA[aria-current='page'] { background: var(--seg-on); color: var(--fg); box-shadow: var(--sh-1); }
 .tools { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .search {
   display: flex; align-items: center; gap: 8px; width: 240px; height: 36px; padding: 0 8px 0 12px;

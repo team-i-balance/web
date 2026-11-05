@@ -48,6 +48,7 @@ export function convert(type: string, v: string, method: Method, i = 0): string 
 // 보안팀 화면에서는 원래 값을 일부만 보여준다
 export function partial(type: string, v: string | null | undefined): string {
   if (v == null || v === '') return '—'
+  if (v.startsWith('⟦h=')) return '평문 없음 · ' + v.slice(3, -1).replace(/^(sha256|hmac):/, '$1 ').slice(0, 20) + '…' // 서버 배포본: 해시만 남아 있다
   if (v.startsWith('⟦=')) return v.slice(2, v.indexOf('#')) || '값 미전송' // 서버 데이터: 가린 값만 온다
   if (v.startsWith('⟦')) return '값 미전송' // 서버 데이터: 값은 저장하지 않음
   if (type === '이름') return v[0] + '*'.repeat(Math.max(1, v.length - 2)) + (v.length > 2 ? v.slice(-1) : '')

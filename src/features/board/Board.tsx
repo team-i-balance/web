@@ -37,6 +37,9 @@ export default function Board() {
   const [scrollX, setScrollX] = useState(0)
   const { scale, boxW, off, w: vw } = useFit(scroller)
   const lock = useRef(0)
+  // 연결선은 처음 그릴 때는 제자리에, 그다음부터 노드를 따라 움직인다
+  const placed = useRef(false)
+  useEffect(() => { if (vw > 0) requestAnimationFrame(() => { placed.current = true }) }, [vw > 0])
 
   // ── 데이터
   const wk = new Date(+S.now - 7 * 864e5)
@@ -135,7 +138,7 @@ export default function Board() {
     : other ? <Button variant="primary" onClick={() => select(other)}>다음 할 일: {QUEUE_NAME[other]} {work[other]}건<ChevronRight size={15} /></Button> : null
   const empty = (title: string) => (
     <Empty icon={serverEmpty ? <Inbox size={20} /> : <CircleCheck size={20} />} title={serverEmpty ? '서버에 최근 7일 이벤트가 아직 없어요' : title}
-      text={serverEmpty ? '직원 PC에서 AI에 입력하면 여기에 모여요' : other ? undefined : '지금 처리할 일이 없어요'}>{nextWork}</Empty>
+      text={serverEmpty ? '직원 PC에서 AI에 입력하면 여기에 모여요' : other ? undefined : '지금 처리할 일이 없어요'}>{nextWork}{!other && !serverEmpty && E.length > 0 && <LinkButton variant="ghost" href="#insights">최근 입력 {E.length}건 보기<ChevronRight size={15} /></LinkButton>}</Empty>
   )
 
   let body: ReactNode, side: ReactNode = null, topAction: ReactNode = null, sideTitle = '다음'
@@ -198,12 +201,12 @@ export default function Board() {
         <div className={b.big}>원문 전송 {raw} → <em>{raw - caught}</em></div>
         <p style={{ color: 'var(--sub)' }}>{lastPub} 배포 · 지난 7일에 이 규칙이 있었다면</p>
         {pcRow}
-        <div className={b.row} style={{ marginTop: 'auto' }}><Button variant="primary" onClick={() => { S.ui.lastPub = null; advanceBoard() }}>다음 할 일<ChevronRight size={15} /></Button></div>
+        <div className={b.row} style={{ marginTop: 8 }}><Button variant="primary" onClick={() => { S.ui.lastPub = null; advanceBoard() }}>다음 할 일<ChevronRight size={15} /></Button></div>
       </div>
     ) : P.changes.length ? (
       <div className={b.pb}>
         <div className={b.changes}>{P.changes.map((c, i) => <div key={i} className={b.change}>{c.what}<em>{c.src}</em></div>)}</div>
-        <div className={b.row} style={{ marginTop: 'auto' }}>
+        <div className={b.row} style={{ marginTop: 8 }}>
           <Button variant="now" size="lg" data-coach="publish" onClick={() => openDialog({ kind: 'publish', onDone: () => { S.ui.lastPub = S.policy.version; emit() } })}>서명 후 배포하기</Button>
           <Button variant="ghost" onClick={() => { location.hash = 'policy' }}>정책에서 보기</Button>
         </div>
@@ -237,7 +240,7 @@ export default function Board() {
                 const inner = <>
                   <span className={b.nl}>{x.l}{q && w > 0 && <span className={clsx(b.pill, isSel && b.pillNow)}>{isSel ? '지금' : '할 일'} {w}</span>}</span>
                   <span className={b.nb}><span className={clsx(b.nv, x.danger && b.danger)}>{x.v}</span><span className={b.ns}>{x.s}</span></span>
-                  {x.id === 'pol' && acks && acks.devices > 0 && <span className={b.nmeter}><i style={{ width: `${(acks.applied / acks.devices) * 100}%` }} /></span>}
+                  {x.id === 'pol' && !P.changes.length && acks && acks.devices > 0 && <span className={b.nmeter}><i style={{ width: `${(acks.applied / acks.devices) * 100}%` }} /></span>}
                 </>
                 if (!q && !x.go) return <div key={x.id} className={clsx(b.node, b.tile)} style={{ left: lx, top: ly }}>{inner}</div>
                 if (x.go) return <button key={x.id} type="button" className={clsx(b.node, b.tile)} style={{ left: lx, top: ly }} onClick={() => select(x.go!)} aria-label={`${x.l} ${x.v}건, 필수 검토로`}>{inner}</button>
@@ -248,7 +251,7 @@ export default function Board() {
           </div>
         </div>
       </section>
-      <div className={b.bridge} aria-hidden="true"><i className={clsx(now && b.now)} style={{ left: bridgeX }} /></div>
+      <div className={b.bridge} aria-hidden="true">{vw > 0 && <i className={clsx(now && b.now, placed.current && b.anim)} style={{ left: bridgeX }} />}</div>
       <div className={clsx(b.panel, !hasSide && b.solo)}>
         <section className={clsx(b.main, now && b.mainNow)} aria-label="지금 한 건" data-panel data-coach="panel">
           <div className={b.ph}>
@@ -258,7 +261,7 @@ export default function Board() {
           </div>
           <motion.div key={SEL + ':' + (cur ? keyOf(cur) : 'none') + (eff ? ':eff' : '')} style={{ flex: 1, display: 'flex', flexDirection: 'column' }} {...slide}>{body}</motion.div>
         </section>
-        {hasSide && <aside className={b.side} aria-label={sideTitle}><div className={b.sideH}>{sideTitle}</div>{side}</aside>}
+        {hasSide && <aside className={b.side} aria-label={sideTitle}>{(SEL === 'pol' || Q.length > 1) && <div className={b.sideH}>{sideTitle}</div>}{side}</aside>}
       </div>
     </div>
   )

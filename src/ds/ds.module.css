@@ -114,7 +114,7 @@
   transition: background var(--d-1) var(--ease), color var(--d-1) var(--ease);
 }
 .segItem:hover { color: var(--fg); }
-.segItem[aria-selected='true'] { background: var(--surface); color: var(--fg); box-shadow: var(--sh-1); }
+.segItem[aria-selected='true'] { background: var(--seg-on); color: var(--fg); box-shadow: var(--sh-1); }
 
 /* ── 단계 바 */
 .steps { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: var(--t-12); }

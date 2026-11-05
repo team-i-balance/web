@@ -55,7 +55,7 @@ export default function Deploy() {
         {hist.length ? <ol className={d.hist}>{hist.map(h => <li key={h.version + +h.at} className={d.hi}>
           <div className={d.hv}><b>{h.version}</b><span>{fmt(h.at)}</span></div>
           <ul className={d.hc}>{h.changes.map((c, i) => <li key={i}><span>{c.what}</span><em>{c.src}</em></li>)}</ul>
-        </li>)}</ol> : <Empty icon={<History size={20} />} title="이 브라우저에서 배포한 기록이 없어요" />}
+        </li>)}</ol> : <Empty icon={<History size={20} />} title={live && !historyFromServer ? '이 브라우저에서 배포한 기록이 없어요' : '아직 배포한 기록이 없어요'} />}
       </section>
     </div>
   )

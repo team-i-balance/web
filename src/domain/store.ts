@@ -111,7 +111,7 @@ export function setEntityGrade(i: number, g: 'O' | 'S' | 'C') {
   change(`${e.name} 등급: ${GRADE[b]} → ${GRADE[g]}`); emit()
 }
 export function setEntityMethod(i: number, m: Method) { const e = S.policy.entities[i], b = e.method; e.method = m; change(`${e.name} 변환 방식: ${b} → ${m}`); emit() }
-export function deleteDict(i: number) { const d = S.policy.dict.splice(i, 1)[0]; change(`회사 고유 단어 삭제: ${d.term}`); emit() }
+export function deleteDict(i: number) { const d = S.policy.dict.splice(i, 1)[0]; change(`회사 고유 단어 삭제: ${partial('', d.term)}`); emit() }
 export function addDict(term: string, alias: string, type: string) { S.policy.dict.unshift({ term, alias, type, draft: true }); change(`회사 고유 단어 추가: ${term}`); emit() }
 export function deleteExclude(i: number) { const d = S.policy.exclude.splice(i, 1)[0]; change(`탐지 제외 삭제: "${partial('', d.term)}"`); emit() }
 export function setMeta(k: string, v: boolean) { S.policy.meta[k] = v; change(`파일 사본: ${k} ${v ? '제거' : '유지'}`); emit() }
@@ -121,7 +121,7 @@ export function publish(nv = nextVersion()) {
   P.dict.forEach(d => delete d.draft); P.exclude.forEach(d => delete d.draft)
   S.history.push({ version: nv, at: clock(), changes: [...P.changes], server: S.api.live })
   P.version = nv; P.deployed = fmt(clock()); P.changes = []
-  toast(`${nv}를 서명해 배포했어요`)
+  toast(`서명 후 배포했어요 · ${nv}`)
 }
 
 // ── 사건 처리

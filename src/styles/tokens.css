@@ -15,6 +15,7 @@
   --surface-2: #fafbfc;
   --well: #f4f5f8;
   --seg: #e3e6ec;
+  --seg-on: #ffffff; /* 세그먼트·메뉴에서 고른 칸 */
   --chip: #e9ebf0;
   --hover: #f1f2f6;
   --press: #e6e8ee;
@@ -66,7 +67,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --bg: #0c0d11; --surface: #15161c; --surface-2: #181a21; --well: #1c1e26; --seg: #15161c; --chip: #262934;
+    --bg: #0c0d11; --surface: #15161c; --surface-2: #181a21; --well: #1c1e26; --seg: #101116; --seg-on: #2a2d39; --chip: #262934;
     --hover: #1e2029; --press: #252833; --scrim: rgba(0, 0, 0, 0.56);
     --fg: #ecedf2; --sub: #a3a7b6; --mute: #858a9b; --faint: #626778;
     --line: #24262f; --line-2: #363947;
@@ -80,7 +81,7 @@
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0c0d11; --surface: #15161c; --surface-2: #181a21; --well: #1c1e26; --seg: #15161c; --chip: #262934;
+  --bg: #0c0d11; --surface: #15161c; --surface-2: #181a21; --well: #1c1e26; --seg: #101116; --seg-on: #2a2d39; --chip: #262934;
   --hover: #1e2029; --press: #252833; --scrim: rgba(0, 0, 0, 0.56);
   --fg: #ecedf2; --sub: #a3a7b6; --mute: #858a9b; --faint: #626778;
   --line: #24262f; --line-2: #363947;

@@ -3,11 +3,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { S, useStore } from '../../domain/store'
 import { QUEUE_KO, periodStats } from '../../api/client'
 import type { ServerStats } from '../../domain/store'
-import { Segmented, Tag } from '../../ds'
+import { Button, Segmented, Tag } from '../../ds'
 import { pad, pct } from '../../lib/util'
 import i from './insights.module.css'
 
 const DAY = 864e5
+const GRADE_KO = { O: '공개', S: '민감', C: '기밀' } as const
+const ACT_KO: Record<string, string> = { sent: '변환해서 보냄', raw: '원문 그대로 보냄', revert: '원문으로 되돌림', cancel: '보내지 않음', block: '기밀 차단', pass: '그대로 보냄' }
 const ACTION_KO: Record<string, string> = { send_transformed: '변환해서 보냄', send_as_is: '원문 그대로 보냄', revert_original: '원문으로 되돌림', cancel: '보내지 않음' }
 const md = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
 
@@ -47,6 +49,7 @@ function Daily({ days, k, raw }: { days: { d: Date; n: number; raw: number }[]; 
 export default function Insights() {
   useStore()
   const [span, setSpan] = useState<'7' | '30'>('7')
+  const [more, setMore] = useState(20)
   const n = +span, end = new Date(S.now), from = new Date(+end - n * DAY)
   const E = S.events.filter(e => e.time >= from && e.time <= end)
   const days = Array.from({ length: n }, (_, j) => {
@@ -102,9 +105,23 @@ export default function Insights() {
             {st.by_action && <div className={i.queues}>{Object.entries(st.by_action).map(([k, v]) => <div key={k} className={i.q}>{ACTION_KO[k] || k}<b>{v}</b></div>)}</div>}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}><Tag>수용률 {Math.round(st.acceptance_rate * 100)}%</Tag><Tag>되돌림률 {Math.round(st.revert_rate * 100)}%</Tag>{st.evasion_suspect > 0 && <Tag tone="warn">회피 의심 {st.evasion_suspect}</Tag>}</div>
           </section>}
-          {S.api.live && <p className={i.note}>대상 AI와 부서는 서버가 아직 보내지 않아 빼 두었어요.</p>}
+          {S.api.live && byAi.length === 0 && <p className={i.note}>대상 AI는 서버 이벤트에 값이 있을 때만 보여요.</p>}
         </div>
       </div>
+      <section className={i.card} id="recent" aria-label="최근 입력">
+        <h2>최근 입력<small>{E.length}건 중 {Math.min(more, E.length)}건 · 최신순</small></h2>
+        {E.length ? <div className={i.tbox}><table className={i.log}><thead><tr><th>시각</th><th>직원</th><th>대상 AI</th><th>잡힌 항목</th><th>등급</th><th>처리</th></tr></thead><tbody>
+          {E.slice(0, more).map(e => <tr key={e.id}>
+            <td className={i.nowrap}>{md(e.time)} {pad(e.time.getHours())}:{pad(e.time.getMinutes())}</td>
+            <td className={i.nowrap}>{e.user}<small> {e.dept}</small></td>
+            <td className={i.nowrap}>{e.ai === 'AI 미전송' ? '—' : e.ai}{e.file && <Tag>{e.file.name}</Tag>}</td>
+            <td>{[...new Set(e.items.map(x => x.type))].join(', ') || '—'}</td>
+            <td><Tag tone={e.grade === 'C' ? 'warn' : undefined}>{GRADE_KO[e.grade]}</Tag></td>
+            <td className={i.nowrap}>{e.action === 'raw' ? <Tag tone="danger">{ACT_KO[e.action]}</Tag> : ACT_KO[e.action]}</td>
+          </tr>)}
+        </tbody></table></div> : <p className={i.note}>이 기간에 들어온 입력이 없어요</p>}
+        {E.length > more && <div><Button size="sm" onClick={() => setMore(m => m + 50)}>더 보기</Button></div>}
+      </section>
     </div>
   )
 }

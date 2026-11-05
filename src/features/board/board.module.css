@@ -38,7 +38,8 @@ button.tile:hover { background: var(--hover); }
 
 /* ── 고른 노드 → 패널 연결 */
 .bridge { position: relative; height: 14px; flex: none; overflow: hidden; }
-.bridge i { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--fg); transition: left var(--d-3) var(--ease); }
+.bridge i { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--fg); }
+.bridge i.anim { transition: left var(--d-3) var(--ease); }
 .bridge i.now { background: var(--acc); }
 
 /* ── 처리 패널 */

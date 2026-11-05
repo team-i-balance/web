@@ -149,5 +149,14 @@ export function seedData(policy: Policy, NOW: Date): { events: AiEvent[]; cases:
   const MIX = ['주소', '생년월일', '고객ID', '프로젝트 코드명', '나이']
   const c = cases.find(c => c.need === 'opt' && c.status === 'open' && c.items.some(i => i.status === 'conv' && MIX.includes(i.type)))
   if (c) { const it = c.items.find(i => i.status === 'conv' && MIX.includes(i.type))!; it.status = 'revert'; it.reason = '오탐'; it.fp = 'open' }
+  // 열린 건 목록에 같은 직원이 두 번 나오지 않게 이름을 나눈다(난수는 쓰지 않아 나머지 예시 데이터는 그대로)
+  const open = cases.filter(x => x.status === 'open'), used = new Set<string>()
+  open.forEach(x => {
+    if (used.has(x.user)) {
+      const nu = USERS.find(([n]) => !used.has(n) && !open.some(o => o.user === n))
+      if (nu) { x.user = x.ev.user = nu[0]; x.dept = x.ev.dept = nu[1] }
+    }
+    used.add(x.user)
+  })
   return { events, cases }
 }

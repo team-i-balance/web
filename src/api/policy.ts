@@ -10,7 +10,7 @@ const THRESHOLDS = { confidential: 0.45, personal: 0.35, high_confidence: 0.7 }
 const REASON_KO: Record<string, string> = { bad_type: '형식 오류', bad_signature: '서명 불일치', unsupported_schema: '모르는 형식', wrong_org: '다른 조직', rollback: '이전 버전', expired: '만료', model_mismatch: '모델 불일치' }
 
 interface Envelope { payloadType: string; payload: string; signatures: { keyid: string; sig: string }[] }
-interface Payload { version: number; rules?: { id: string; label: string; description: string; grade: string; action: string }[]; types?: Record<string, { on?: boolean }> }
+interface Payload { version: number; dict?: { h: string; type?: string }[]; exclude?: { h: string }[]; rules?: { id: string; label: string; description: string; grade: string; action: string }[]; types?: Record<string, { on?: boolean }> }
 
 async function sha256(s: string) {
   const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
@@ -23,9 +23,9 @@ export async function buildPayload(P: Policy) {
     schema: 1, org: ORG, thresholds: THRESHOLDS,
     rules: P.learned.map((r, i) => ({ id: `r-${i + 1}`, label: r.type.slice(0, 15), description: r.when.slice(0, 40), grade: ent(r.type)?.grade === 'C' ? 'C' : 'S', action: r.method })),
     types: Object.fromEntries(P.entities.map(e => [e.name, { on: e.on, grade: e.grade, method: e.method }])),
-    dict: await Promise.all(P.dict.map(async d => ({ h: await sha256(d.term), type: d.type }))),
+    dict: await Promise.all(P.dict.map(async d => ({ h: d.term.startsWith('⟦h=') ? d.term.slice(3, -1) : await sha256(d.term), type: d.type }))),
     // 서버 이벤트에서 온 값은 평문이 없으므로 서버가 준 값 해시(HMAC, #21)를 그대로 보낸다
-    exclude: await Promise.all(P.exclude.map(async x => (x.term.startsWith('⟦=') ? { h: 'hmac:' + x.term.slice(x.term.indexOf('#') + 1, -1) } : { h: await sha256(x.term) }))),
+    exclude: await Promise.all(P.exclude.map(async x => (x.term.startsWith('⟦h=') ? { h: x.term.slice(3, -1) } : x.term.startsWith('⟦=') ? { h: 'hmac:' + x.term.slice(x.term.indexOf('#') + 1, -1) } : { h: await sha256(x.term) }))),
   }
 }
 
@@ -67,11 +67,14 @@ export async function loadPolicy() {
     const p = decode(env.payload)
     P.version = 'v' + p.version
     P.learned = (p.rules || []).map(r => ({ type: r.label, when: r.description, method: r.action as Policy['learned'][number]['method'], from: '서버', hits: 0, live: true }))
+    // 배포본에는 고유 단어·제외 값이 해시로만 있다. 예시 데이터를 비우고 해시를 그대로 들고 있다가 다시 배포할 때 보낸다
+    P.dict = (p.dict || []).map(d => ({ term: `⟦h=${d.h}⟧`, alias: '', type: d.type || '프로젝트 코드명' }))
+    P.exclude = (p.exclude || []).map(x => ({ term: `⟦h=${x.h}⟧`, why: '', from: '서버 배포본' }))
     Object.entries(p.types || {}).forEach(([name, t]) => { const e = ent(name); if (e && typeof t.on === 'boolean') e.on = t.on })
     S.api.pol.keyid = env.signatures[0]?.keyid ?? null
   } catch (e) {
     if ((e as Error).message !== '404') throw e
-    P.version = 'v0'; P.learned = []
+    P.version = 'v0'; P.learned = []; P.dict = []; P.exclude = []
   }
   P.deployed = ''; P.changes = []
   S.history = []

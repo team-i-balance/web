@@ -23,7 +23,7 @@
 @keyframes slide { from { opacity: 0; transform: translateX(24px); } }
 
 /* ── 알림 */
-.toasts { position: fixed; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); }
+.toasts { position: fixed; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 49; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); }
 .toast {
   pointer-events: auto; display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 8px 8px 16px;
   background: var(--fg); color: var(--surface); border-radius: var(--r-lg); box-shadow: var(--sh-3); font-size: var(--t-14); font-weight: 500;
