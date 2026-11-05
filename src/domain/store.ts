@@ -88,8 +88,8 @@ export function metrics(from: Date, to: Date = S.now) {
   return { n: sens.length, byType }
 }
 export function boardWork() {
-  const req = openOf('req')
-  return { req: req.filter(c => c.reason).length, pol: S.policy.changes.length, fp: fpGroups(true).length, opt: openOf('opt').length }
+  // 필수 검토는 사유를 기다리는 건도 할 일이다(사유 다시 요청 · 사유 없이 결론)
+  return { req: openOf('req').length, pol: S.policy.changes.length, fp: fpGroups(true).length, opt: openOf('opt').length }
 }
 
 // ── 알림

@@ -23,7 +23,8 @@ export function useBoardModel() {
 
   // ── 대기열과 지금 한 건
   type QItem = Case | FpGroup | typeof P.changes
-  const Q: QItem[] = ({ req: ready, opt, fp: fps, pol: P.changes.length ? [P.changes] : [] } as Record<Queue, QItem[]>)[SEL] || []
+  // 필수 검토: 사유가 온 건 먼저, 그다음 사유를 기다리는 건
+  const Q: QItem[] = ({ req: [...ready, ...wait], opt, fp: fps, pol: P.changes.length ? [P.changes] : [] } as Record<Queue, QItem[]>)[SEL] || []
   const keyOf = (x: QItem) => (SEL === 'fp' ? groupKey(x as FpGroup) : SEL === 'pol' ? 'pol' : (x as Case).id)
   const cur = Q.find(x => keyOf(x) === S.ui.cur[SEL]) || Q[0] || null
   if (cur) S.ui.cur[SEL] = keyOf(cur)
@@ -31,7 +32,8 @@ export function useBoardModel() {
   const eff = SEL === 'pol' && !!lastPub && fresh.length > 0 && !P.changes.length
 
   const steps: Step[] | null = !cur && SEL !== 'pol' ? null : ({
-    req: [['원문 전송', 'done'], ['사유 도착', 'done'], ['판단', 'now'], ['규칙 배포', 'next'], ['PC 적용', 'next']],
+    req: (cur as Case | null)?.reason ? [['원문 전송', 'done'], ['사유 도착', 'done'], ['판단', 'now'], ['규칙 배포', 'next'], ['PC 적용', 'next']]
+      : [['원문 전송', 'done'], ['사유 요청', 'now'], ['판단', 'next'], ['규칙 배포', 'next'], ['PC 적용', 'next']],
     opt: [['되돌림', 'done'], ['사유 남김', 'done'], ['확인', 'now'], ['종결', 'next']],
     fp: [['오탐으로 되돌림', 'done'], ['판단', 'now'], ['배포', 'next'], ['PC 적용', 'next']],
     pol: eff ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'done'], ['PC 적용', 'now']]

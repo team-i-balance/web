@@ -9,7 +9,7 @@ import type { Case, FpGroup } from '../../domain/types'
 import { connect } from '../../api/client'
 import { refreshAcks } from '../../api/policy'
 import { requestReason } from '../../api/cases'
-import { Button, DecideButton, Empty, LinkButton, Sentence, Skeleton, StepBar, Tag, typesOf, ds } from '../../ds'
+import { Button, DecideButton, Empty, LinkButton, Sentence, Skeleton, StepBar, Tag, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
 import { partial, rpath } from '../../lib/util'
 import b from './board.module.css'
@@ -117,7 +117,8 @@ export default function Board() {
           <span>{typesOf(c).map(t => `${t} ${ent(t)?.method ?? '—'}`).join(' · ')}</span>
           <span className={b.actual}>실제: 원문 전송</span>
           <span className={b.polVer}>{c.ev.ver ? `정책 ${c.ev.ver}` : '지금 정책'}</span></p></div>
-        <div className={b.reason}><span>직원 사유</span>{c.reason?.text ? <p>{c.reason.text}</p> : <p className={b.none}>사유 없음</p>}</div>
+        <div className={b.reason}><span>직원 사유</span>{c.reason?.text ? <p>{c.reason.text}</p>
+          : <p className={clsx(b.none, b.row)}>{SEL === 'req' ? '사유를 기다리는 중이에요 · 받기 전에도 결론 낼 수 있어요' : '사유 없음'}{SEL === 'req' && <Button size="sm" variant="quiet" onClick={() => requestReason(c)}>사유 다시 요청</Button>}</p>}</div>
         <div className={b.decide} style={{ '--n': SEL === 'req' ? 3 : 2 } as React.CSSProperties} data-coach="decide">
           {SEL === 'req'
             ? DECIDE.map(([k, t, d], i) => <DecideButton key={k} title={t} desc={d} k={String(i + 1)} onClick={() => decideCase(c, k)} />)
@@ -127,12 +128,7 @@ export default function Board() {
       </div>
     ) : empty(SEL === 'req' ? '결론 낼 건이 없어요' : '확인할 건이 없어요')
     side = <>
-      {(Q as Case[]).filter(x => x !== c).map(x => <button key={x.id} type="button" className={b.nx} data-pick={x.id} onClick={() => pickItem(x.id)}><b>{x.user}<small>{ago(x.time)}</small></b><span>{types(x)} → {x.ev.ai}</span></button>)}
-      {SEL === 'req' && wait.length > 0 && <>
-        <div className={b.sideH}>사유 기다리는 중 <span>{wait.length}</span></div>
-        {wait.map(x => <div key={x.id} className={clsx(b.nx, b.wait, ds.quietHost)}><b>{x.user}<small>{ago(x.time)}</small></b><span>{types(x)} → {x.ev.ai}</span>
-          <div className={b.row}><Button size="sm" variant="quiet" onClick={() => requestReason(x)}>사유 다시 요청</Button><Button size="sm" variant="quiet" onClick={() => openDialog({ kind: 'close', caseId: x.id })}>사유 없이 결론</Button></div></div>)}
-      </>}
+      {(Q as Case[]).filter(x => x !== c).map(x => <button key={x.id} type="button" className={clsx(b.nx, SEL === 'req' && !x.reason && b.wait)} data-pick={x.id} onClick={() => pickItem(x.id)}><b>{x.user}<small>{ago(x.time)}</small></b><span>{types(x)} → {x.ev.ai}{SEL === 'req' && !x.reason && ' · 사유 기다리는 중'}</span></button>)}
     </>
   } else if (SEL === 'fp') {
     const g = cur as FpGroup | null
