@@ -43,8 +43,6 @@
   --warn: #a15c07;
   --warn-soft: rgba(217, 119, 6, 0.12);
   --info: #1f7fb8;
-  /* 차트 색(Devs chart: 노랑·민트·하늘·파랑·보라). 1번은 우리 강조색 */
-  --c1: #2563eb; --c2: #0fa36b; --c3: #0891b2; --c4: #c49000; --c5: #8b5cf6;
   --focus: #2563eb;
   /* 깊이 */
   /* 깊이: Devs 처럼 면은 평평하게(그림자 없음). 떠 있는 것(팝오버·대화상자·알림)만 그림자 */
@@ -54,9 +52,12 @@
   /* 글자 크기 */
   --font: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
-  /* 글자(Devs): 12 xsmall · 14 small · 16 medium · 18 large · 제목 20/24/32. 12보다 작게 쓰지 않는다 */
-  --t-11: 12px; --t-12: 12px; --t-13: 14px; --t-14: 14px; --t-15: 16px; --t-16: 16px;
-  --t-18: 20px; --t-20: 20px; --t-24: 24px; --t-28: 32px; --t-32: 32px;
+  /* 글자(우리 서비스 기준, 2026-11-05): 촘촘한 판단 도구라 본문 14 를 중심으로 한 단계씩만 키운다. 12보다 작게 쓰지 않는다
+     12 보조·시각 · 13 표·부가 설명·작은 버튼 · 14 본문 · 15 이름·판단 제목 · 16 구역 제목 · 18 패널 제목 · 20 상세 제목 · 22 화면 제목 · 28 핵심 수치
+     굵기는 세 가지만: 400 본문 · 500 라벨·버튼·표 머리 · 600 제목·이름·수치 */
+  --t-11: 12px; --t-12: 12px; --t-13: 13px; --t-14: 14px; --t-15: 15px; --t-16: 16px;
+  --t-18: 18px; --t-20: 20px; --t-24: 22px; --t-28: 28px; --t-32: 28px;
+  --w-body: 400; --w-label: 500; --w-title: 600;
   /* 간격 4pt */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-9: 36px; --s-12: 48px;
   /* 모서리(Devs 단계): 2 가장 작은 부품 · 6 작은 버튼·라벨 · 12 버튼·입력·상자 · 16 큰 패널(최대) */
@@ -79,7 +80,7 @@
     --line: #343a40; --line-2: #495057;
     --acc: #6ea0ff; --acc-on: #101216; --acc-ink: #a3c2ff; --acc-tile: color-mix(in srgb, #6ea0ff 14%, #25292d); --acc-ring: rgba(110, 160, 255, 0.18);
     --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
-    --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --c1: #6ea0ff; --c2: #28f3a5; --c3: #12e1f9; --c4: #f0f671; --c5: #aa5ef1; --focus: #8fb5ff;
+    --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #8fb5ff;
     --sh-1: none;
     --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
     --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);
@@ -93,7 +94,7 @@
   --line: #343a40; --line-2: #495057;
   --acc: #6ea0ff; --acc-on: #101216; --acc-ink: #a3c2ff; --acc-tile: color-mix(in srgb, #6ea0ff 14%, #25292d); --acc-ring: rgba(110, 160, 255, 0.18);
   --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
-  --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --c1: #6ea0ff; --c2: #28f3a5; --c3: #12e1f9; --c4: #f0f671; --c5: #aa5ef1; --focus: #8fb5ff;
+  --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #8fb5ff;
   --sh-1: none;
   --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
   --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);

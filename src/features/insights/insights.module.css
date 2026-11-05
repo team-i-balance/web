@@ -1,36 +1,35 @@
 .wrap { display: flex; flex-direction: column; gap: 12px; }
 .head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 4px 4px 0; }
-.head h1 { font-size: var(--t-24); font-weight: 700; }
+.head h1 { font-size: var(--t-24); font-weight: var(--w-title); }
 .head p { color: var(--sub); font-size: var(--t-13); margin-top: 2px; }
 .head > :last-child { margin-left: auto; }
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; }
-/* Devs KPI 카드: 작은 회색 이름 + 오른쪽 위 아이콘, 큰 굵은 값, 아래 보조 한 줄 */
-.tile span { display: flex; justify-content: space-between; align-items: center; font-size: var(--t-13); color: var(--sub); font-weight: 600; }
-.tile span svg { color: var(--mute); }
-.tile b { font-size: var(--t-24); font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); padding: 18px 20px; display: flex; flex-direction: column; gap: 4px; }
+.tile span { font-size: var(--t-13); color: var(--sub); font-weight: var(--w-label); }
+.tile b { font-size: var(--t-32); font-weight: var(--w-title); letter-spacing: -0.03em; line-height: 1.1; }
 .tile small { font-size: var(--t-12); color: var(--mute); }
 .grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.card h2 { font-size: var(--t-16); font-weight: 700; }
-/* Devs 구역 제목: 굵은 제목 아래 회색 설명 한 줄 */
-.card h2 small { display: block; margin-top: 4px; font-weight: 400; color: var(--mute); font-size: var(--t-12); letter-spacing: 0; }
-.chart { position: relative; padding: 16px 12px 8px; border-radius: var(--r-md); background: var(--bg); } /* Devs: 차트는 한 단계 어두운 안쪽 면 */
+.card h2 { font-size: var(--t-16); font-weight: var(--w-title); }
+.card h2 small { font-weight: 500; color: var(--mute); font-size: var(--t-12); margin-left: 6px; }
+.chart { position: relative; }
 .chart svg { display: block; width: 100%; overflow: visible; }
 .grid line { stroke: var(--line); stroke-width: 1; }
 .axis { fill: var(--mute); font-size: 12px; }
+.bar { fill: var(--sub); }
+.bar.raw { fill: var(--danger); }
 .hit { fill: transparent; }
 .hit:hover + .hl, .hl.on { fill: var(--hover); }
 .tip { position: absolute; z-index: 2; pointer-events: none; transform: translate(-50%, calc(-100% - 8px)); padding: 6px 10px; border-radius: var(--r-sm); background: var(--fg); color: var(--surface); font-size: var(--t-12); white-space: nowrap; box-shadow: var(--sh-2); }
-.tip b { font-weight: 700; }
+.tip b { font-weight: var(--w-title); }
 .hbars { display: flex; flex-direction: column; gap: 10px; }
 .hb { display: grid; grid-template-columns: 96px minmax(0, 1fr) 92px; gap: 10px; align-items: center; font-size: var(--t-13); }
-.hb > span:first-child { color: var(--fg); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.track { height: 8px; border-radius: var(--r-full); background: var(--well); overflow: hidden; }
-.track i { display: block; height: 100%; border-radius: var(--r-full); background: var(--c1); }
+.hb > span:first-child { color: var(--fg); font-weight: var(--w-label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track { height: 10px; border-radius: 0 4px 4px 0; background: var(--well); overflow: hidden; }
+.track i { display: block; height: 100%; border-radius: 0 4px 4px 0; background: var(--sub); }
 .hb em { font-style: normal; color: var(--sub); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .hb em small { color: var(--mute); margin-left: 4px; }
-.warn { color: var(--warn); font-weight: 700; }
+.warn { color: var(--warn); font-weight: var(--w-label); }
 .legend { display: flex; gap: 14px; font-size: var(--t-12); color: var(--sub); }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 .note { font-size: var(--t-12); color: var(--mute); }
@@ -46,7 +45,7 @@ details summary { cursor: pointer; font-size: var(--t-12); color: var(--mute); }
 
 .tbox { overflow-x: auto; }
 .log { width: 100%; min-width: 640px; font-size: var(--t-13); }
-.log th { text-align: left; font-size: var(--t-12); font-weight: 600; color: var(--fg); background: var(--well); padding: 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.log th { text-align: left; font-size: var(--t-12); font-weight: var(--w-label); color: var(--fg); background: var(--well); padding: 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .log td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .log td small { color: var(--mute); }
 .log td > span { margin-left: 6px; }

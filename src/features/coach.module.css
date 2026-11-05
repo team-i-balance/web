@@ -1,6 +1,6 @@
 .spot { position: fixed; z-index: 45; border-radius: var(--r-xl); box-shadow: 0 0 0 3px var(--acc), 0 0 0 9999px rgba(12, 13, 17, 0.42); pointer-events: none; transition: all var(--d-3) var(--ease); }
 .card { position: fixed; z-index: 46; right: max(20px, env(safe-area-inset-right, 0px)); bottom: max(20px, env(safe-area-inset-bottom, 0px)); width: min(360px, calc(100vw - 32px)); padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-3); display: flex; flex-direction: column; gap: 6px; }
-.h { display: flex; align-items: center; justify-content: space-between; font-size: var(--t-12); font-weight: 700; color: var(--acc-ink); }
+.h { display: flex; align-items: center; justify-content: space-between; font-size: var(--t-12); font-weight: var(--w-label); color: var(--acc-ink); }
 .t { font-size: var(--t-18); letter-spacing: -0.02em; }
 .x { color: var(--sub); font-size: var(--t-14); }
 .f { display: flex; align-items: center; gap: 6px; margin-top: 8px; }

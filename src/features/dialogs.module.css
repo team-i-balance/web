@@ -12,7 +12,7 @@
 .span { grid-column: 1 / -1; }
 .preview { font-size: var(--t-13); color: var(--sub); padding: 8px 12px; border-radius: var(--r-sm); background: var(--well); }
 .valueCard { display: flex; flex-direction: column; gap: 2px; padding: 16px; border-radius: var(--r-lg); background: var(--well); }
-.mut { color: var(--mute); font-size: var(--t-12); font-weight: 600; }
+.mut { color: var(--mute); font-size: var(--t-12); font-weight: var(--w-label); }
 .big { font-size: var(--t-20); letter-spacing: -0.01em; }
 .changes { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
 .changes li { display: flex; gap: 12px; justify-content: space-between; padding: 10px 14px; font-size: var(--t-14); }

@@ -12,7 +12,7 @@
   animation: slide var(--d-3) var(--ease);
 }
 .head { display: flex; align-items: flex-start; gap: 12px; padding: 20px 22px 0; }
-.title { font-size: var(--t-18); font-weight: 700; letter-spacing: -0.02em; }
+.title { font-size: var(--t-18); font-weight: var(--w-title); letter-spacing: -0.02em; }
 .desc { color: var(--sub); font-size: var(--t-13); margin-top: 4px; }
 .close { margin-left: auto; margin-top: -4px; margin-right: -8px; }
 .body { padding: 18px 22px; overflow: auto; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
@@ -37,7 +37,7 @@
 .toast.error { --tone: var(--danger); }
 .toastI { flex: none; color: var(--tone); }
 .toast.plain { padding-right: 16px; }
-.toastBtn { height: 30px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: color-mix(in srgb, var(--fg) 8%, transparent); color: inherit; font-weight: 600; font-size: var(--t-13); display: inline-flex; align-items: center; gap: 6px; }
+.toastBtn { height: 30px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: color-mix(in srgb, var(--fg) 8%, transparent); color: inherit; font-weight: var(--w-label); font-size: var(--t-13); display: inline-flex; align-items: center; gap: 6px; }
 .toastBtn:hover { background: color-mix(in srgb, var(--fg) 14%, transparent); }
 .toastKbd { font-size: 12px; opacity: 0.7; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; }
 .toastBar { position: absolute; left: 12px; right: 12px; bottom: 3px; height: 2px; border-radius: 1px; background: var(--tone); opacity: 0.5; transform-origin: left; animation: shrink 10s linear forwards; }

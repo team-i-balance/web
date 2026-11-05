@@ -1,13 +1,13 @@
 .page { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); }
 .head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 22px 24px 16px; }
-.head h1 { font-size: var(--t-24); font-weight: 700; }
+.head h1 { font-size: var(--t-24); font-weight: var(--w-title); }
 .head p { color: var(--sub); font-size: var(--t-13); margin-top: 2px; }
 .head > :last-child { margin-left: auto; }
 .bulk { display: flex; align-items: center; gap: 8px; margin: 0 24px 12px; padding: 8px 8px 8px 14px; border-radius: var(--r-md); background: var(--well); font-size: var(--t-13); }
 .bulk b { margin-right: auto; }
 .scroll { flex: 1; overflow: auto; padding: 0 12px 12px; }
 .t { width: 100%; font-size: var(--t-14); }
-.t th { position: sticky; top: 0; z-index: 1; background: var(--well); text-align: left; font-size: var(--t-12); font-weight: 600; color: var(--fg); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.t th { position: sticky; top: 0; z-index: 1; background: var(--well); text-align: left; font-size: var(--t-12); font-weight: var(--w-label); color: var(--fg); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .t td { padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .t tr:last-child td { border-bottom: 0; }
 .t tbody tr { transition: background var(--d-1) var(--ease); }
