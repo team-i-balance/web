@@ -96,3 +96,55 @@
 @media (prefers-reduced-motion: reduce) {
   :root { --d-1: 0ms; --d-2: 0ms; --d-3: 0ms; }
 }
+
+/* ── 새 디자인(비교용): 주소에 ?look=next 가 있을 때만 켠다. 값은 docs/DESIGN-BRIEF.md.
+   강조색은 선택 위치·링크·주 행동에만. 일반 패널 그림자 없음(--sh-1 none), --sh-2·3 은 팝오버·대화상자·알림용. */
+@font-face { font-family: 'IBM Plex Mono'; src: url('/fonts/IBMPlexMono-400.woff2') format('woff2'); font-weight: 400; font-display: swap; unicode-range: U+0000-00FF, U+2010-2027, U+2190-2193; }
+@font-face { font-family: 'IBM Plex Mono'; src: url('/fonts/IBMPlexMono-500.woff2') format('woff2'); font-weight: 500; font-display: swap; unicode-range: U+0000-00FF, U+2010-2027, U+2190-2193; }
+@font-face { font-family: 'IBM Plex Mono'; src: url('/fonts/IBMPlexMono-600.woff2') format('woff2'); font-weight: 600; font-display: swap; unicode-range: U+0000-00FF, U+2010-2027, U+2190-2193; }
+
+:root[data-look='next'] {
+  color-scheme: light;
+  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f0f2f5; --well: #f0f2f5;
+  --seg: transparent; --seg-on: #eaf0f8; --chip: #e6e9ee; --hover: #f3f5f8; --press: #e9edf2; --scrim: rgba(16, 20, 28, 0.36);
+  --fg: #20252d; --sub: #596273; --mute: #697282; --faint: #8b93a1;
+  --line: #dde1e6; --line-2: #c4cad3; --edge: #aab2bf;
+  --acc: #315a8a; --acc-on: #ffffff; --acc-ink: #315a8a; --acc-tile: #eaf0f8; --acc-ring: rgba(49, 90, 138, 0.18);
+  --danger: #b42336; --danger-soft: rgba(180, 35, 54, 0.08); --ok: #23724b; --ok-soft: rgba(35, 114, 75, 0.1);
+  --warn: #946000; --warn-soft: rgba(148, 96, 0, 0.1); --focus: #315a8a;
+  --sh-1: none;
+  --sh-2: 0 4px 16px rgba(16, 20, 28, 0.12);
+  --sh-3: 0 8px 32px rgba(16, 20, 28, 0.18);
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, 'Pretendard Variable', monospace;
+  /* 글자 5단계 12·13·14·18·28 — 옛 단계는 가까운 값으로 접는다 */
+  --t-11: 12px; --t-15: 14px; --t-16: 14px; --t-20: 18px; --t-24: 18px; --t-32: 28px;
+  /* 모서리: 라벨 2 · 버튼·입력·노드 4 · 패널 6 */
+  --r-xs: 2px; --r-sm: 4px; --r-md: 4px; --r-lg: 6px; --r-xl: 6px;
+  --s-5: 24px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='next']:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #101216; --surface: #171a20; --surface-2: #1e222a; --well: #1e222a;
+    --seg: transparent; --seg-on: #202d40; --chip: #2a2f38; --hover: #1c2028; --press: #232832; --scrim: rgba(0, 0, 0, 0.6);
+    --fg: #e7ebf0; --sub: #a4adbb; --mute: #8b94a2; --faint: #6b7482;
+    --line: #303640; --line-2: #434b57; --edge: #626d7d;
+    --acc: #8eb4e3; --acc-on: #101216; --acc-ink: #8eb4e3; --acc-tile: #202d40; --acc-ring: rgba(142, 180, 227, 0.22);
+    --danger: #ff8292; --danger-soft: rgba(255, 130, 146, 0.12); --ok: #70c49a; --ok-soft: rgba(112, 196, 154, 0.12);
+    --warn: #e2b45b; --warn-soft: rgba(226, 180, 91, 0.12); --focus: #8eb4e3;
+    --sh-2: 0 4px 16px rgba(0, 0, 0, 0.45);
+    --sh-3: 0 8px 32px rgba(0, 0, 0, 0.6);
+  }
+}
+:root[data-look='next'][data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #101216; --surface: #171a20; --surface-2: #1e222a; --well: #1e222a;
+  --seg: transparent; --seg-on: #202d40; --chip: #2a2f38; --hover: #1c2028; --press: #232832; --scrim: rgba(0, 0, 0, 0.6);
+  --fg: #e7ebf0; --sub: #a4adbb; --mute: #8b94a2; --faint: #6b7482;
+  --line: #303640; --line-2: #434b57; --edge: #626d7d;
+  --acc: #8eb4e3; --acc-on: #101216; --acc-ink: #8eb4e3; --acc-tile: #202d40; --acc-ring: rgba(142, 180, 227, 0.22);
+  --danger: #ff8292; --danger-soft: rgba(255, 130, 146, 0.12); --ok: #70c49a; --ok-soft: rgba(112, 196, 154, 0.12);
+  --warn: #e2b45b; --warn-soft: rgba(226, 180, 91, 0.12); --focus: #8eb4e3;
+  --sh-2: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --sh-3: 0 8px 32px rgba(0, 0, 0, 0.6);
+}

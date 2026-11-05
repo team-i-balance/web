@@ -7,6 +7,7 @@ import { Check, Minus } from 'lucide-react'
 import clsx from 'clsx'
 import type { Case } from '../domain/types'
 import { partial } from '../lib/util'
+import { isNext } from '../shell/theme'
 import s from './ds.module.css'
 
 export { s as ds }
@@ -28,10 +29,18 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps & ButtonHTMLAttribu
 export function LinkButton({ variant, size, icon, className, children, ...rest }: BtnProps & AnchorHTMLAttributes<HTMLAnchorElement>) {
   return <a className={btnCls({ variant, size }, className)} {...rest}>{icon}{children}</a>
 }
+// 식별자(건 번호·버전·해시·시각): 새 디자인에서 IBM Plex Mono
+export const Id = ({ children }: { children: ReactNode }) => <span className={s.id}>{children}</span>
 export const Kbd = ({ children }: { children: ReactNode }) => <kbd className={s.kbd}>{children}</kbd>
 
-// 판단 버튼: 제목, 결과 한 줄, 단축키
+// 판단 버튼: 제목, 결과 한 줄, 단축키. 새 디자인은 같은 중립 버튼 + 아래 설명 한 줄
 export function DecideButton({ title, desc, k, danger, onClick }: { title: string; desc: string; k?: string; danger?: boolean; onClick: () => void }) {
+  if (isNext()) return (
+    <div className={s.decideN}>
+      <button type="button" className={s.btn} onClick={onClick} aria-keyshortcuts={k} data-decide={k}>{k && <Kbd>{k}</Kbd>}{title}</button>
+      <span>{desc}</span>
+    </div>
+  )
   return (
     <button type="button" className={clsx(s.decide, danger && s.decideDanger)} onClick={onClick} aria-keyshortcuts={k} data-decide={k}>
       <b>{title}</b>{k && <Kbd>{k}</Kbd>}<span>{desc}</span>

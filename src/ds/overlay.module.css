@@ -36,3 +36,25 @@
 .toastBar { position: absolute; left: 12px; right: 12px; bottom: 4px; height: 2px; border-radius: 1px; background: currentColor; opacity: 0.25; transform-origin: left; animation: shrink 10s linear forwards; }
 @keyframes shrink { to { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .toastBar { animation: none; } }
+
+/* ── 새 디자인(?look=next): 대화상자 6px, 알림은 오른쪽 아래 13px·4px */
+:global([data-look='next']) .dialog, :global([data-look='next']) .sheet { border-radius: 6px; }
+:global([data-look='next']) .dialog { animation: fade var(--d-2) var(--ease); }
+:global([data-look='next']) .head { padding: 16px 20px 0; }
+:global([data-look='next']) .title { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+:global([data-look='next']) .desc { font-size: 13px; }
+:global([data-look='next']) .body { padding: 16px 20px; gap: 16px; }
+:global([data-look='next']) .foot { padding: 12px 20px 16px; gap: 8px; }
+:global([data-look='next']) .toasts {
+  left: auto; right: max(16px, env(safe-area-inset-right, 0px)); top: auto; bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  transform: none; align-items: flex-end;
+}
+:global([data-look='next']) .toasts.withCoach { bottom: 220px; }
+:global([data-look='next']) .toast { min-height: 40px; padding: 6px 6px 6px 14px; gap: 12px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+:global([data-look='next']) .toast.plain { padding-right: 14px; }
+:global([data-look='next']) .toastBtn { height: 28px; padding: 0 8px; border-radius: 2px; font-weight: 500; font-size: 13px; }
+:global([data-look='next']) .toastKbd { border: 0; padding: 0; font-family: var(--mono); font-size: 12px; }
+:global([data-look='next']) .toastBar { left: 0; right: 0; bottom: 0; height: 1px; border-radius: 0; }
+@media (max-width: 860px) {
+  :global([data-look='next']) .toasts { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); left: 16px; right: 16px; align-items: stretch; max-width: none; width: auto; }
+}
