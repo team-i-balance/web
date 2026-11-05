@@ -7,7 +7,7 @@ import type { Method } from '../../domain/types'
 import { Button, Empty, Select, Switch, Tag, ds } from '../../ds'
 import { openDialog } from '../dialogs'
 import { serverBehind, serverStatus } from '../../api/policy'
-import { convert, partial, pct } from '../../lib/util'
+import { GENERALIZABLE, convert, partial, pct } from '../../lib/util'
 import p from './policy.module.css'
 
 const T = `${ds.table} ${p.t}`
@@ -19,7 +19,7 @@ function Rate({ b }: { b?: { n: number; rev: number } }) {
   return <span className={p.rate + (hi ? ' ' + p.hi : '')} title={`최근 7일 변환 제안 ${b.n}건 중 ${b.rev}건을 원문으로 보냄`}><b>{r}%</b><small>{b.rev}/{b.n}</small></span>
 }
 const Draft = ({ on }: { on?: boolean }) => (on ? <span className={p.draft}><Tag tone="now">배포 대기</Tag></span> : null)
-const LEGEND = '대체: 가짜 값으로 바꿔요 · 일반화: 범위로 줄여요(주소 → 구까지) · 삭제: 빼고 보내요 · 태그: [이름A]처럼 표시해요 · 같은 값은 한 대화 안에서 같은 값으로 바뀌어요'
+const LEGEND = '대체: [이름_1]처럼 바꾸고, AI 답변이 오면 원래 값으로 되돌려요 · 일반화: 주소는 앞 두 낱말, 생년월일은 연대만 남겨요(이 둘만 돼요) · 삭제: [삭제됨]으로 바꿔요 · 태그: [이름]처럼 종류만 남겨요 · 번호는 입력 한 건 안에서만 같아요'
 
 // 지금 화면에 보이는 구역(목록에서 면으로 표시)
 function useActive(ids: string[]) {
@@ -78,9 +78,10 @@ export default function Policy() {
               <td className={p.name}>{e.name}</td>
               <td><Select quiet value={e.grade} aria-label={`${e.name} 등급`} onChange={x => setEntityGrade(i, x.target.value as 'O' | 'S' | 'C')}>{(['O', 'S', 'C'] as const).map(g => <option key={g} value={g}>{GRADE[g]}</option>)}</Select></td>
               <td>{e.grade === 'S'
-                ? <Select quiet value={e.method} aria-label={`${e.name} 변환 방식`} onChange={x => setEntityMethod(i, x.target.value as Method)}>{METHODS.map(m => <option key={m}>{m}</option>)}</Select>
-                : <span className={p.sub}>{e.grade === 'C' ? '외부로 안 보냄' : '그대로 보냄'}</span>}</td>
-              <td>{e.grade === 'S' && <span className={p.ex}><span className={p.exFrom}>{e.sample}</span><span className={p.arrow}>→</span><b>{convert(e.name, e.sample, e.method) || '(삭제)'}</b></span>}</td>
+                ? <Select quiet value={e.method} aria-label={`${e.name} 변환 방식`} onChange={x => setEntityMethod(i, x.target.value as Method)}>{METHODS.filter(m => m !== '일반화' || GENERALIZABLE.has(e.name) || e.method === m).map(m => <option key={m}>{m}</option>)}</Select>
+                // 등급을 바꿔도 서버는 값을 계속 가린다(대체). 등급은 입력 전체의 판정에만 쓰인다
+                : <span className={p.sub} title="등급은 입력 전체의 판정에만 쓰여요. 값은 서버가 계속 가려요">{e.grade === 'C' ? '기밀로 판정 · 값은 가려요' : '공개로 판정 · 값은 가려요'}</span>}</td>
+              <td><span className={p.ex}><span className={p.exFrom}>{e.sample}</span><span className={p.arrow}>→</span><b>{convert(e.name, e.sample, e.grade === 'S' ? e.method : '대체')}</b></span></td>
               <td className="num"><Rate b={pm7.byType[e.name]} /></td>
             </tr>)}
           </tbody></table></div>

@@ -76,7 +76,7 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
           <Field label="항목" htmlFor="rtype"><Select id="rtype" value={type} onChange={e => { setType(e.target.value); setMethod(suggestRule(c, e.target.value).method) }}>{types.map(t => <option key={t}>{t}</option>)}</Select></Field>
           <Field label="이렇게 바꿔요" htmlFor="rmethod"><Select id="rmethod" value={method} onChange={e => setMethod(e.target.value as Method)}>{METHODS.map(m => <option key={m}>{m}</option>)}</Select></Field>
           <div className={f.span}><Field label="이런 경우에" htmlFor="rwhen" count={w.length} max={40}><Input id="rwhen" value={w} onChange={e => setWhen(e.target.value)} /></Field></div>
-          <div className={f.span + ' ' + f.preview}>{partial(type, src.orig)} → <b>{convert(type, src.orig, method) || '(삭제)'}</b></div>
+          <div className={f.span + ' ' + f.preview}>{partial(type, src.orig)} → <b>{convert(type, src.orig, method)}</b></div>
           {method === (ent(type)?.method ?? '') && <div className={f.span}><Note warn>지금 기본 방식과 같아서 바뀌는 게 없어요</Note></div>}
         </div>}
       </div>}

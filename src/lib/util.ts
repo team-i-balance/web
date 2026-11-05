@@ -24,25 +24,21 @@ export function rpath(p: number[][], r = 10) {
   return d + ` L${l}`
 }
 
-const FAKE_NAMES = ['김민수', '이지은', '박준호', '최서연', '정하준', '한지민']
+// 서버가 실제로 내보내는 모양(backend local_ai/pseudonym.py)을 그대로 흉내 낸다
+// 대체 [이름_1] · 태그 [이름] · 삭제 [삭제됨] · 일반화는 주소(앞 두 낱말)·생년월일(연대)만, 나머지는 대체로 처리
+const LABEL: Record<string, string> = { '주민등록번호': '식별번호', 'API 키': 'API키', '토큰': '토큰' }
+export const serverLabel = (type: string) => LABEL[type] || type.replace(/\s+/g, '')
+export const GENERALIZABLE = new Set(['주소', '생년월일'])
 export function convert(type: string, v: string, method: Method, i = 0): string {
-  if (method === '삭제') return ''
-  if (method === '태그') return type === '프로젝트 코드명' ? `[프로젝트${String.fromCharCode(65 + i)}]` : `[${type}${String.fromCharCode(65 + i)}]`
-  if (method === '일반화') {
-    if (type === '주소') return v.split(/\s+/).slice(0, 2).join(' ')
-    if (type === '나이') { const n = parseInt(v); return isNaN(n) ? '(연령대)' : `${Math.floor(n / 10) * 10}대` }
-    if (type === '생년월일') { const y = (v.match(/\d{4}/) || [''])[0]; return y ? `${y.slice(0, 3)}0년대` : '(연대)' }
-    return `(${type})`
+  const label = serverLabel(type)
+  if (method === '삭제') return '[삭제됨]'
+  if (method === '태그') return `[${label}]`
+  if (method === '일반화' && GENERALIZABLE.has(type)) {
+    if (type === '주소') { const w = v.split(/\s+/).slice(0, 2).join(' '); return w && w !== v.trim() ? w : `[${label}]` }
+    const y = (v.match(/(?<![0-9])(1[89][0-9]{2}|20[0-9]{2})(?![0-9])/) || [])[1]
+    return y ? `${y.slice(0, 3)}0년대` : `[${label}]`
   }
-  if (type === '이름') return FAKE_NAMES[i % FAKE_NAMES.length]
-  if (type === '전화번호') return `010-0000-${String(i + 1).padStart(4, '0')}`
-  if (type === '이메일') return `user${i + 1}@example.com`
-  if (type === '고객ID') return `CU-${100001 + i}`
-  if (type === '계좌번호') return v.replace(/\d/g, '0')
-  if (type === '주소') return '서울 중구 세종대로 1'
-  if (type === '프로젝트 코드명') return ['프로젝트 은하', '프로젝트 바다', '프로젝트 숲'][i % 3]
-  const d = v.replace(/\d/g, '0')
-  return d === v ? '○○○' : d
+  return `[${label}_${i + 1}]`
 }
 
 // 보안팀 화면에서는 원래 값을 일부만 보여준다
