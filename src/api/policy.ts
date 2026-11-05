@@ -69,7 +69,7 @@ export async function loadHistory(ok?: () => boolean) {
     const local = new Map(S.history.filter(h => h.server).map(h => [h.version, h]))
     S.history = items.sort((a, b) => a.version - b.version).map(h => {
       const v = 'v' + h.version, l = local.get(v)
-      return { version: v, sha: h.sha256, by: h.published_by, at: h.stored_at ? new Date(h.stored_at) : l?.at ?? new Date(0), changes: l?.changes ?? [{ what: `규칙 ${h.rule_count}개`, src: '' }], server: true }
+      return { version: v, sha: h.sha256, by: h.published_by, at: h.stored_at ? new Date(h.stored_at) : l?.at ?? new Date(0), changes: l?.changes ?? [{ what: `자동 변환 규칙 ${h.rule_count}개 · 바뀐 내용은 '이 버전 내용 보기'에서`, src: '' }], server: true }
     })
     const last = items.find(h => 'v' + h.version === S.policy.version)
     if (last?.stored_at) S.policy.deployed = fmt(new Date(last.stored_at))

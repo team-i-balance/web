@@ -74,12 +74,12 @@ export default function Policy() {
           <div className={p.tbox}><table className={T}><thead><tr><th>사용</th><th>항목</th><th>등급</th><th title={LEGEND}>변환 방식</th><th>결과 예시</th><th className="num">원문 전송 · 7일</th></tr></thead><tbody>
             {P.entities.map((e, i) => <tr key={e.name} data-off={!e.on || undefined}>
               <td><Switch checked={e.on} label={`${e.name} 탐지`} onChange={v => setEntityOn(i, v)} /></td>
-              <td className={p.name} title={e.name === '주민등록번호' ? '서버는 운전면허 등 다른 식별번호도 이 항목으로 잡아요. 끄면 함께 꺼져요' : undefined}>{e.name}</td>
+              <td className={p.name} title={e.name === '주민등록번호' ? '서버는 운전면허 등 다른 식별번호도 이 항목으로 잡아요. 끄면 함께 꺼져요' : undefined}>{e.name}{e.name === '주민등록번호' && <small className={p.sub}> · 다른 식별번호 포함</small>}</td>
               <td><Select quiet value={e.grade} aria-label={`${e.name} 등급`} onChange={x => setEntityGrade(i, x.target.value as 'O' | 'S' | 'C')}>{(['O', 'S', 'C'] as const).map(g => <option key={g} value={g}>{GRADE[g]}</option>)}</Select></td>
               <td>{e.grade === 'S'
                 ? <Select quiet value={e.method} aria-label={`${e.name} 변환 방식`} onChange={x => setEntityMethod(i, x.target.value as Method)}>{METHODS.filter(m => m !== '일반화' || GENERALIZABLE.has(e.name) || e.method === m).map(m => <option key={m}>{m}</option>)}</Select>
                 // 등급을 바꿔도 서버는 값을 계속 가린다(대체). 등급은 입력 전체의 판정에만 쓰인다
-                : <span className={p.faint} title="공개·기밀 등급은 입력 전체의 판정에만 쓰여요. 값은 서버가 계속 가려요">—</span>}</td>
+                : <span className={p.sub} title="등급은 입력 전체의 판정에만 쓰여요. 값은 서버가 계속 가려요">{e.grade === 'C' ? '기밀로 판정 · 값은 가려요' : '공개로 판정 · 값은 가려요'}</span>}</td>
               <td><span className={p.ex}><span className={p.exFrom}>{e.sample}</span><span className={p.arrow}>→</span><b>{convert(e.name, e.sample, e.grade === 'S' ? e.method : '대체')}</b></span></td>
               <td className="num"><Rate b={pm7.byType[e.name]} /></td>
             </tr>)}
@@ -87,7 +87,7 @@ export default function Policy() {
         </section>
 
         <section className={p.sec} id="p-rules">
-          <div className={p.sh}><div><h2>자동 변환 규칙</h2><p>서버 AI 탐지가 이 항목을 더 찾아 사내정보로 가려요</p></div></div>
+          <div className={p.sh}><div><h2>자동 변환 규칙</h2><p>서버 AI 탐지(SLM)가 이 항목을 더 찾아 사내정보로 가려요. 설명은 기록용이고 탐지에는 쓰이지 않아요</p></div></div>
           {P.learned.length ? <div className={p.tbox}><table className={T}><thead><tr><th>항목</th><th>설명</th><th>이렇게</th><th>출처</th><th /></tr></thead><tbody>
             {[...P.learned].reverse().map((r, i) => <tr key={i}>
               <td className={p.name}>{r.type} {r.type.length > 15 && <Tag tone="warn">15자 넘음</Tag>}{P.learned.filter(x => x.type === r.type).length > 1 && <Tag tone="warn">같은 항목 규칙이 2개 · 배포하면 적용 실패</Tag>}</td>

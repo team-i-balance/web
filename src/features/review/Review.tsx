@@ -49,12 +49,12 @@ function Detail({ c }: { c: Case }) {
   const actions = closed ? <Button onClick={() => reopen(c)}>다시 열기</Button>
     : !c.reason ? <><Button variant="ghost" onClick={() => requestReason(c)}>사유 다시 요청</Button><Button variant="primary" onClick={() => openDialog({ kind: 'close', caseId: c.id })}>사유 없이 결론 내기</Button></>
     : c.need === 'opt' ? <><div className={r.decide}>
-        <DecideButton title="위반으로 기록" k="1" onClick={() => decide('violation')} />
-        <DecideButton title="문제 없음" k="2" onClick={() => decide('ok')} /></div>{detail}</>
+        <DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" onClick={() => decide('violation')} />
+        <DecideButton title="문제 없음" desc="정당한 업무 사용으로 종결해요" k="2" onClick={() => decide('ok')} /></div>{detail}</>
     : <><div className={r.decide}>
-        <DecideButton title="위반으로 기록" k="1" onClick={() => decide('violation')} />
-        <DecideButton title="정당한 사용 · 규칙 추가" desc="이 항목을 서버 탐지에 더하는 규칙 초안이 생겨요" k="2" onClick={() => decide('legit')} />
-        <DecideButton title="오탐으로 기록" k="3" onClick={() => decide('fp')} /></div>{detail}</>
+        <DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" onClick={() => decide('violation')} />
+        <DecideButton title="정당한 사용 · 규칙 추가" desc="업무상 필요했어요 · 이 항목을 서버 탐지에 더하는 규칙 초안이 생겨요" k="2" onClick={() => decide('legit')} />
+        <DecideButton title="오탐으로 기록" desc="이 건만 닫아요 · 탐지는 그대로예요" k="3" onClick={() => decide('fp')} /></div>{detail}</>
   // 직원 처리 열: 행마다 처리가 섞일 때만
   const mixed = new Set(c.items.map(i => i.status)).size > 1
   const del = <span className={clsx(ds.mask, ds.maskDel)}>삭제</span>
@@ -72,6 +72,7 @@ function Detail({ c }: { c: Case }) {
         <div className={r.col}>
           <section className={r.sec}><h3>직원 사유 {c.reason?.pick && <Tag>{c.reason.pick}</Tag>}</h3>
             {c.reason?.text ? <blockquote className={r.quote}>{c.reason.text}</blockquote>
+              : c.reason?.pick === '오탐' ? <div className={r.note}>'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫고, 값을 빼려면 오탐 신고에서 탐지 제외하세요</div>
               : c.reason ? <div className={r.note}>사유 글 없음</div>
               : <div className={r.note}>사유 없음</div>}</section>
           {x && <section className={r.sec}><h3>보안팀 결론</h3>

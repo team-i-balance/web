@@ -17,7 +17,7 @@ import b from './board.module.css'
 const SW = 1120, SH = 256, W = 200, H = 80, AY = 36, BY = 164, PAD = 24, TOP = 48
 const cx = (x: number) => x + W / 2, my = (y: number) => y + H / 2
 const POS: Record<string, [number, number]> = { in: [0, AY], conv: [300, AY], raw: [640, AY], fp: [200, BY], opt: [420, BY], req: [640, BY], pol: [920, BY] }
-const DECIDE = [['violation', '위반으로 기록', ''], ['legit', '정당한 사용 · 규칙 추가', '이 항목을 서버 탐지에 더하는 규칙 초안이 생겨요'], ['fp', '오탐으로 기록', '']] as const
+const DECIDE = [['violation', '위반으로 기록', '위반 이력이 남아요'], ['legit', '정당한 사용 · 규칙 추가', '업무상 필요했어요 · 이 항목을 서버 탐지에 더하는 규칙 초안이 생겨요'], ['fp', '오탐으로 기록', '이 건만 닫아요 · 탐지는 그대로예요']] as const
 const slide = { initial: { opacity: 0, x: 16 }, animate: { opacity: 1, x: 0 }, transition: { duration: 0.2, ease: [0.2, 0.8, 0.2, 1] as const } }
 
 // 흐름도 크기: 폭에 맞춰 줄이고(최소 0.62배), 그보다 좁으면 가로로 밀어 본다
@@ -66,10 +66,10 @@ export default function Board() {
   const N = [
     { id: 'in', l: 'AI 입력', v: E.length, s: '' },
     { id: 'conv', l: '개인정보 탐지', v: sens + conf, s: '', t: `민감 ${sens} · 기밀 ${conf}${confOut ? `(원문 전송 ${confOut})` : ''} · 공개 ${pub}` },
-    { id: 'raw', l: '원문 전송', v: raw, s: '', danger: raw > 0, go: 'req' as Queue },
-    { id: 'fp', l: '오탐 신고', v: fps.length, s: '', q: 'fp' as Queue },
-    { id: 'opt', l: '선택 검토', v: opt.length, s: '', q: 'opt' as Queue },
-    { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 없음 ${wait.length}` : '', q: 'req' as Queue },
+    { id: 'raw', l: '원문 전송', v: raw, s: '원문 그대로·되돌림', danger: raw > 0, go: 'req' as Queue },
+    { id: 'fp', l: '오탐 신고', v: fps.length, s: '잘못 잡힌 값', q: 'fp' as Queue },
+    { id: 'opt', l: '선택 검토', v: opt.length, s: '사유 남기고 보냄', q: 'opt' as Queue },
+    { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 없음 ${wait.length}` : '사유 없이 보냄', q: 'req' as Queue },
     { id: 'pol', l: '재발 방지 배포', v: P.changes.length ? `대기 ${P.changes.length}` : P.version, s: P.changes.length ? '서명 후 배포' : pc ?? (live ? '' : '연결 안 됨'), q: 'pol' as Queue },
   ]
   // 고른 대기열까지 들어오는 길은 강조색으로 이어 보인다
@@ -111,13 +111,13 @@ export default function Board() {
         </div>
         {c.ev.tpl && <div className={b.text}><Sentence c={c} /></div>}
         <div className={b.reason}><span>직원 사유</span>{c.reason
-          ? <p>{c.reason.pick && <Tag>{c.reason.pick}</Tag>} {c.reason.text}</p>
+          ? <p>{c.reason.pick && <Tag>{c.reason.pick}</Tag>} {c.reason.text || (c.reason.pick === '오탐' ? "'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫고, 값을 빼려면 오탐 신고에서 탐지 제외하세요" : '사유 글 없음')}</p>
           : <p className={clsx(b.none, b.row)}>사유 없음{SEL === 'req' && <Button size="sm" variant="quiet" onClick={() => requestReason(c)}>사유 다시 요청</Button>}</p>}</div>
         <div className={b.decide} style={{ '--n': SEL === 'req' ? 3 : 2 } as React.CSSProperties}>
           {SEL === 'req'
             ? DECIDE.map(([k, t, d], i) => <DecideButton key={k} title={t} desc={d} k={String(i + 1)} onClick={() => decideCase(c, k)} />)
-            : <><DecideButton title="위반으로 기록" k="1" onClick={() => decideCase(c, 'violation')} />
-              <DecideButton title="문제 없음" k="2" onClick={() => decideCase(c, 'ok')} /></>}
+            : <><DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" onClick={() => decideCase(c, 'violation')} />
+              <DecideButton title="문제 없음" desc="정당한 업무 사용으로 종결해요" k="2" onClick={() => decideCase(c, 'ok')} /></>}
         </div>
         {/* 판단에 참고만 하는 정보: 이 항목들의 지금 변환 방식과 처리 당시 정책 버전 */}
         {typesOf(c).some(t => ent(t) && ent(t)!.method !== '—') && <p className={b.polNote}>지금 정책 · {typesOf(c).filter(t => ent(t) && ent(t)!.method !== '—').map(t => `${t} ${ent(t)!.method}`).join(' · ')}{c.ev.ver && ` · 처리 당시 ${c.ev.ver}`}</p>}
@@ -135,7 +135,7 @@ export default function Board() {
         </div>
         <div className={b.reason}><span>직원 사유</span>{fpReasons(g).length ? fpReasons(g).slice(0, 3).map(t => <p key={t}>{t}</p>) : <p className={b.none}>사유 글 없음</p>}</div>
         <div className={b.decide} style={{ '--n': 2 } as React.CSSProperties}>
-          <DecideButton title="탐지 결과 유지" k="1" onClick={() => keepFp(g)} />
+          <DecideButton title="탐지 결과 유지" desc="실제 개인정보가 맞아요" k="1" onClick={() => keepFp(g)} />
           <DecideButton title="탐지 제외 검토" desc="이 값을 앞으로 안 잡도록 초안에 추가" k="2" onClick={() => openDialog({ kind: 'exclude', groupKey: groupKey(g), onDone: advanceBoard })} />
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function Board() {
   return (
     <div className={b.board}>
       <section className={b.flow} aria-label="흐름도">
-        <div className={b.flowHead}><h2>처리 흐름</h2><span title="입력 숫자는 최근 7일, 검토·오탐은 지금 열린 건 전체예요">최근 7일</span>{truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
+        <div className={b.flowHead}><h2>처리 흐름</h2><span>입력은 최근 7일 · 검토는 열린 건 전체</span>{truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
         <div className={b.scroller} ref={scroller}>
           <div className={b.stageBox} style={{ width: boxW, height: SH * scale + TOP, marginLeft: off, marginRight: off }}>
             <div className={b.stage} style={{ width: SW, height: SH, top: TOP, transform: `scale(${scale})` }}>
