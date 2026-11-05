@@ -12,6 +12,7 @@ export interface ServerEvent {
   reason_text?: string | null; reason_requested_at?: string | null; reason_at?: string | null
   // 이슈 #21(PR #36)이 들어오면 채워진다
   user_id?: string | null; dept?: string | null; target_ai?: string | null
+  source?: 'text' | 'file' // #32: 엑셀 파일 검사·차단·보호본 다운로드도 이벤트로 남는다
   items?: { type: string; decision: 'converted' | 'reverted' | 'raw'; reason?: string | null; value_hash?: string | null; preview?: string | null }[]
 }
 
@@ -64,8 +65,8 @@ export function fromServer(ev: ServerEvent): AiEvent {
       status: grade !== 'S' ? null : action === 'raw' ? 'raw' : action === 'revert' ? 'revert' : 'conv',
       reason: action === 'revert' ? rsn : null, fp: action === 'revert' && rsn === '오탐' ? 'open' : null }))
   const h = (ev.content_hash || String(ev.id)).slice(0, 4)
-  return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || `직원 ${h}`, dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: null,
-    tpl: '본문은 서버에 저장하지 않아요', items, grade, action,
+  return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || `직원 ${h}`, dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: ev.source === 'file' ? { name: '엑셀 파일', meta: [] } : null,
+    tpl: ev.source === 'file' ? '엑셀 파일 · 내용은 서버에 저장하지 않아요' : '본문은 서버에 저장하지 않아요', items, grade, action,
     conf: ev.detection_confidence === 'high' ? 0.95 : 0.6, ver: '', server: ev } // 서버 이벤트에는 당시 정책 버전이 없다
 }
 function casesFrom(events: AiEvent[]): Case[] {

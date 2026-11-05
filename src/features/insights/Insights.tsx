@@ -73,7 +73,7 @@ export default function Insights() {
         <Segmented label="기간" value={span} onChange={setSpan} items={[{ k: '7', t: '7일' }, { k: '30', t: '30일' }]} />
       </div>
       <div className={i.tiles}>
-        <div className={i.tile}><span>AI 입력</span><b>{E.length.toLocaleString()}</b><small>하루 평균 {Math.round(E.length / n)}건</small></div>
+        <div className={i.tile}><span>AI 입력</span><b>{E.length.toLocaleString()}</b><small>하루 평균 {Math.round(E.length / n)}건{E.some(e => e.file) ? ` · 파일 ${E.filter(e => e.file).length}건` : ''}</small></div>
         <div className={i.tile}><span>개인정보 변환</span><b>{sens.length.toLocaleString()}</b><small>입력의 {pct(sens.length, E.length)}%</small></div>
         <div className={i.tile}><span>원문 전송</span><b style={{ color: raw ? 'var(--danger)' : undefined }}>{raw}</b><small>민감 입력의 {pct(raw, sens.length)}%</small></div>
         <div className={i.tile}><span>항목 되돌림률</span><b>{pct(rev, items.length)}%</b><small>{items.length}개 항목 중 {rev}개</small></div>
