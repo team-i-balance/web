@@ -99,19 +99,23 @@ function markExcluded() {
 
 // ── 정책 초안 (/policy/draft, 백엔드 docs/policy-draft-api.md)
 // 고칠 때마다 서버 초안에 저장해 새로고침·다른 보안팀원과 공유한다. 화면을 되살리는 데 필요한 평문(고유 단어·제외 값)은
-// 초안의 console 칸에만 두고, 배포할 때는 해시만 담은 payload 를 보낸다(평문은 PC 번들에 들어가지 않는다).
-interface DraftOut { payload: (Record<string, unknown> & { console?: ConsoleState }) | null; changes: { what: string; src: string }[]; has_draft: boolean; etag: string }
+// 초안의 console_state 칸에만 두고, payload 에는 해시만 담는다(평문은 PC 번들에 들어가지 않는다).
+// console_state: 서버가 서명하지 않는 화면 복원 칸(#46). 예전 초안은 payload.console 에 있었다
+interface DraftOut { payload: (Record<string, unknown> & { console?: ConsoleState }) | null; console_state?: ConsoleState | null; changes: { what: string; src: string }[]; has_draft: boolean; etag: string }
 interface ConsoleState { entities: Policy['entities']; learned: Policy['learned']; dict: Policy['dict']; exclude: Policy['exclude']; meta: Policy['meta'] }
 let etag: string | null = null, timer = 0, saving: Promise<void> = Promise.resolve()
 export let draftOn = false
 
 function applyDraft(d: DraftOut) {
   etag = d.etag
-  const c = d.payload?.console
-  if (!d.has_draft || !c) return
+  // 배포한 뒤에도 서버가 console_state 를 남기므로 초안이 없어도 화면을 되살린다
+  const c = d.console_state ?? d.payload?.console
+  if (!c?.entities) return
   const P = S.policy
   P.entities = c.entities; P.learned = c.learned; P.dict = c.dict; P.exclude = c.exclude; P.meta = c.meta
-  P.changes = d.changes.map(x => ({ what: x.what, src: x.src }))
+  P.changes = d.has_draft ? d.changes.map(x => ({ what: x.what, src: x.src })) : []
+  // 초안이 없으면(배포 뒤) 저장해 둔 규칙·단어는 이미 배포된 것이다
+  if (!d.has_draft) { P.learned.forEach(r => (r.live = true)); P.dict.forEach(x => delete x.draft); P.exclude.forEach(x => delete x.draft) }
 }
 async function loadDraft() {
   try { applyDraft(await get<DraftOut>('/policy/draft', 5000)); draftOn = true } catch { draftOn = false }
@@ -122,7 +126,7 @@ async function saveDraft() {
   const P = S.policy
   const console: ConsoleState = { entities: P.entities, learned: P.learned, dict: P.dict, exclude: P.exclude, meta: P.meta }
   try {
-    const d = await post<DraftOut>('/policy/draft', { payload: { ...(await buildPayload(P)), console }, changes: P.changes.slice(-500).map(c => ({ what: c.what.slice(0, 2000), src: (c.src || '직접 수정').slice(0, 128) })) },
+    const d = await post<DraftOut>('/policy/draft', { payload: await buildPayload(P), console_state: console, changes: P.changes.slice(-500).map(c => ({ what: c.what.slice(0, 2000), src: (c.src || '직접 수정').slice(0, 128) })) },
       etag ? { 'If-Match': etag } : {}, 'PUT')
     etag = d.etag
   } catch (e) {
@@ -159,8 +163,6 @@ export async function refreshAcks() { await loadAcks(); emit() }
 // 서버에 배포한 직후: 새 버전 기준 현황과 기록을 다시 읽는다
 export async function afterServerPublish() {
   await Promise.all([loadAcks(), loadHistory(), loadDraft()])
-  // 배포하면 서버 초안이 비워진다. 화면 복원용 상태(평문·등급·변환 방식)를 빈 변경 목록과 함께 다시 저장해 둔다
-  if (draftOn) await saveDraft()
   markExcluded(); emit()
 }
 
