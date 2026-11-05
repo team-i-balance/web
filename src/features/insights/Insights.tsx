@@ -39,7 +39,7 @@ function Daily({ days, k, raw }: { days: { d: Date; n: number; raw: number }[]; 
             <rect className={i.hit} x={L + j * step} y={0} width={step} height={H - B} />
             <rect className={i.hl} x={L + j * step + 1} y={0} width={step - 2} height={H - B} rx={4} />
             {v > 0 && <path className={`${i.bar} ${raw ? i.raw : ''}`} d={`M${x},${H - B} V${H - B - h + 4} q0,-4 4,-4 h${bw - 8} q4,0 4,4 V${H - B} Z`} />}
-            {few && <text className={i.val} x={x + bw / 2} y={H - B - h - 6} textAnchor="middle">{v}</text>}
+            {few && v > 0 && <text className={i.val} x={x + bw / 2} y={H - B - h - 6} textAnchor="middle">{v}</text>}
             {j % every === 0 && <text className={i.axis} x={x + bw / 2} y={H - 6} textAnchor="middle">{md(d.d)}</text>}
           </g>
         })}
@@ -108,9 +108,13 @@ export default function Insights() {
           </section>}
           {st && <section className={ds.panel}>
             <h2>서버 집계 · {n}일</h2>
-            <div className={i.queues}>{Object.entries(st.by_queue).map(([k, v]) => <div key={k} className={i.q}>{QUEUE_KO[k] || k}<b>{v}</b></div>)}</div>
-            {st.by_policy_version && <div className={i.queues}>{Object.entries(st.by_policy_version).sort(([a], [b]) => (a === 'none' ? 1 : b === 'none' ? -1 : +b - +a)).map(([k, v]) => <div key={k} className={i.q}>{k === 'none' ? '버전 기록 없음' : `정책 v${k}`}<b>{v}</b></div>)}</div>}
-            {st.by_action && <details className={i.more}><summary>처리별 건수</summary><div className={i.queues}>{Object.entries(st.by_action).map(([k, v]) => <div key={k} className={i.q}>{ACTION_KO[k] || k}<b>{v}</b></div>)}</div></details>}
+            {/* 매일 볼 것은 위반·오탐 두 가지. 나머지 분류·처리·정책 버전은 '더 보기' 안에 */}
+            <div className={i.queues}>{(['real_violation', 'detection_improve'] as const).map(k => <div key={k} className={i.q}>{k === 'real_violation' ? '실제 위반' : '오탐 신고'}<b>{st.by_queue[k] ?? 0}</b></div>)}</div>
+            <details className={i.more}><summary>더 보기</summary>
+              <div className={i.queues}>{Object.entries(st.by_queue).filter(([k]) => k !== 'real_violation' && k !== 'detection_improve').map(([k, v]) => <div key={k} className={i.q}>{QUEUE_KO[k] || k}<b>{v}</b></div>)}</div>
+              {st.by_action && <div className={i.queues}>{Object.entries(st.by_action).map(([k, v]) => <div key={k} className={i.q}>{ACTION_KO[k] || k}<b>{v}</b></div>)}</div>}
+              {st.by_policy_version && <div className={i.queues}>{Object.entries(st.by_policy_version).sort(([a], [b]) => (a === 'none' ? 1 : b === 'none' ? -1 : +b - +a)).map(([k, v]) => <div key={k} className={i.q}>{k === 'none' ? '버전 기록 없음' : `정책 v${k}`}<b>{v}</b></div>)}</div>}
+            </details>
             {st.evasion_suspect > 0 && <div><Tag tone="warn">회피 의심 {st.evasion_suspect}</Tag></div>}
           </section>}
           {live && byAi.length === 0 && <p className={i.note}>대상 AI는 서버 이벤트에 값이 있을 때만 보여요.</p>}
