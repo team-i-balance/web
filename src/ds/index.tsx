@@ -31,9 +31,9 @@ export function LinkButton({ variant, size, icon, className, children, ...rest }
 export const Kbd = ({ children }: { children: ReactNode }) => <kbd className={s.kbd}>{children}</kbd>
 
 // 판단 버튼: 제목, 결과 한 줄, 단축키
-export function DecideButton({ title, desc, k, danger, onClick }: { title: string; desc: string; k?: string; danger?: boolean; onClick: () => void }) {
+export function DecideButton({ title, desc, k, onClick }: { title: string; desc: string; k?: string; onClick: () => void }) {
   return (
-    <button type="button" className={clsx(s.decide, danger && s.decideDanger)} onClick={onClick} aria-keyshortcuts={k} data-decide={k}>
+    <button type="button" className={s.decide} onClick={onClick} aria-keyshortcuts={k} data-decide={k}>
       <b>{title}</b>{k && <Kbd>{k}</Kbd>}<span>{desc}</span>
     </button>
   )

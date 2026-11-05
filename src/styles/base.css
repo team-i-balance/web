@@ -10,6 +10,8 @@ body {
   font-feature-settings: 'tnum';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  word-break: keep-all; /* 한글을 글자가 아니라 낱말 단위로 줄바꿈 */
+  overflow-wrap: anywhere;
 }
 h1, h2, h3, h4, p { margin: 0; }
 h1, h2, h3 { letter-spacing: -0.02em; text-wrap: balance; }

@@ -17,7 +17,7 @@ import b from './board.module.css'
 const SW = 1120, SH = 284, W = 200, H = 84, AY = 36, BY = 180, PAD = 20, TOP = 26
 const cx = (x: number) => x + W / 2, my = (y: number) => y + H / 2
 const POS: Record<string, [number, number]> = { in: [0, AY], conv: [300, AY], raw: [640, AY], fp: [200, BY], opt: [420, BY], req: [640, BY], pol: [920, BY] }
-const DECIDE = [['violation', '위반으로 기록', '위반 이력이 남아요', true], ['legit', '이번 건 예외 인정', '같은 입력 자동 변환 규칙 초안이 생겨요', false], ['fp', '오탐으로 기록', '개인정보가 아닌 값을 잡았어요', false]] as const
+const DECIDE = [['violation', '위반으로 기록', '위반 이력이 남아요'], ['legit', '이번 건 예외 인정', '같은 입력 자동 변환 규칙 초안이 생겨요'], ['fp', '오탐으로 기록', '개인정보가 아닌 값을 잡았어요']] as const
 const slide = { initial: { opacity: 0, x: 16 }, animate: { opacity: 1, x: 0 }, transition: { duration: 0.2, ease: [0.2, 0.8, 0.2, 1] as const } }
 
 // 흐름도 크기: 폭에 맞춰 줄이고(최소 0.62배), 그보다 좁으면 가로로 밀어 본다
@@ -117,8 +117,8 @@ export default function Board() {
         <div className={b.reason}><span>직원 사유</span><p>{c.reason?.text}</p></div>
         <div className={b.decide} style={{ '--n': SEL === 'req' ? 3 : 2 } as React.CSSProperties} data-coach="decide">
           {SEL === 'req'
-            ? DECIDE.map(([k, t, d, dg], i) => <DecideButton key={k} title={t} desc={d} k={String(i + 1)} danger={dg} onClick={() => decideCase(c, k)} />)
-            : <><DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" danger onClick={() => decideCase(c, 'violation')} />
+            ? DECIDE.map(([k, t, d], i) => <DecideButton key={k} title={t} desc={d} k={String(i + 1)} onClick={() => decideCase(c, k)} />)
+            : <><DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" onClick={() => decideCase(c, 'violation')} />
               <DecideButton title="문제 없음" desc="정당한 업무 사용으로 종결해요" k="2" onClick={() => decideCase(c, 'ok')} /></>}
         </div>
         <div className={b.hint}>{SEL === 'req' ? '1·2·3' : '1·2'} 판단 · ↑↓ 다른 건 · Z 되돌리기</div>
