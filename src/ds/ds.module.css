@@ -29,7 +29,7 @@
 .iconOnly { width: var(--h); padding: 0; }
 .kbd {
   display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px;
-  border: 1px solid var(--line); border-radius: var(--r-xs); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2);
   font: 600 var(--t-11)/1 var(--font); color: var(--mute);
 }
 @media (hover: none) { .kbd { display: none; } }
@@ -79,11 +79,16 @@
 .countOver { color: var(--danger); }
 .input, .select, .textarea {
   width: 100%; min-height: 38px; padding: 8px 12px; border-radius: var(--r-md);
-  border: 1px solid var(--line-2); background: var(--surface); color: var(--fg); font-size: var(--t-14);
-  transition: border-color var(--d-1) var(--ease), box-shadow var(--d-1) var(--ease);
+  border: 1px solid transparent; background-color: var(--well); color: var(--fg); font-size: var(--t-14);
+  transition: border-color var(--d-1) var(--ease), background-color var(--d-1) var(--ease);
 }
-.input:focus, .select:focus, .textarea:focus { border-color: var(--focus); box-shadow: 0 0 0 3px var(--acc-ring); outline: none; }
-.input[aria-invalid='true'], .textarea[aria-invalid='true'] { border-color: var(--danger); }
+/* 상태(Devs 입력 규칙): 기본은 채운 면·테두리 없음 → 올림은 옅은 테두리 → 쓰는 중은 진한 테두리 → 성공·오류는 상태색 테두리 */
+.input::placeholder, .textarea::placeholder { color: var(--faint); }
+.input:hover:not(:disabled), .select:hover:not(:disabled), .textarea:hover:not(:disabled) { border-color: var(--line-2); }
+.input:focus, .select:focus, .textarea:focus { border-color: var(--sub); outline: none; }
+.input[aria-invalid='true'], .textarea[aria-invalid='true'], .select[aria-invalid='true'] { border-color: var(--danger); }
+.input[data-ok], .textarea[data-ok] { border-color: var(--ok); }
+.input:disabled, .select:disabled, .textarea:disabled { color: var(--faint); background-color: color-mix(in srgb, var(--well) 50%, transparent); cursor: not-allowed; }
 .textarea { min-height: 84px; resize: vertical; line-height: 1.55; }
 .select {
   appearance: none; padding-right: 32px; cursor: pointer;
@@ -91,23 +96,27 @@
   background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat;
 }
 .selectSm { min-width: 84px; min-height: 30px; padding: 4px 28px 4px 10px; font-size: var(--t-13); border-radius: var(--r-sm); }
-.hint { font-size: var(--t-12); color: var(--mute); }
-.error { font-size: var(--t-12); color: var(--danger); font-weight: 600; }
+.hint, .error, .okMsg { display: flex; align-items: flex-start; gap: 4px; font-size: var(--t-12); color: var(--mute); }
+.hint svg, .error svg, .okMsg svg { flex: none; margin-top: 2px; }
+.error { color: var(--danger); font-weight: 600; }
+.okMsg { color: var(--ok); }
 
 /* ── 스위치·체크 */
 .switch {
-  width: 36px; height: 22px; flex: none; border-radius: var(--r-full); border: 0; padding: 2px; background: var(--line-2);
-  transition: background var(--d-2) var(--ease);
+  width: 36px; height: 22px; flex: none; border-radius: var(--r-full); border: 1px solid var(--line-2); padding: 1px; background: var(--well);
+  transition: background var(--d-2) var(--ease), border-color var(--d-2) var(--ease);
 }
-.switch[data-state='checked'] { background: var(--fg); }
+.switch[data-state='checked'] { background: var(--acc); border-color: var(--acc); }
+.switch:disabled { opacity: 0.4; cursor: not-allowed; }
 .thumb { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform var(--d-2) var(--ease); }
 .thumb[data-state='checked'] { transform: translateX(14px); }
 .check {
-  width: 18px; height: 18px; flex: none; border-radius: var(--r-xs); border: 1.5px solid var(--line-2); background: var(--surface);
+  width: 18px; height: 18px; flex: none; border-radius: 4px; border: 1.5px solid var(--line-2); background: var(--surface);
   display: inline-flex; align-items: center; justify-content: center; padding: 0; color: var(--surface);
   transition: background var(--d-1) var(--ease), border-color var(--d-1) var(--ease);
 }
-.check[data-state='checked'], .check[data-state='indeterminate'] { background: var(--fg); border-color: var(--fg); }
+.check[data-state='checked'], .check[data-state='indeterminate'] { background: var(--acc); border-color: var(--acc); color: var(--acc-on); }
+.check:disabled { background: var(--well); border-color: transparent; color: var(--faint); cursor: not-allowed; }
 
 /* ── 세그먼트(탭) */
 .seg { display: inline-flex; gap: 2px; padding: 3px; background: var(--seg); border-radius: var(--r-md); }

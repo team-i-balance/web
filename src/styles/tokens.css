@@ -54,8 +54,8 @@
   --t-18: 18px; --t-20: 20px; --t-24: 24px; --t-28: 28px; --t-32: 32px;
   /* 간격 4pt */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px;
-  /* 모서리 */
-  --r-xs: 5px; --r-sm: 8px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px; --r-full: 999px;
+  /* 모서리(Devs 단계): 2 가장 작은 부품 · 6 작은 버튼·라벨 · 12 버튼·입력·상자 · 16 큰 패널(최대) */
+  --r-xs: 2px; --r-sm: 6px; --r-md: 12px; --r-lg: 12px; --r-xl: 16px; --r-full: 999px;
   /* 움직임 */
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);

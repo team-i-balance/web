@@ -3,7 +3,7 @@ import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode, type Anch
 import * as RSwitch from '@radix-ui/react-switch'
 import * as RCheck from '@radix-ui/react-checkbox'
 import * as RTip from '@radix-ui/react-tooltip'
-import { Check, Minus, CircleCheck, TriangleAlert, CircleAlert, Info } from 'lucide-react'
+import { Check, Minus, CircleCheck, CircleX, TriangleAlert, CircleAlert, Info } from 'lucide-react'
 import clsx from 'clsx'
 import type { Case } from '../domain/types'
 import { partial } from '../lib/util'
@@ -63,12 +63,14 @@ export function Notice({ tone = 'info', title, children, actions }: { tone?: Not
 }
 
 // ── 입력
-export function Field({ label, count, max, hint, error, children, htmlFor }: { label: string; count?: number; max?: number; hint?: ReactNode; error?: string | false; children: ReactNode; htmlFor?: string }) {
+export function Field({ label, count, max, hint, error, ok, children, htmlFor }: { label: string; count?: number; max?: number; hint?: ReactNode; error?: string | false; ok?: string | false; children: ReactNode; htmlFor?: string }) {
   return (
     <div className={s.field}>
       <label className={s.label} htmlFor={htmlFor}>{label}{max != null && <span className={clsx(s.count, (count ?? 0) > max && s.countOver)}>{count ?? 0}/{max}</span>}</label>
       {children}
-      {error ? <div className={s.error} role="alert">{error}</div> : hint ? <div className={s.hint}>{hint}</div> : null}
+      {error ? <div className={s.error} role="alert"><CircleX size={12} aria-hidden="true" />{error}</div>
+        : ok ? <div className={s.okMsg}><CircleCheck size={12} aria-hidden="true" />{ok}</div>
+        : hint ? <div className={s.hint}><Info size={12} aria-hidden="true" />{hint}</div> : null}
     </div>
   )
 }
