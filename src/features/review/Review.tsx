@@ -2,14 +2,13 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Inbox, SlidersHorizontal } from 'lucide-react'
 import clsx from 'clsx'
-import { S, emit, useStore, ago, quickClose, reopen, ent } from '../../domain/store'
+import { S, emit, useStore, ago, quickClose, reopen, known } from '../../domain/store'
 import { CAUSES, CONCLUSION } from '../../domain/defaults'
 import type { Case, Conclusion } from '../../domain/types'
-import { Button, Checkbox, DecideButton, Dot, Empty, LinkButton, Notice, Segmented, Sentence, Tag, ds, typesOf } from '../../ds'
+import { Button, Checkbox, DecideButton, Dot, Empty, LinkButton, Notice, Segmented, Tag, ds, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
 import { useReviewModel } from './model'
 import { loadCaseDetail, requestReason } from '../../api/cases'
-import { hashOf } from '../../api/fp'
 import { fmt, partial } from '../../lib/util'
 import r from './review.module.css'
 
@@ -29,11 +28,11 @@ function Row({ x, on, pick }: { x: Case; on: boolean; pick: boolean }) {
     <a className={clsx(r.row, !pick && r.rowNoCheck)} href={`#review/${x.id}`} aria-current={on} data-row>
       {pick && <Checkbox checked={S.ui.picked.has(x.id)} label={`${x.user} 고르기`} onChange={v => { v ? S.ui.picked.add(x.id) : S.ui.picked.delete(x.id); emit() }} />}
       <span className={r.who}>
-        <span className={r.name}>{x.user}</span>
-        <span className={r.dept}>{x.dept}</span>
+        <span className={r.name}>{x.user === '직원 미전송' ? x.id : x.user}</span>
+        {x.ev.grade === 'C' && <Tag tone="danger">기밀</Tag>}
         <span className={r.tags}>{counts.map(([t, n]) => <Tag key={t}>{t}{n > 1 ? ` ${n}` : ''}</Tag>)}</span>
       </span>
-      <span className={r.when}>{x.ev.ai} · {ago(x.time)}</span>
+      <span className={r.when}>{ago(x.time)}</span>
       {(closed || x.reason) && <span className={r.snip}>
         {closed ? <><Dot tone={DOT[x.close!.k]}>{CONCLUSION[x.close!.k][0]}</Dot>{x.reason?.text ? ` “${x.reason.text}”` : x.reason ? ` ${x.reason.pick}` : ' 사유 없음'}</> : x.reason?.text || x.reason?.pick || '사유 없음'}
       </span>}
@@ -50,12 +49,12 @@ function Detail({ c }: { c: Case }) {
   const actions = closed ? <Button onClick={() => reopen(c)}>다시 열기</Button>
     : !c.reason ? <><Button variant="ghost" onClick={() => requestReason(c)}>사유 다시 요청</Button><Button variant="primary" onClick={() => openDialog({ kind: 'close', caseId: c.id })}>사유 없이 결론 내기</Button></>
     : c.need === 'opt' ? <><div className={r.decide}>
-        <DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" onClick={() => decide('violation')} />
-        <DecideButton title="문제 없음" desc="정당한 업무 사용으로 종결해요" k="2" onClick={() => decide('ok')} /></div>{detail}</>
+        <DecideButton title="위반으로 기록" k="1" onClick={() => decide('violation')} />
+        <DecideButton title="문제 없음" k="2" onClick={() => decide('ok')} /></div>{detail}</>
     : <><div className={r.decide}>
-        <DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" onClick={() => decide('violation')} />
-        <DecideButton title="정당한 사용 · 규칙 추가" desc="업무상 필요했어요 · 이 항목을 서버 탐지에 더하는 규칙 초안이 생겨요" k="2" onClick={() => decide('legit')} />
-        <DecideButton title="오탐으로 기록" desc="이 건만 닫아요 · 탐지는 그대로예요" k="3" onClick={() => decide('fp')} /></div>{detail}</>
+        <DecideButton title="위반으로 기록" k="1" onClick={() => decide('violation')} />
+        <DecideButton title="정당한 사용 · 규칙 추가" desc="이 항목을 서버 탐지에 더하는 규칙 초안이 생겨요" k="2" onClick={() => decide('legit')} />
+        <DecideButton title="오탐으로 기록" k="3" onClick={() => decide('fp')} /></div>{detail}</>
   // 직원 처리 열: 행마다 처리가 섞일 때만
   const mixed = new Set(c.items.map(i => i.status)).size > 1
   const del = <span className={clsx(ds.mask, ds.maskDel)}>삭제</span>
@@ -67,15 +66,14 @@ function Detail({ c }: { c: Case }) {
           {closed && <>{c.need === 'req' ? <Tag>필수</Tag> : <Tag>선택</Tag>}{x && <Dot tone={DOT[x.k]}>{CONCLUSION[x.k][0]}</Dot>}</>}
         </div>
         <h2>{c.ev.grade === 'C' && <Tag tone="danger">기밀</Tag>} {c.user} 님이 {leaked.map(i => i.type).join(', ')} 원문을 {c.ev.ai === 'AI 미전송' ? 'AI' : c.ev.ai}에 보냈어요</h2>
-        <div className={r.metaT} title={ago(c.time)}>{fmt(c.time)}{c.ev.ver ? ` · 정책 ${c.ev.ver}` : ''}</div>
+        <div className={r.metaT} title={ago(c.time)}>{known(c.dept, fmt(c.time), c.ev.ver ? `정책 ${c.ev.ver}` : '')}</div>
       </div>
       <div className={r.dbody}>
         <div className={r.col}>
           <section className={r.sec}><h3>직원 사유 {c.reason?.pick && <Tag>{c.reason.pick}</Tag>}</h3>
             {c.reason?.text ? <blockquote className={r.quote}>{c.reason.text}</blockquote>
-              : c.reason?.pick === '오탐' ? <div className={r.note}>{c.items.some(i => hashOf(i.orig)) ? "'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫고, 값을 빼려면 오탐 신고에서 탐지 제외하세요" : "'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫으세요. 값 해시가 없어 탐지 제외로는 이어지지 않아요"}</div>
-              : c.reason ? <div className={r.note}>사유 글 없이 '{c.reason.pick}'만 골랐어요</div>
-              : <div className={r.note}>사유가 없어요 · 지금 직원 프로그램은 나중에 사유를 낼 방법이 없어요</div>}</section>
+              : c.reason ? <div className={r.note}>사유 글 없음</div>
+              : <div className={r.note}>사유 없음</div>}</section>
           {x && <section className={r.sec}><h3>보안팀 결론</h3>
             <div className={r.verdict}>
               <b><Dot tone={DOT[x.k]} />{CONCLUSION[x.k][0]}</b>
@@ -86,13 +84,10 @@ function Detail({ c }: { c: Case }) {
             {S.policy.changes.some(ch => ch.src === c.id) && <Notice tone="now" actions={<><LinkButton size="sm" variant="link" href="#policy">정책에서 보기</LinkButton><Button size="sm" variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button></>}>규칙 초안이 배포를 기다려요 · 아직 서버 탐지에 적용 전</Notice>}
           </section>}
           <section className={r.sec}><h3>보낸 내용</h3>
-            <div className={r.text}><Sentence c={c} /></div>
             {c.items.some(i => i.reason === '오탐') && <div className={r.note}>{c.items.filter(i => i.reason === '오탐').map(i => i.type).join(', ')} 항목은 "오탐"으로 되돌려 <a href="#fp">오탐 신고</a>에서 따로 처리해요</div>}
-            <div className={r.tbox}><table className={clsx(ds.table, r.tbl)}><thead><tr><th>항목</th><th>나간 값</th><th>지금 정책</th>{mixed && <th>직원 처리</th>}</tr></thead><tbody>
+            <div className={r.tbox}><table className={clsx(ds.table, r.tbl)}><thead><tr><th>항목</th><th>나간 값</th>{mixed && <th>직원 처리</th>}</tr></thead><tbody>
               {c.items.map((it, i) => <tr key={i}><td className={r.type}>{it.type}</td>
                 <td>{it.status === 'conv' ? (it.conv === '' ? del : <span className={r.pol}>{it.conv}</span>) : <span className={r.leak}>{partial(it.type, it.orig)}</span>}</td>
-                {/* 서버에는 변환 결과가 없어 이 항목에 지금 정책이 정한 방식을 보인다 */}
-                <td><span className={r.pol}>{ent(it.type) ? ent(it.type)!.method : '—'}</span></td>
                 {mixed && <td>{it.status === 'conv' ? <Tag>변환 유지</Tag> : it.status === 'revert' ? <Tag>되돌림 · {it.reason}</Tag> : <Tag>원문 전송</Tag>}</td>}</tr>)}
             </tbody></table></div>
           </section>
