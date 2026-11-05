@@ -25,7 +25,7 @@ npm run dev                  # http://localhost:5320
 | 이름 | 필수 | 설명 |
 |---|---|---|
 | `BACKEND_URL` | 예 | 백엔드 주소. 예: `https://13.193.207.69` |
-| `BACKEND_TOKEN` | 아니요 | 백엔드가 인증을 요구하면 넣는다. `Authorization: Bearer` 로 붙여 보낸다 |
+| `BACKEND_TOKEN` | 예 | 백엔드 **보안팀(security) 토큰**. 서버의 `SECURITY_TOKENS` 중 하나. `Authorization: Bearer` 로 붙여 보낸다. 없거나 틀리면 콘솔이 "인증 필요"로 표시하고 예시 데이터를 보여 준다 |
 | `BACKEND_CA` | 아니요 | 백엔드 인증서(PEM)가 바뀌었을 때만. 기본은 `api/_backend-ca.ts` 에 고정한 팀 서버 인증서 |
 
 셋 다 브라우저 코드에는 들어가지 않는다(`VITE_` 접두사 없음). 브라우저는 같은 주소의 `/api` 만 부르고, 개발에서는 Vite 프록시가, 배포에서는 `api/proxy.ts`(Vercel 함수, `vercel.json` 이 `/api/*` 를 넘김)가 `BACKEND_URL` 로 넘긴다. 팀 서버는 자체 서명 인증서를 쓰므로 인증서 검증을 끄지 않고 그 인증서만 신뢰하도록 고정했다.

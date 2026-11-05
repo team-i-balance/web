@@ -172,9 +172,10 @@ function Server() {
     finally { setBusy(false) }
   }
   if (!a.live) return (
-    <Modal open onClose={closeDialog} title={a.state === 'off' ? '예시 데이터로 보는 중' : '서버에 연결되지 않았어요'}
+    <Modal open onClose={closeDialog} title={a.state === 'off' ? '예시 데이터로 보는 중' : a.state === 'auth' ? '서버 인증이 필요해요' : '서버에 연결되지 않았어요'}
       desc="예시 데이터를 보여 주고 있어요" foot={<><Button variant="ghost" onClick={closeDialog}>닫기</Button>{a.state === 'off' ? <a className={ds.btn + ' ' + ds.primary} href="./#home">서버 데이터로 보기</a> : <Button variant="primary" onClick={reload}>다시 연결하기</Button>}</>}>
-      {a.state !== 'off' && <Note>배포 환경이라면 BACKEND_URL 이 맞는지 확인해 주세요.</Note>}
+      {a.state === 'auth' ? <Note warn>서버가 보안팀 토큰을 요구해요. 배포 환경의 BACKEND_TOKEN 에 보안팀(security) 토큰을 넣어 주세요.</Note>
+        : a.state !== 'off' && <Note>배포 환경이라면 BACKEND_URL 이 맞는지 확인해 주세요.</Note>}
     </Modal>
   )
   return (

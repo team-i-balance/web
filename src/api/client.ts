@@ -101,6 +101,7 @@ export function setIncludeTest(v: boolean) {
 
 export async function connect(): Promise<boolean> {
   const cands = candidates()
+  let denied = false // 서버는 살아 있는데 토큰이 없거나 틀림(401·403)
   S.api.state = cands.length ? 'connecting' : 'off'; emit()
   for (const base of cands) {
     S.api.base = base
@@ -118,9 +119,9 @@ export async function connect(): Promise<boolean> {
       Object.assign(S.api, { state: 'live', live: true, count: S.events.filter(e => +e.time >= Date.now() - 7 * 864e5).length, stats, synced: new Date() })
       emit()
       return true
-    } catch { /* 다음 후보 */ }
+    } catch (e) { if (/^40[13]$/.test((e as Error).message)) denied = true /* 다음 후보 */ }
   }
-  S.api.base = null; S.api.live = false; S.api.state = cands.length ? 'offline' : 'off'
+  S.api.base = null; S.api.live = false; S.api.state = denied ? 'auth' : cands.length ? 'offline' : 'off'
   emit()
   return false
 }

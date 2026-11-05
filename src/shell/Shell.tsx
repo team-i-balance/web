@@ -30,7 +30,7 @@ function navBadge(r: Route): ReactNode {
 
 function Conn() {
   const a = S.api
-  const t = a.state === 'live' ? `서버 ${a.count}건` : a.state === 'connecting' ? '연결하는 중' : a.state === 'offline' ? '연결 안 됨 · 예시 데이터' : '예시 데이터'
+  const t = a.state === 'live' ? `서버 ${a.count}건` : a.state === 'connecting' ? '연결하는 중' : a.state === 'offline' ? '연결 안 됨 · 예시 데이터' : a.state === 'auth' ? '인증 필요 · 예시 데이터' : '예시 데이터'
   return (
     <Tip text={a.state === 'live' ? '서버 상태 보기' : '서버 연결 보기'}>
       <button type="button" className={clsx(sh.conn, sh[a.state])} onClick={() => openDialog({ kind: 'server' })} aria-label={`데이터: ${t}`}>
