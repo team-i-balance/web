@@ -33,11 +33,12 @@ export async function buildPayload(P: Policy) {
 const decode = (b64: string): Payload => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64), c => c.charCodeAt(0))))
 
 // 서버 탐지가 지금 쓰는 정책(/policy/current). 콘솔의 배포(/policy/publish)는 저장만 하므로 /policy/deploy 로 적용해야 바뀐다
-export async function loadActive() {
+export async function loadActive(ok?: () => boolean) {
   try {
     const r = await get<{ active: boolean; version: number | null; activated_at: string | null }>('/policy/current')
+    if (ok && !ok()) return
     if (S.api.pol) S.api.pol.active = r.active && r.version != null ? { version: r.version, at: r.activated_at } : null
-  } catch { if (S.api.pol) S.api.pol.active = null }
+  } catch { if (S.api.pol && (!ok || ok())) S.api.pol.active = null }
 }
 // 저장된 버전 n 을 서버 탐지에 적용한다. 성공하면 null, 거절되면 사유 코드
 export async function applyOnServer(n: number): Promise<string | null> {
@@ -50,9 +51,10 @@ export async function applyOnServer(n: number): Promise<string | null> {
 // 배포 기록(/policy/history). 이 브라우저에서 배포한 버전은 무엇이 바뀌었는지까지 남겨 둔 것을 쓴다
 interface HistoryItem { version: number; sha256: string; stored_at: string | null; rule_count: number }
 export let historyFromServer = false
-export async function loadHistory() {
+export async function loadHistory(ok?: () => boolean) {
   try {
     const items = await get<HistoryItem[]>('/policy/history')
+    if (ok && !ok()) return
     const local = new Map(S.history.filter(h => h.server).map(h => [h.version, h]))
     S.history = items.sort((a, b) => a.version - b.version).map(h => {
       const v = 'v' + h.version, l = local.get(v)
@@ -61,7 +63,7 @@ export async function loadHistory() {
     const last = items.find(h => 'v' + h.version === S.policy.version)
     if (last?.stored_at) S.policy.deployed = fmt(new Date(last.stored_at))
     historyFromServer = true
-  } catch { historyFromServer = false }
+  } catch { if (!ok || ok()) historyFromServer = false }
 }
 
 // 버전 하나의 내용(/policy/{n})과 바로 앞 버전 대비 바뀐 점. 값은 해시라 단어·제외 값은 개수만 보여 준다.
@@ -93,11 +95,14 @@ export async function loadVersion(n: number): Promise<VersionView> {
 }
 
 // 서버의 최신 배포본을 콘솔 정책에 반영한다. 아직 배포가 없으면 v0(규칙 없음)부터.
-export async function loadPolicy() {
+// 받기(fetchLatest)와 반영(applyBundle)을 나눠, 실시간 갱신이 다 받은 뒤 한 번에 반영할 수 있게 한다
+async function fetchLatest(): Promise<Envelope | null> {
+  try { return await get<Envelope>('/policy/latest') } catch (e) { if ((e as Error).message !== '404') throw e; return null }
+}
+function applyBundle(env: Envelope | null) {
   S.api.pol = { keyid: null, sha: null, active: null }
   const P = S.policy
-  try {
-    const env = await get<Envelope>('/policy/latest')
+  if (env) {
     const p = decode(env.payload)
     P.version = 'v' + p.version
     P.learned = (p.rules || []).map(r => ({ type: r.label, when: r.description, method: r.action as Policy['learned'][number]['method'], from: '서버', hits: 0, live: true }))
@@ -111,14 +116,23 @@ export async function loadPolicy() {
       if (t.method) e.method = t.method as Policy['entities'][number]['method']
     })
     S.api.pol.keyid = env.signatures[0]?.keyid ?? null
-  } catch (e) {
-    if ((e as Error).message !== '404') throw e
-    P.version = 'v0'; P.learned = []; P.dict = []; P.exclude = []
-  }
+  } else { P.version = 'v0'; P.learned = []; P.dict = []; P.exclude = [] }
   P.deployed = ''; P.changes = []
   S.history = []
+}
+export async function loadPolicy() {
+  applyBundle(await fetchLatest())
   await Promise.all([loadActive(), loadHistory(), loadDraft()])
   markExcluded()
+}
+// 실시간 갱신: 다른 보안팀원이 새 버전을 배포했을 때. 배포본·초안을 다 받은 뒤 ok() 일 때만(재연결·내 편집이 없을 때) 반영한다
+export async function reloadPolicy(ok: () => boolean): Promise<boolean> {
+  const [env, d] = await Promise.all([fetchLatest(), get<DraftOut>('/policy/draft', 5000)])
+  if (!ok()) return false
+  applyBundle(env); applyDraft(d); draftOn = true
+  await Promise.all([loadActive(ok), loadHistory(ok)])
+  markExcluded()
+  return true
 }
 
 // 탐지 제외한 값(정책·초안의 hmac 해시)과 같은 오탐 신고는 '제외함'으로 둔다. 서버에 오탐 판단 기록이 없어서 정책으로 되살린다
@@ -138,7 +152,7 @@ export function markExcluded() {
 // console_state: 서버가 서명하지 않는 화면 복원 칸(#46). 예전 초안은 payload.console 에 있었다
 interface DraftOut { payload: (Record<string, unknown> & { console?: ConsoleState }) | null; console_state?: ConsoleState | null; changes: { what: string; src: string }[]; has_draft: boolean; etag: string }
 interface ConsoleState { entities: Policy['entities']; learned: Policy['learned']; dict: Policy['dict']; exclude: Policy['exclude']; meta: Policy['meta'] }
-let etag: string | null = null, timer = 0, saving: Promise<void> = Promise.resolve(), saves = 0
+let etag: string | null = null, timer = 0, saving: Promise<void> = Promise.resolve(), saves = 0, edits = 0
 export let draftOn = false
 
 function applyDraft(d: DraftOut) {
@@ -158,9 +172,17 @@ function applyDraft(d: DraftOut) {
 export async function loadDraft() {
   try { applyDraft(await get<DraftOut>('/policy/draft', 5000)); draftOn = true } catch { draftOn = false }
 }
-// 실시간 갱신용: 내가 마지막으로 받은 초안 ETag, 아직 보내지 않았거나 보내는 중인 초안이 있는지
+// 실시간 갱신용: 내가 마지막으로 받은 초안 ETag, 아직 보내지 않았거나 보내는 중인 초안이 있는지, 화면에서 고친 횟수
 export const draftEtag = () => etag
 export const draftBusy = () => !!timer || saves > 0
+export const draftEdits = () => edits
+// 다른 보안팀원이 고친 초안을 받는다. 실패하면 던진다(초안 저장을 끄지 않고 다음 확인 때 다시)
+export async function refreshDraft(ok: () => boolean): Promise<boolean> {
+  const d = await get<DraftOut>('/policy/draft', 5000)
+  if (!ok()) return false
+  applyDraft(d); draftOn = true
+  return true
+}
 let conflicted = false
 async function saveDraft() {
   if (!draftOn || !S.api.live) return
@@ -178,6 +200,7 @@ async function saveDraft() {
 }
 // 바꿀 때마다 부르지만, 잇따른 변경은 묶어서 한 번에 순서대로 보낸다
 export function scheduleDraftSave() {
+  edits++
   if (!draftOn || !S.api.live) return
   clearTimeout(timer)
   timer = window.setTimeout(() => { timer = 0; saves++; saving = saving.then(saveDraft).finally(() => { saves-- }) }, 300)

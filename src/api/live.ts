@@ -6,9 +6,9 @@
 import type { AiEvent, Case } from '../domain/types'
 import { S, emit, toast } from '../domain/store'
 import { allEvents, casesFrom, fromServer, periodStats } from './client'
-import { casesBusy, loadCaseDetail, loadCases } from './cases'
+import { casesBusy, casesEpoch, loadCaseDetail, loadCases } from './cases'
 import { refreshFpDecisions } from './fp'
-import { draftBusy, draftEtag, loadActive, loadDraft, loadHistory, loadPolicy, markExcluded } from './policy'
+import { draftBusy, draftEdits, draftEtag, loadActive, loadHistory, markExcluded, refreshDraft, reloadPolicy } from './policy'
 
 interface Changes {
   events: { last_id: number | null; change_seq: number }
@@ -100,36 +100,39 @@ async function apply(g: number): Promise<boolean> {
     dirty.events = false; dirty.fp = true; changed = true
   }
   if (dirty.cases && !casesBusy()) {
-    const cs = (await loadCases().catch(() => null)) ?? casesFrom(S.events)
-    // 읽는 사이에 내가 판단을 보냈으면 이번 결과는 버리고 다음에 다시 읽는다
+    const e0 = casesEpoch()
+    // /cases 가 없는 예전 서버만 이벤트로 만든다. 다른 오류는 던져서 다음 확인 때 다시 읽는다(종결 건을 열린 건으로 바꾸지 않게)
+    const cs = await loadCases().catch(e => { if ((e as Error).message === '404') return casesFrom(S.events); throw e })
     if (g !== gen) return false
-    if (!casesBusy()) {
+    // 읽는 사이에 내가 판단을 보냈거나 끝냈으면 이번 결과는 버리고 다음에 다시 읽는다
+    if (!casesBusy() && casesEpoch() === e0) {
       mergeCases(cs); dirty.cases = false; changed = true
       const cur = S.ui.cur.req || S.ui.cur.opt, open = cur ? S.cases.find(c => c.id === cur) : undefined
       if (open?.timeline.length) loadCaseDetail(open)
     }
   }
   if (dirty.fp) {
-    await refreshFpDecisions()
-    if (g !== gen) return false
+    if (!(await refreshFpDecisions(() => g === gen))) return false
     markExcluded(); dirty.fp = false; changed = true
   }
-  // 정책 배포·서버 적용: 기록과 적용 상태는 바로, 다른 사람이 새 버전을 배포했으면 내 초안이 없을 때만 통째로
-  const editing = draftBusy() || ['publish', 'changes', 'addDict', 'exclude'].includes(S.ui.dialog?.kind ?? '')
-  if (dirty.policy && !editing) {
+  // 정책: 받는 사이 재연결되거나 내가 정책을 고쳤으면(ok 가 false) 반영하지 않고 다음에 다시 한다
+  const dialogEditing = () => ['publish', 'changes', 'addDict', 'exclude'].includes(S.ui.dialog?.kind ?? '')
+  const e0 = draftEdits(), ok = () => g === gen && !draftBusy() && draftEdits() === e0 && !dialogEditing()
+  if (dirty.policy && ok()) {
+    // 다른 사람이 새 버전을 배포했으면 내 초안 변경이 없을 때만 통째로, 아니면 기록과 서버 적용 상태만
     const latest = last?.policy.latest ?? null, mine = +S.policy.version.slice(1) || 0
-    if (latest !== null && latest > mine && !S.policy.changes.length) { await loadPolicy(); markExcluded() }
+    const newer = latest !== null && latest > mine
+    if (newer && !S.policy.changes.length) { if (await reloadPolicy(ok)) { dirty.policy = false; changed = true } }
     else {
-      await Promise.all([loadActive(), loadHistory()])
-      if (latest !== null && latest > mine) toast(`다른 보안팀원이 v${latest}를 배포했어요 · 내 초안을 확인해 주세요`)
+      await Promise.all([loadActive(ok), loadHistory(ok)])
+      if (ok()) { dirty.policy = false; changed = true; if (newer) toast(`다른 보안팀원이 v${latest}를 배포했어요 · 내 초안을 확인해 주세요`) }
     }
     if (g !== gen) return false
-    dirty.policy = false; changed = true
   }
-  if (dirty.draft && !editing) {
-    if (last && last.policy.draft_etag !== draftEtag()) { await loadDraft(); changed = true }
+  if (dirty.draft && ok()) {
+    if (!last || last.policy.draft_etag === draftEtag()) dirty.draft = false
+    else if (await refreshDraft(ok)) { dirty.draft = false; changed = true }
     if (g !== gen) return false
-    dirty.draft = false
   }
   if (changed) {
     const after = openReq(), added = [...after.keys()].filter(id => !before.has(id))

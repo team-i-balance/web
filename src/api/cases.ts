@@ -63,9 +63,11 @@ export async function loadCaseDetail(c: Case) {
 // ── 서버 저장
 const queue = new Map<string, Promise<unknown>>()
 const mine = new Set<string>() // 이 화면에서 종결해 서버에 저장된 건(되돌리기는 이것만 다시 연다)
-let inflight = 0 // 서버에 보내는 중인 판단 수. 실시간 갱신은 0일 때만 건 목록을 바꾼다
+let inflight = 0, epoch = 0 // 보내는 중인 판단 수, 판단을 보내기 시작·끝낸 횟수
+// 실시간 갱신은 보내는 중인 판단이 없고, 목록을 읽는 사이 판단이 오가지 않았을 때만 건 목록을 바꾼다
 export const casesBusy = () => inflight > 0
-const track = <T,>(p: Promise<T>) => { inflight++; p.finally(() => { inflight-- }).catch(() => {}); return p }
+export const casesEpoch = () => epoch
+const track = <T,>(p: Promise<T>) => { inflight++; epoch++; p.finally(() => { inflight--; epoch++ }).catch(() => {}); return p }
 function enqueue(id: string, job: () => Promise<unknown>) {
   const next = track((queue.get(id) || Promise.resolve()).then(job, job))
   queue.set(id, next)

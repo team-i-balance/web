@@ -26,12 +26,14 @@ async function fetchDone() {
 }
 // 신고된 항목의 상태를 서버 판단 + 아직 보내지 않은 '유지'(되돌리기 대기) 기준으로 다시 정한다.
 // 실시간 갱신은 이벤트를 다시 읽으므로 전부 다시 계산한다(서버가 open 으로 돌린 값도 반영)
-export async function refreshFpDecisions() {
+export async function refreshFpDecisions(ok: () => boolean = () => true) {
   const done = await fetchDone()
+  if (!ok()) return false
   S.events.forEach(e => e.items.forEach(it => {
     const h = it.fp ? hashOf(it.orig) : null
     if (h) it.fp = pending.has(h) ? 'keep' : done.get(h) ?? 'open'
   }))
+  return true
 }
 export async function loadFpDecisions() {
   const done = await fetchDone()
@@ -58,7 +60,10 @@ function onDecide(g: FpGroup, decision: 'keep' | 'exclude', why?: string) {
 }
 function onUndo(g: FpGroup) {
   const h = groupHash(g)
-  if (h && pending.has(h)) { clearTimeout(pending.get(h)); pending.delete(h) }
+  if (!h || !pending.has(h)) return
+  clearTimeout(pending.get(h)); pending.delete(h)
+  // 기다리는 사이 실시간 갱신으로 들어온 같은 값의 새 신고도 '유지'로 둔 것이니 함께 되돌린다(서버에는 판단이 없다)
+  S.events.forEach(e => e.items.forEach(it => { if (it.fp === 'keep' && hashOf(it.orig) === h) it.fp = 'open' }))
 }
 // 창을 닫기 전에 남은 '유지' 판단을 보낸다
 addEventListener('pagehide', () => { pending.forEach((t, h) => { clearTimeout(t); navigator.sendBeacon?.(`${S.api.base}/false-positives/${h}/decide`, new Blob([JSON.stringify({ decision: 'keep' })], { type: 'application/json' })) }) })
