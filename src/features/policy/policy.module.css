@@ -45,31 +45,3 @@
 .draftNote { color: var(--acc-ink) !important; font-weight: 600; }
 .legend { padding: 4px 22px 18px; font-size: var(--t-12); color: var(--mute); line-height: 1.7; }
 .legend b { color: var(--sub); font-weight: 600; }
-
-/* ── 새 디자인(?look=next) */
-:global([data-look='next']) .nav { padding: 8px; gap: 0; border-radius: 6px; box-shadow: none; }
-:global([data-look='next']) .navT { padding: 8px 8px 12px; gap: 4px; }
-:global([data-look='next']) .navT b { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-:global([data-look='next']) .navA { padding: 8px; border-radius: 4px; font-size: 13px; font-weight: 500; }
-:global([data-look='next']) .changed { width: 6px; height: 6px; background: var(--fg); }
-:global([data-look='next']) .draftNote { color: var(--fg) !important; font-weight: 500; }
-:global([data-look='next']) .sec { border-radius: 6px; box-shadow: none; }
-:global([data-look='next']) .sh { padding: 16px 16px 12px; }
-:global([data-look='next']) .sh h2 { font-size: 14px; font-weight: 600; }
-:global([data-look='next']) .sh p { font-size: 12px; margin-top: 2px; }
-:global([data-look='next']) .tbox { padding: 0 0 4px; }
-:global([data-look='next']) .t th { height: 36px; padding: 0 16px; font-weight: 500; background: var(--surface-2); border-top: 1px solid var(--line); }
-:global([data-look='next']) .t td { height: 40px; padding: 6px 16px; }
-:global([data-look='next']) .name { font-weight: 500; }
-:global([data-look='next']) .ex b { font-weight: 500; }
-:global([data-look='next']) .t a { color: var(--acc); text-decoration: none; font-family: var(--mono); font-size: 13px; }
-:global([data-look='next']) .rate i { width: 56px; height: 4px; border-radius: 0; }
-:global([data-look='next']) .rate i span { border-radius: 0; }
-:global([data-look='next']) .rate b { font-weight: 500; }
-:global([data-look='next']) .metas { gap: 0 24px; padding: 0 16px 8px; border-top: 1px solid var(--line); }
-:global([data-look='next']) .meta { padding: 10px 0; border-radius: 0; background: none; border-bottom: 1px solid var(--line); }
-:global([data-look='next']) .bar { padding: 8px 8px 8px 16px; border-radius: 6px; animation: none; }
-:global([data-look='next']) .bar b { font-weight: 600; }
-:global([data-look='next']) .legend { padding: 8px 16px 16px; line-height: 1.5; }
-:global([data-look='next']) .legend b { font-weight: 500; }
-@media (max-width: 860px) { :global([data-look='next']) .sh { padding: 16px 16px 10px; } :global([data-look='next']) .metas { padding: 0 16px 8px; } }

@@ -9,7 +9,7 @@ import type { Case, FpGroup } from '../../domain/types'
 import { connect } from '../../api/client'
 import { refreshAcks } from '../../api/policy'
 import { requestReason } from '../../api/cases'
-import { Button, DecideButton, Empty, Id, LinkButton, Sentence, Skeleton, StepBar, Tag, typesOf } from '../../ds'
+import { Button, DecideButton, Empty, LinkButton, Sentence, Skeleton, StepBar, Tag, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
 import { partial, rpath } from '../../lib/util'
 import b from './board.module.css'
@@ -110,7 +110,7 @@ export default function Board() {
         <div className={b.who}>
           <span className={b.avatar} aria-hidden="true">{c.user.replace(/^직원 /, '').slice(0, 1)}</span>
           <div className={b.whoT}><b>{c.user} <span>{c.dept} · {ago(c.time)}</span></b><span>{types(c)} → <b>{c.ev.ai}</b></span>
-            <small>{c.ev.ver ? <>전송 당시 정책 <Id>{c.ev.ver}</Id> · </> : '지금 정책 기준 · '}{typesOf(c).map(t => `${t} ${ent(t)?.method ?? '—'}`).join(' · ')}</small></div>
+            <small>{c.ev.ver ? `전송 당시 정책 ${c.ev.ver} · ` : '지금 정책 기준 · '}{typesOf(c).map(t => `${t} ${ent(t)?.method ?? '—'}`).join(' · ')}</small></div>
           <a className={b.more} href={`#review/${c.id}`}>자세히<ChevronRight size={14} /></a>
         </div>
         <div className={b.text}><Sentence c={c} /></div>
@@ -188,7 +188,7 @@ export default function Board() {
             <div className={b.stage} style={{ width: SW, height: SH, top: TOP, transform: `scale(${scale})` }}>
               <svg className={b.edges} width={SW} height={SH} aria-hidden="true">
                 {EG.map((e, i) => <path key={i} className={clsx(b.edge, e.c)} d={rpath(e.p, 12)} />)}
-                <path className={clsx(b.edge, b.edgeOn, b.edgeSel)} style={now ? undefined : { stroke: 'var(--fg)' }} d={`M${sx + W / 2},${POS[SEL][1] + H} V${SH}`} />
+                <path className={clsx(b.edge, b.edgeOn)} style={now ? undefined : { stroke: 'var(--fg)' }} d={`M${sx + W / 2},${POS[SEL][1] + H} V${SH}`} />
               </svg>
               <span className={b.chip} style={{ left: 330, top: 150 }}>오탐</span>
               <span className={b.chip} style={{ left: 470, top: 132 }}>업무상 필요</span>

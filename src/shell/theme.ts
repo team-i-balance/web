@@ -17,18 +17,3 @@ export function toggleTheme() {
   try { localStorage.setItem(KEY, t) } catch { /* 저장소를 못 쓰면 이번 창에서만 */ }
   emit()
 }
-
-// 디자인 비교: ?look=next·carbon·cloudscape 로 켜고 ?look=old 로 끈다. 이 창 안에서는 주소가 바뀌어도 유지한다.
-export type Look = 'next' | 'carbon' | 'cloudscape'
-const LOOKS: Look[] = ['next', 'carbon', 'cloudscape']
-const LOOK = 'console-look'
-export function initLook() {
-  const q = new URLSearchParams(location.search).get('look')
-  const ok = (v: string | null): v is Look => LOOKS.includes(v as Look)
-  try { if (ok(q)) sessionStorage.setItem(LOOK, q); else if (q) sessionStorage.removeItem(LOOK) } catch { /* 저장소를 못 쓰면 주소만 본다 */ }
-  let v: string | null = q
-  try { if (!q) v = sessionStorage.getItem(LOOK) } catch { /* 위와 같음 */ }
-  if (ok(v)) document.documentElement.dataset.look = v
-}
-export const currentLook = () => document.documentElement.dataset.look as Look | undefined
-export const isNext = () => currentLook() === 'next'

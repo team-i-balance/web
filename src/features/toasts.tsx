@@ -3,7 +3,6 @@ import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Undo2 } from 'lucide-react'
 import { S, emit, useStore } from '../domain/store'
-import { isNext } from '../shell/theme'
 import o from '../ds/overlay.module.css'
 
 export function undoLast() {
@@ -18,7 +17,6 @@ const anim = { initial: { opacity: 0, y: -10, scale: 0.98 }, animate: { opacity:
 export function Toasts() {
   useStore()
   const t = S.ui.toast, u = S.ui.utoast
-  const a = isNext() ? { ...anim, initial: { ...anim.initial, y: 8 } } : anim // 새 디자인은 아래에서 올라온다
   useEffect(() => {
     if (!t) return
     const h = setTimeout(() => { if (S.ui.toast?.id === t.id) { S.ui.toast = null; emit() } }, 2800)
@@ -30,14 +28,14 @@ export function Toasts() {
     return () => clearTimeout(h)
   }, [u?.id])
   return (
-    <div className={o.toasts + (S.ui.guide >= 0 ? ' ' + o.withCoach : '')} role="status" aria-live="polite">
+    <div className={o.toasts} role="status" aria-live="polite">
       <AnimatePresence initial={false}>
-        {u && <motion.div key={'u' + u.id} className={o.toast} {...a}>
+        {u && <motion.div key={'u' + u.id} className={o.toast} {...anim}>
           <span>{u.msg}</span>
           {u.undo && <button type="button" className={o.toastBtn} onClick={undoLast}><Undo2 size={14} />되돌리기<span className={o.toastKbd}>Z</span></button>}
           <i className={o.toastBar} aria-hidden="true" />
         </motion.div>}
-        {t && <motion.div key={'t' + t.id} className={o.toast + ' ' + o.plain} {...a}>{t.msg}</motion.div>}
+        {t && <motion.div key={'t' + t.id} className={o.toast + ' ' + o.plain} {...anim}>{t.msg}</motion.div>}
       </AnimatePresence>
     </div>
   )

@@ -5,8 +5,7 @@ import clsx from 'clsx'
 import { S, emit, useStore, ago, quickClose, reopen, demoReason } from '../../domain/store'
 import { CAUSES, CONCLUSION } from '../../domain/seed'
 import type { Case } from '../../domain/types'
-import { Button, Checkbox, Empty, Id, LinkButton, Segmented, Sentence, Tag, typesOf } from '../../ds'
-import { isNext } from '../../shell/theme'
+import { Button, Checkbox, Empty, LinkButton, Segmented, Sentence, Tag, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
 import { useReviewModel } from './model'
 import { loadCaseDetail, requestReason } from '../../api/cases'
@@ -58,7 +57,7 @@ function Detail({ c }: { c: Case }) {
   const detail = <Button variant="ghost" icon={<SlidersHorizontal size={15} />} onClick={() => openDialog({ kind: 'close', caseId: c.id })}>세부 설정으로 결론</Button>
   const actions = c.status === 'closed' ? <><span /><Button onClick={() => reopen(c)}>다시 열기</Button></>
     : !c.reason ? <>{S.api.live ? <Button variant="ghost" onClick={() => requestReason(c)}>사유 다시 요청</Button> : <Button variant="ghost" onClick={() => demoReason(c)}>사유 도착시키기 · 데모</Button>}<Button variant="primary" onClick={() => openDialog({ kind: 'close', caseId: c.id })}>사유 없이 결론 내기</Button></>
-    : c.need === 'opt' ? <>{detail}<Button danger onClick={() => decide('violation')} kbd="1">위반으로 기록</Button><Button variant={isNext() ? undefined : 'primary'} onClick={() => decide('ok')} kbd="2">문제 없음</Button></>
+    : c.need === 'opt' ? <>{detail}<Button danger onClick={() => decide('violation')} kbd="1">위반으로 기록</Button><Button variant="primary" onClick={() => decide('ok')} kbd="2">문제 없음</Button></>
     : <>{detail}<Button danger onClick={() => decide('violation')} kbd="1">위반으로 기록</Button><Button onClick={() => decide('legit')} kbd="2">이번 건 예외 인정</Button><Button onClick={() => decide('fp')} kbd="3">오탐으로 기록</Button></>
   const tl = [{ t: c.time, who: c.user, what: `${leaked.map(i => i.type).join(', ')} ${c.need === 'req' ? '원문 전송' : '되돌림'}`, quote: null as string | null }, ...c.timeline.map(e => ({ ...e, quote: e.quote ?? null }))]
   return (
@@ -71,7 +70,7 @@ function Detail({ c }: { c: Case }) {
             {x ? <Tag tone={x.k === 'violation' ? 'danger' : x.k === 'legit' ? 'ok' : undefined} dot>{CONCLUSION[x.k][0]}</Tag> : c.reason ? <Tag tone="now" dot>결론 차례</Tag> : <Tag dot>사유 대기</Tag>}
           </div>
           <h2>{c.user} 님이 {leaked.map(i => i.type).join(', ')} 원문을 {c.ev.ai === 'AI 미전송' ? 'AI' : c.ev.ai}에 보냈어요</h2>
-          <div className={r.metaT}>{c.dept} · <Id>{fmt(c.time)}</Id> ({ago(c.time)}){c.ev.ver ? <> · 정책 <Id>{c.ev.ver}</Id></> : ''}{isNext() && <> · <Id>{c.id}</Id></>}</div>
+          <div className={r.metaT}>{c.dept} · {fmt(c.time)} ({ago(c.time)}){c.ev.ver ? ` · 정책 ${c.ev.ver}` : ''}</div>
         </div>
       </div>
       <div className={r.dbody}>
@@ -102,7 +101,7 @@ function Detail({ c }: { c: Case }) {
         <div className={r.col}>
           <section className={r.sec}><h3>사건 경로</h3><Path c={c} /></section>
           <section className={r.sec}><h3>처리 기록</h3>
-            <ol className={r.tl}>{tl.map((e, i) => <li key={i} className={r.tli}><span><Id>{fmt(e.t)}</Id> · {e.who}</span><b>{e.what}</b>{e.quote && <q>{e.quote}</q>}</li>)}</ol></section>
+            <ol className={r.tl}>{tl.map((e, i) => <li key={i} className={r.tli}><span>{fmt(e.t)} · {e.who}</span><b>{e.what}</b>{e.quote && <q>{e.quote}</q>}</li>)}</ol></section>
         </div>
       </div>
       <div className={r.foot}>{actions}</div>

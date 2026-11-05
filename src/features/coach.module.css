@@ -9,13 +9,3 @@
 .dots i[data-done] { background: var(--line-2); }
 .dots i[data-on] { background: var(--acc); }
 @media (max-width: 860px) { .card { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); } }
-
-/* ── 새 디자인(?look=next) */
-:global([data-look='next']) .spot { border-radius: 6px; box-shadow: 0 0 0 2px var(--acc), 0 0 0 9999px rgba(12, 14, 18, 0.42); }
-:global([data-look='next']) .card { padding: 16px; gap: 6px; border-radius: 6px; }
-:global([data-look='next']) .h { font-weight: 500; color: var(--sub); font-family: var(--mono); }
-:global([data-look='next']) .t { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-:global([data-look='next']) .x { font-size: 13px; }
-:global([data-look='next']) .dots { gap: 4px; }
-:global([data-look='next']) .dots i { width: 6px; height: 6px; border-radius: 50%; }
-:global([data-look='next']) .dots i[data-on] { background: var(--acc); }
