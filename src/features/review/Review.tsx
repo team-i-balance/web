@@ -155,7 +155,7 @@ export default function Review({ id: idArg }: { id?: string }) {
           {!list.length ? <Empty icon={<Inbox size={20} />} title={tab === 'closed' ? '종결한 건이 없어요' : '검토할 건이 없어요'} />
             : tab === 'req' ? <>
               {ready.length > 0 && <><div className={r.lh}>사유 도착 · 지금 결론<span className="num">{ready.length}</span></div>{rows(ready)}</>}
-              {wait.length > 0 && <><div className={r.lh}>사유 기다리는 중<span className="num">{wait.length}</span></div>{rows(wait)}</>}
+              {wait.length > 0 && <><div className={r.lh}>사유 없음<span className="num">{wait.length}</span></div>{rows(wait)}</>}
             </> : rows(list)}
         </div>
       </section>

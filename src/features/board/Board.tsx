@@ -69,7 +69,7 @@ export default function Board() {
     { id: 'raw', l: '원문 전송', v: raw, s: '원문 그대로·되돌림', danger: raw > 0, go: 'req' as Queue },
     { id: 'fp', l: '오탐 신고', v: fps.length, s: '잘못 잡힌 값', q: 'fp' as Queue },
     { id: 'opt', l: '선택 검토', v: opt.length, s: '사유 남기고 보냄', q: 'opt' as Queue },
-    { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 대기 ${wait.length}` : '사유 없이 보냄', q: 'req' as Queue },
+    { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 없음 ${wait.length}` : '사유 없이 보냄', q: 'req' as Queue },
     { id: 'pol', l: '재발 방지 배포', v: P.changes.length ? `대기 ${P.changes.length}` : P.version, s: P.changes.length ? '서명 후 배포' : pc ?? (live ? '' : '연결 안 됨'), q: 'pol' as Queue },
   ]
   // 고른 대기열까지 들어오는 길은 강조색으로 이어 보인다
@@ -129,7 +129,7 @@ export default function Board() {
       </div>
     ) : empty(SEL === 'req' ? '결론 낼 건이 없어요' : '확인할 건이 없어요')
     side = <>
-      {(Q as Case[]).filter(x => x !== c).map(x => <button key={x.id} type="button" className={clsx(b.nx, SEL === 'req' && !x.reason && b.wait)} data-pick={x.id} onClick={() => pickItem(x.id)}><b>{x.user}<small>{ago(x.time)}</small></b><span>{types(x)} → {x.ev.ai}{SEL === 'req' && !x.reason && ' · 사유 기다리는 중'}</span></button>)}
+      {(Q as Case[]).filter(x => x !== c).map(x => <button key={x.id} type="button" className={clsx(b.nx, SEL === 'req' && !x.reason && b.wait)} data-pick={x.id} onClick={() => pickItem(x.id)}><b>{x.user}<small>{ago(x.time)}</small></b><span>{types(x)} → {x.ev.ai}{SEL === 'req' && !x.reason && ' · 사유 없음'}</span></button>)}
     </>
   } else if (SEL === 'fp') {
     const g = cur as FpGroup | null
