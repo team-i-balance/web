@@ -74,7 +74,7 @@ export default function Policy() {
           <div className={p.tbox}><table className={T}><thead><tr><th>사용</th><th>항목</th><th>등급</th><th title={LEGEND}>변환 방식</th><th>결과 예시</th><th className="num">원문 전송 · 7일</th></tr></thead><tbody>
             {P.entities.map((e, i) => <tr key={e.name} data-off={!e.on || undefined}>
               <td><Switch checked={e.on} label={`${e.name} 탐지`} onChange={v => setEntityOn(i, v)} /></td>
-              <td className={p.name}>{e.name}</td>
+              <td className={p.name} title={e.name === '주민등록번호' ? '서버는 운전면허 등 다른 식별번호도 이 항목으로 잡아요. 끄면 함께 꺼져요' : undefined}>{e.name}{e.name === '주민등록번호' && <small className={p.sub}> · 다른 식별번호 포함</small>}</td>
               <td><Select quiet value={e.grade} aria-label={`${e.name} 등급`} onChange={x => setEntityGrade(i, x.target.value as 'O' | 'S' | 'C')}>{(['O', 'S', 'C'] as const).map(g => <option key={g} value={g}>{GRADE[g]}</option>)}</Select></td>
               <td>{e.grade === 'S'
                 ? <Select quiet value={e.method} aria-label={`${e.name} 변환 방식`} onChange={x => setEntityMethod(i, x.target.value as Method)}>{METHODS.filter(m => m !== '일반화' || GENERALIZABLE.has(e.name) || e.method === m).map(m => <option key={m}>{m}</option>)}</Select>

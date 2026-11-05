@@ -191,7 +191,7 @@ function Server() {
       <KV rows={[
         ['주소', a.base === '/api' ? '같은 주소 프록시 → 백엔드' : a.base],
         ['불러온 시각', a.synced ? fmt(a.synced) : '—'],
-        ['실시간 갱신', a.stale ? '서버 응답이 없어 다시 시도하는 중' : `${EVERY / 1000}초마다 변경 확인`],
+        ['실시간 갱신', a.stale ? '멈춤 · 서버 응답이 없거나 인증이 끊겼어요. 다시 불러오기를 눌러 주세요' : `${EVERY / 1000}초마다 변경 확인`],
         ['최근 7일', `${a.count}건${a.truncated ? ' (너무 많아 일부만 불러옴)' : ''}`],
         ...(st ? [['최근 7일 서버 집계', `${st.total}건`], ['수용률 · 되돌림률', `${pct(st.acceptance_rate)} · ${pct(st.revert_rate)}`]] as [string, string][] : []),
       ]} />

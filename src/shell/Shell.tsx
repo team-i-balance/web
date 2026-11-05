@@ -106,7 +106,7 @@ function Palette() {
         <Command.List className={sh.palList}>
           <Command.Empty className={sh.palEmpty}>찾는 게 없어요</Command.Empty>
           {nx && <Command.Group heading="지금 할 일" className={sh.palGroup}>
-            <Command.Item className={sh.palItem} onSelect={run(() => { S.ui.sel = nx; go('home'); emit() })}><ArrowRight size={16} />{QUEUE_NAME[nx]} {w[nx]}건 처리하기</Command.Item>
+            <Command.Item className={sh.palItem} onSelect={run(() => { S.ui.sel = nx; go('home'); emit() })}><ArrowRight size={16} />{QUEUE_NAME[nx]} {w[nx]}{nx === 'pol' ? '개 변경' : '건'} 처리하기</Command.Item>
           </Command.Group>}
           <Command.Group heading="화면" className={sh.palGroup}>
             {(Object.keys(ROUTE_NAME) as Route[]).map(k => <Command.Item key={k} value={'화면 ' + ROUTE_NAME[k]} className={sh.palItem} onSelect={run(() => go(k))}>{ICON[k]}{ROUTE_NAME[k]}</Command.Item>)}

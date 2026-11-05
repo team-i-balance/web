@@ -18,7 +18,8 @@ export function useBoardModel() {
   const SEL = S.ui.sel, lastPub = S.ui.lastPub, now = work[SEL] > 0
   const pc = serverStatus(), behind = serverBehind()
   const loading = S.api.state === 'connecting'
-  const serverEmpty = S.api.live && !S.api.count
+  // 최근 7일 입력이 없어도 열린 검토 건·오탐 신고가 남아 있으면 '비어 있음'이 아니다
+  const serverEmpty = S.api.live && !S.api.count && !S.cases.some(c => c.status === 'open') && !fpGroups(true).length
 
   // ── 대기열과 지금 한 건
   type QItem = Case | FpGroup | typeof P.changes
