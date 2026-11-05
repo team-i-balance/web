@@ -1,13 +1,12 @@
 // 현황: 기간(7일·30일) 동안 AI 입력·변환·원문 전송·되돌림. 서버에 없는 필드(대상 AI·부서)는 차트를 숨긴다.
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { S, useStore } from '../../domain/store'
-import { QUEUE_KO, periodStats } from '../../api/client'
-import type { ServerStats } from '../../domain/store'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { useStore } from '../../domain/store'
+import { QUEUE_KO } from '../../api/client'
+import { useInsightsModel } from './model'
 import { Button, Segmented, Tag } from '../../ds'
 import { pad, pct } from '../../lib/util'
 import i from './insights.module.css'
 
-const DAY = 864e5
 const GRADE_KO = { O: '공개', S: '민감', C: '기밀' } as const
 const ACT_KO: Record<string, string> = { sent: '변환해서 보냄', raw: '원문 그대로 보냄', revert: '원문으로 되돌림', cancel: '보내지 않음', block: '기밀 차단', pass: '그대로 보냄' }
 const ACTION_KO: Record<string, string> = { send_transformed: '변환해서 보냄', send_as_is: '원문 그대로 보냄', revert_original: '원문으로 되돌림', cancel: '보내지 않음' }
@@ -50,29 +49,11 @@ export default function Insights() {
   useStore()
   const [span, setSpan] = useState<'7' | '30'>('7')
   const [more, setMore] = useState(20)
-  const n = +span, end = new Date(S.now), from = new Date(+end - n * DAY)
-  const E = S.events.filter(e => e.time >= from && e.time <= end)
-  const days = Array.from({ length: n }, (_, j) => {
-    const d0 = new Date(end.getFullYear(), end.getMonth(), end.getDate() - (n - 1 - j)), d1 = new Date(+d0 + DAY)
-    const es = E.filter(e => e.time >= d0 && e.time < d1)
-    return { d: d0, n: es.length, raw: es.filter(e => e.action === 'raw').length }
-  })
-  const sens = E.filter(e => e.grade === 'S'), raw = E.filter(e => e.action === 'raw').length
-  const items = sens.flatMap(e => e.items)
-  const rev = items.filter(x => x.status === 'revert').length
-  const byType = Object.entries(items.reduce<Record<string, { n: number; rev: number }>>((m, x) => { const b = (m[x.type] ||= { n: 0, rev: 0 }); b.n++; if (x.status === 'revert' || x.status === 'raw') b.rev++; return m }, {}))
-    .sort((a, b) => b[1].n - a[1].n).slice(0, 8)
-  const tmax = Math.max(1, ...byType.map(([, b]) => b.n))
-  const byAi = Object.entries(E.filter(e => e.ai !== 'AI 미전송').reduce<Record<string, number>>((m, e) => ((m[e.ai] = (m[e.ai] || 0) + 1), m), {})).sort((a, b) => b[1] - a[1])
-  const amax = Math.max(1, ...byAi.map(([, v]) => v))
-  // 서버 통계는 고른 기간으로 다시 받는다
-  const [pst, setPst] = useState<ServerStats | null>(null)
-  useEffect(() => { if (S.api.live) periodStats(n).then(setPst, () => setPst(null)) }, [n, S.api.synced])
-  const st = S.api.live ? pst ?? S.api.stats : null
+  const { n, end, from, E, days, sens, raw, items, rev, byType, tmax, byAi, amax, st, live } = useInsightsModel(span)
   return (
     <div className={i.wrap}>
       <div className={i.head}>
-        <div><h1>현황</h1><p>{md(from)} – {md(end)} · {S.api.live ? '서버 데이터' : '예시 데이터'} · {pad(end.getHours())}:{pad(end.getMinutes())} 기준</p></div>
+        <div><h1>현황</h1><p>{md(from)} – {md(end)} · {live ? '서버 데이터' : '예시 데이터'} · {pad(end.getHours())}:{pad(end.getMinutes())} 기준</p></div>
         <Segmented label="기간" value={span} onChange={setSpan} items={[{ k: '7', t: '7일' }, { k: '30', t: '30일' }]} />
       </div>
       <div className={i.tiles}>
@@ -105,7 +86,7 @@ export default function Insights() {
             {st.by_action && <div className={i.queues}>{Object.entries(st.by_action).map(([k, v]) => <div key={k} className={i.q}>{ACTION_KO[k] || k}<b>{v}</b></div>)}</div>}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}><Tag>수용률 {Math.round(st.acceptance_rate * 100)}%</Tag><Tag>되돌림률 {Math.round(st.revert_rate * 100)}%</Tag>{st.evasion_suspect > 0 && <Tag tone="warn">회피 의심 {st.evasion_suspect}</Tag>}</div>
           </section>}
-          {S.api.live && byAi.length === 0 && <p className={i.note}>대상 AI는 서버 이벤트에 값이 있을 때만 보여요.</p>}
+          {live && byAi.length === 0 && <p className={i.note}>대상 AI는 서버 이벤트에 값이 있을 때만 보여요.</p>}
         </div>
       </div>
       <section className={i.card} id="recent" aria-label="최근 입력">

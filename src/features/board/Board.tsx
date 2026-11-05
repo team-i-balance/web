@@ -3,11 +3,12 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { motion } from 'motion/react'
 import { ChevronRight, Inbox, RefreshCw, CircleCheck, Database } from 'lucide-react'
 import clsx from 'clsx'
-import { S, emit, useStore, openOf, fpGroups, groupKey, boardWork, QUEUE_ORDER, QUEUE_NAME, ago, ent, quickClose, fpKeep, demoReason, advanceBoard, closeCase, undoToast, hooks, type Queue } from '../../domain/store'
+import { S, useStore, groupKey, QUEUE_ORDER, QUEUE_NAME, ago, ent, demoReason, advanceBoard, type Queue } from '../../domain/store'
+import { useBoardModel } from './model'
 import type { Case, FpGroup } from '../../domain/types'
 import { connect } from '../../api/client'
-import { acksNow, pcStatus, refreshAcks } from '../../api/policy'
-import { Button, DecideButton, Empty, LinkButton, Sentence, Skeleton, StepBar, Tag, typesOf, type Step } from '../../ds'
+import { refreshAcks } from '../../api/policy'
+import { Button, DecideButton, Empty, LinkButton, Sentence, Skeleton, StepBar, Tag, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
 import { partial, rpath } from '../../lib/util'
 import b from './board.module.css'
@@ -41,53 +42,8 @@ export default function Board() {
   const placed = useRef(false)
   useEffect(() => { if (vw > 0) requestAnimationFrame(() => { placed.current = true }) }, [vw > 0])
 
-  // ── 데이터
-  const wk = new Date(+S.now - 7 * 864e5)
-  const E = S.events.filter(e => e.time >= wk), n = (f: (e: (typeof E)[number]) => boolean) => E.filter(f).length
-  const pub = n(e => e.grade === 'O'), conf = n(e => e.grade === 'C'), sens = n(e => e.grade === 'S'), raw = n(e => e.action === 'raw')
-  const req = openOf('req'), ready = req.filter(c => c.reason).sort((a, b2) => +b2.time - +a.time), wait = req.filter(c => !c.reason)
-  const opt = openOf('opt').sort((a, b2) => +b2.time - +a.time), fps = fpGroups(true), P = S.policy
-  const fresh = P.learned.filter(r => r.live && r.fresh).map(r => r.type)
-  const caught = fresh.length ? E.filter(e => e.action === 'raw' && e.items.some(i => i.status === 'raw' && fresh.includes(i.type))).length : 0
-  const work = boardWork()
-  if (!S.ui.sel) S.ui.sel = QUEUE_ORDER.find(k => work[k]) || 'req'
-  const SEL = S.ui.sel, lastPub = S.ui.lastPub, now = work[SEL] > 0
-  const acks = acksNow(), pc = pcStatus()
-  const loading = S.api.state === 'connecting'
-  const serverEmpty = S.api.live && !S.api.count
-
-  // ── 대기열과 지금 한 건
-  type QItem = Case | FpGroup | typeof P.changes
-  const Q: QItem[] = ({ req: ready, opt, fp: fps, pol: P.changes.length ? [P.changes] : [] } as Record<Queue, QItem[]>)[SEL] || []
-  const keyOf = (x: QItem) => (SEL === 'fp' ? groupKey(x as FpGroup) : SEL === 'pol' ? 'pol' : (x as Case).id)
-  const cur = Q.find(x => keyOf(x) === S.ui.cur[SEL]) || Q[0] || null
-  if (cur) S.ui.cur[SEL] = keyOf(cur)
-  const ci = cur ? Q.indexOf(cur) : -1
-  const eff = SEL === 'pol' && !!lastPub && fresh.length > 0 && !P.changes.length
-
-  const steps: Step[] | null = !cur && SEL !== 'pol' ? null : ({
-    req: [['원문 전송', 'done'], ['사유 도착', 'done'], ['판단', 'now'], ['규칙 배포', 'next'], ['PC 적용', 'next']],
-    opt: [['되돌림', 'done'], ['사유 남김', 'done'], ['확인', 'now'], ['종결', 'next']],
-    fp: [['오탐으로 되돌림', 'done'], ['판단', 'now'], ['배포', 'next'], ['PC 적용', 'next']],
-    pol: eff ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'done'], ['PC 적용', 'now']]
-      : P.changes.length ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'now'], ['PC 적용', 'next']]
-      : [['서명 후 배포', 'done'], ['PC 적용', acks && !acks.applied ? 'now' : 'done']],
-  } as Record<Queue, Step[]>)[SEL]
-
-  // ── 처리
-  const act = (fn: () => void) => { fn(); advanceBoard() }
-  // 사라지는 중인 카드에서 눌러도 이미 처리한 건은 다시 처리하지 않는다
-  const decideCase = (c: Case, k: 'violation' | 'legit' | 'fp' | 'ok') => { if (c.status === 'open') act(() => quickClose(c, k)) }
-  const keepFp = (g: FpGroup) => { if (g.refs.some(r => r.it.fp === 'open')) act(() => fpKeep(g)) }
-  const select = (q: Queue) => { S.ui.sel = q; emit() }
-  const pickItem = (k: string) => { S.ui.cur[SEL] = k; emit() }
-  const allOk = () => {
-    const list = [...opt]
-    list.forEach(c => closeCase(c, { k: 'legit', cause: null, memo: '사유 확인 — 업무 범위 내 사용', rule: null }, false))
-    hooks.closeMany?.(list)
-    undoToast(`선택 검토 ${list.length}건 문제 없음`, () => { list.forEach(c => { c.status = 'open'; c.close = null; c.timeline.pop(); hooks.reopen?.(c, true) }); S.ui.sel = 'opt' })
-    advanceBoard()
-  }
+  const { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, sens, raw, req, ready, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, acks, pc, loading, serverEmpty,
+    Q, keyOf, cur, ci, eff, steps, decideCase, keepFp, select, pickItem, allOk } = useBoardModel()
 
   // ── 단축키: 1·2·3 판단, ↑↓ 다른 건, Z 되돌리기
   useEffect(() => {
@@ -172,7 +128,7 @@ export default function Board() {
       {SEL === 'req' && wait.length > 0 && <>
         <div className={b.sideH}>사유 기다리는 중 <span>{wait.length}</span></div>
         {wait.map(x => <div key={x.id} className={clsx(b.nx, b.wait)}><b>{x.user}<small>{ago(x.time)}</small></b><span>{types(x)} → {x.ev.ai}</span>
-          <div className={b.row}>{S.api.live
+          <div className={b.row}>{live
             ? <Button size="sm" onClick={() => openDialog({ kind: 'close', caseId: x.id })}>사유 없이 결론</Button>
             : <Button size="sm" variant="ghost" onClick={() => demoReason(x)}>사유 도착시키기 · 데모</Button>}</div></div>)}
       </>}
@@ -196,19 +152,19 @@ export default function Board() {
     side = (Q as FpGroup[]).filter(x => x !== g).map(x => <button key={groupKey(x)} type="button" className={b.nx} data-pick={groupKey(x)} onClick={() => pickItem(groupKey(x))}><b>{partial(x.type, x.value)}<small>{x.refs.length}회</small></b><span>{x.type}</span></button>)
   } else {
     sideTitle = '자동 변환 규칙'
-    const pcRow = pc && <div className={b.row}><Tag tone={acks?.rejected ? 'warn' : acks?.applied ? 'ok' : undefined} dot>{pc}</Tag>{S.api.live && <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={() => refreshAcks()}>새로고침</Button>}</div>
+    const pcRow = pc && <div className={b.row}><Tag tone={acks?.rejected ? 'warn' : acks?.applied ? 'ok' : undefined} dot>{pc}</Tag>{live && <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={() => refreshAcks()}>새로고침</Button>}</div>
     body = eff ? (
       <div className={b.pb}>
         <div className={b.big}>원문 전송 {raw} → <em>{raw - caught}</em></div>
         <p style={{ color: 'var(--sub)' }}>{lastPub} 배포 · 지난 7일에 이 규칙이 있었다면</p>
         {pcRow}
-        <div className={b.row} style={{ marginTop: 8 }}><Button variant="primary" onClick={() => { S.ui.lastPub = null; advanceBoard() }}>다음 할 일<ChevronRight size={15} /></Button></div>
+        <div className={b.row} style={{ marginTop: 8 }}><Button variant="primary" onClick={finishEffect}>다음 할 일<ChevronRight size={15} /></Button></div>
       </div>
     ) : P.changes.length ? (
       <div className={b.pb}>
         <div className={b.changes}>{P.changes.map((c, i) => <div key={i} className={b.change}>{c.what}<em>{c.src}</em></div>)}</div>
         <div className={b.row} style={{ marginTop: 8 }}>
-          <Button variant="now" size="lg" data-coach="publish" onClick={() => openDialog({ kind: 'publish', onDone: () => { S.ui.lastPub = S.policy.version; emit() } })}>서명 후 배포하기</Button>
+          <Button variant="now" size="lg" data-coach="publish" onClick={() => openDialog({ kind: 'publish', onDone: publishDone })}>서명 후 배포하기</Button>
           <Button variant="ghost" onClick={() => { location.hash = 'policy' }}>정책에서 보기</Button>
         </div>
       </div>
@@ -225,7 +181,7 @@ export default function Board() {
   return (
     <div className={b.board}>
       <section className={b.flow} aria-label="흐름도" data-coach="flow">
-        <div className={b.flowHead}>흐름 · 최근 7일{S.api.live && S.api.includeTest && <Tag tone="warn">시험 이벤트 포함</Tag>}{S.api.truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
+        <div className={b.flowHead}>흐름 · 최근 7일{live && includeTest && <Tag tone="warn">시험 이벤트 포함</Tag>}{truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
         <div className={b.scroller} ref={scroller} onScroll={e => setScrollX(e.currentTarget.scrollLeft)}>
           <div className={b.stageBox} style={{ width: boxW, height: SH * scale + TOP, marginLeft: off, marginRight: off }}>
             <div className={b.stage} style={{ width: SW, height: SH, top: TOP, transform: `scale(${scale})` }}>

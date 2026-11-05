@@ -1,7 +1,8 @@
 // 오탐 신고: 직원이 "오탐"으로 되돌린 값을 값별로 묶어 처리한다. 여러 값을 골라 한 번에 "탐지 결과 유지"할 수 있다.
 import { Fragment, useState } from 'react'
 import { ChevronDown, Flag } from 'lucide-react'
-import { S, emit, useStore, fpGroups, groupKey, caseById, undoToast, ago } from '../../domain/store'
+import { useStore, groupKey, caseById, ago } from '../../domain/store'
+import { useFpModel } from './model'
 import type { FpGroup } from '../../domain/types'
 import { Button, Checkbox, Empty, LinkButton, Segmented, Tag } from '../../ds'
 import { openDialog } from '../dialogs'
@@ -13,33 +14,22 @@ const sentence = (g: FpGroup, n = 0) => { const r = g.refs[n]; return r.e.tpl.re
 
 export default function FalsePositives() {
   useStore()
-  const tab = S.ui.fpTab
+  const { tab, groups, picked, sel, all, keep, toggle, setTab, counts, clear, toggleAll } = useFpModel()
   const [open, setOpen] = useState<string | null>(null)
-  const groups = fpGroups(tab === 'open')
-  const picked = S.ui.fpPicked
-  const live = new Set(groups.map(groupKey)), sel = [...picked].filter(k => live.has(k))
-  const all = sel.length === groups.length && groups.length > 0
-  const keep = (gs: FpGroup[]) => {
-    gs.forEach(g => g.refs.forEach(r => (r.it.fp = 'keep')))
-    picked.clear()
-    undoToast(gs.length > 1 ? `${gs.length}개 값 · 탐지 결과 유지` : `${partial(gs[0].type, gs[0].value)} · 탐지 결과 유지`, () => gs.forEach(g => g.refs.forEach(r => (r.it.fp = 'open'))))
-  }
-  const toggle = (k: string, v: boolean) => { v ? picked.add(k) : picked.delete(k); emit() }
-  const setTab = (t: 'open' | 'done') => { S.ui.fpTab = t; picked.clear(); emit() }
   return (
     <section className={f.page} aria-label="오탐 신고">
       <div className={f.head}>
         <div><h1>오탐 신고</h1><p>직원이 "개인정보 아님"으로 되돌린 값이에요. 값마다 탐지를 유지할지 제외할지 정해요.</p></div>
-        <Segmented label="상태" value={tab} onChange={setTab} items={[{ k: 'open', t: '처리할 신고', n: fpGroups(true).length }, { k: 'done', t: '처리함', n: fpGroups(false).length }]} />
+        <Segmented label="상태" value={tab} onChange={setTab} items={[{ k: 'open', t: '처리할 신고', n: counts.open }, { k: 'done', t: '처리함', n: counts.done }]} />
       </div>
       {tab === 'open' && sel.length > 0 && <div className={f.bulk} role="region" aria-label="고른 값 처리">
         <b>{sel.length}개 골랐어요</b>
-        <Button size="sm" variant="ghost" onClick={() => { picked.clear(); emit() }}>해제</Button>
+        <Button size="sm" variant="ghost" onClick={clear}>해제</Button>
         <Button size="sm" variant="primary" onClick={() => keep(groups.filter(g => sel.includes(groupKey(g))))}>{sel.length}개 탐지 결과 유지</Button>
       </div>}
       {groups.length ? <div className={f.scroll}><table className={f.t}>
         <thead><tr>
-          {tab === 'open' && <th className={f.pick}><Checkbox checked={all ? true : sel.length ? 'indeterminate' : false} label="모두 고르기" onChange={() => { all ? picked.clear() : groups.forEach(g => picked.add(groupKey(g))); emit() }} /></th>}
+          {tab === 'open' && <th className={f.pick}><Checkbox checked={all ? true : sel.length ? 'indeterminate' : false} label="모두 고르기" onChange={toggleAll} /></th>}
           <th>잡힌 값</th><th>신고</th><th>나온 문장</th><th style={{ textAlign: 'right' }}>{tab === 'open' ? '처리' : '결과'}</th>
         </tr></thead>
         <tbody>{groups.map(g => {

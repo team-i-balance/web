@@ -2,20 +2,16 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Inbox, SlidersHorizontal } from 'lucide-react'
 import clsx from 'clsx'
-import { S, emit, useStore, caseById, openOf, ago, quickClose, reopen, demoReason } from '../../domain/store'
+import { S, emit, useStore, ago, quickClose, reopen, demoReason } from '../../domain/store'
 import { CAUSES, CONCLUSION } from '../../domain/seed'
 import type { Case } from '../../domain/types'
 import { Button, Checkbox, Empty, LinkButton, Segmented, Sentence, Tag, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
+import { useReviewModel } from './model'
 import { loadCaseDetail } from '../../api/cases'
 import { fmt, partial } from '../../lib/util'
 import r from './review.module.css'
 
-type Tab = 'req' | 'opt' | 'closed'
-function listOf(tab: Tab) {
-  return S.cases.filter(c => (tab === 'closed' ? c.status === 'closed' : c.need === tab && c.status === 'open'))
-    .sort(tab === 'closed' ? (a, b) => +b.close!.at - +a.close!.at : tab === 'req' ? (a, b) => (+!!b.reason - +!!a.reason) || +b.time - +a.time : (a, b) => +b.time - +a.time)
-}
 const useWide = () => {
   const [w, setW] = useState(innerWidth > 1100)
   useEffect(() => { const f = () => setW(innerWidth > 1100); addEventListener('resize', f); return () => removeEventListener('resize', f) }, [])
@@ -116,13 +112,7 @@ function Detail({ c }: { c: Case }) {
 export default function Review({ id: idArg }: { id?: string }) {
   useStore()
   const wide = useWide()
-  if (idArg) { const c = caseById(idArg); if (c) S.ui.rqTab = c.status === 'closed' ? 'closed' : c.need }
-  const tab = S.ui.rqTab
-  const list = listOf(tab)
-  const id = idArg || (wide && list[0] ? list[0].id : undefined)
-  const c = id ? caseById(id) : undefined
-  const ready = list.filter(x => x.reason), wait = list.filter(x => !x.reason)
-  const picked = [...S.ui.picked].filter(k => list.some(x => x.id === k))
+  const { tab, list, c, ready, wait, picked, setTab, count, anyReady } = useReviewModel(idArg, wide)
 
   // ↑↓·j/k 목록 이동, 1·2·3 판단, Z 되돌리기
   useEffect(() => {
@@ -146,8 +136,6 @@ export default function Review({ id: idArg }: { id?: string }) {
     return () => removeEventListener('keydown', f)
   }, [])
 
-  const setTab = (k: Tab) => { S.ui.rqTab = k; S.ui.picked.clear(); if (location.hash === '#review') emit(); else location.hash = 'review' }
-  const count = (k: Tab) => (k === 'closed' ? S.cases.filter(x => x.status === 'closed').length : openOf(k).length)
   const rows = (xs: Case[]) => xs.map(x => <Row key={x.id} x={x} on={x.id === c?.id} pick={tab === 'opt'} />)
   return (
     <div className={clsx(r.wrap, idArg && r.has)}>
@@ -155,7 +143,7 @@ export default function Review({ id: idArg }: { id?: string }) {
         <div className={r.listH}>
           <h1>위반 검토</h1>
           <Segmented label="목록" value={tab} onChange={setTab} items={[
-            { k: 'req', t: '필수', n: count('req'), now: openOf('req').some(x => x.reason) }, { k: 'opt', t: '선택', n: count('opt') }, { k: 'closed', t: '종결', n: count('closed') }]} />
+            { k: 'req', t: '필수', n: count('req'), now: anyReady }, { k: 'opt', t: '선택', n: count('opt') }, { k: 'closed', t: '종결', n: count('closed') }]} />
         </div>
         {tab === 'opt' && picked.length > 0 && <div className={r.bulk}><b>{picked.length}건 골랐어요</b>
           <Button size="sm" variant="ghost" onClick={() => { S.ui.picked.clear(); emit() }}>해제</Button>
