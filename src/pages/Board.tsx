@@ -201,7 +201,9 @@ export default function Board() {
       {(Q as Case[]).filter(x => x !== c).map(x => <button key={x.id} className="nx" data-pick={x.id} onClick={() => pickItem(x.id)}><b>{x.user}</b><span>{types(x)} → {x.ev.ai}</span><em>{ago(x.time)}</em></button>)}
       {SEL === 'req' && wait.length > 0 && <>
         <div className="nx-h">사유 대기 {wait.length}</div>
-        {wait.map(x => <div key={x.id} className="nx dim"><b>{x.user}</b><span>{types(x)} → {x.ev.ai}</span>{!S.api.live && <button className="btn sm ghost" onClick={() => demoReason(x)}>사유 도착시키기 · 데모</button>}</div>)}
+        {wait.map(x => <div key={x.id} className="nx dim"><b>{x.user}</b><span>{types(x)} → {x.ev.ai}</span>{S.api.live
+          ? <button className="btn sm ghost" onClick={() => openDialog({ kind: 'close', caseId: x.id })}>사유 없이 결론</button>
+          : <button className="btn sm ghost" onClick={() => demoReason(x)}>사유 도착시키기 · 데모</button>}</div>)}
       </>}
     </>
   } else if (SEL === 'fp') {

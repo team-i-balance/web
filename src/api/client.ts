@@ -49,7 +49,7 @@ function fromServer(ev: ServerEvent): AiEvent {
     reason: action === 'revert' ? rsn : null, fp: action === 'revert' && rsn === '오탐' ? 'open' : null }))
   const h = (ev.content_hash || String(ev.id)).slice(0, 4)
   return { id: String(ev.id), time: new Date(ev.created_at), user: `직원 ${h}`, dept: '부서 미전송', ai: 'AI 미전송', file: null,
-    tpl: items.map((_, i) => `{${i}}`).join(' · ') + (items.length ? ' — 본문은 서버에 저장하지 않아요' : ''), items, grade, action,
+    tpl: '본문은 서버에 저장하지 않아요', items, grade, action,
     conf: ev.detection_confidence === 'high' ? 0.95 : 0.6, ver: S.policy.version, server: ev }
 }
 function casesFrom(events: AiEvent[]): Case[] {
