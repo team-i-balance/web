@@ -1,0 +1,35 @@
+.page { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); }
+.head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 22px 24px 16px; }
+.head h1 { font-size: var(--t-24); font-weight: 700; }
+.head p { color: var(--sub); font-size: var(--t-13); margin-top: 2px; }
+.head > :last-child { margin-left: auto; }
+.bulk { display: flex; align-items: center; gap: 8px; margin: 0 24px 12px; padding: 8px 8px 8px 14px; border-radius: var(--r-md); background: var(--well); font-size: var(--t-13); }
+.bulk b { margin-right: auto; }
+.scroll { flex: 1; overflow: auto; padding: 0 12px 12px; }
+.t { width: 100%; font-size: var(--t-14); }
+.t th { position: sticky; top: 0; z-index: 1; background: var(--surface); text-align: left; font-size: var(--t-12); font-weight: 600; color: var(--mute); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.t td { padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.t tr:last-child td { border-bottom: 0; }
+.t tbody tr { transition: background var(--d-1) var(--ease); }
+.t tbody tr:hover { background: var(--surface-2); }
+.t tr[data-picked] { background: var(--well); }
+.pick { width: 40px; }
+.val { display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
+.val b { font-size: var(--t-15); }
+.val span { font-size: var(--t-12); color: var(--mute); }
+.cnt { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cnt b { font-size: var(--t-15); }
+.cnt span { color: var(--mute); font-size: var(--t-12); margin-left: 4px; }
+.sent { color: var(--sub); font-size: var(--t-13); max-width: 420px; }
+.sent a { display: inline-block; margin-top: 4px; font-size: var(--t-12); color: var(--mute); }
+.acts { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; }
+@media (max-width: 900px) {
+  .t thead { display: none; }
+  .t, .t tbody, .t tr, .t td { display: block; }
+  .t tr { position: relative; padding: 14px 12px 14px 48px; border-bottom: 1px solid var(--line); }
+  .t td { padding: 0; border: 0; margin-bottom: 8px; }
+  .t td.pick { position: absolute; left: 14px; top: 16px; width: auto; }
+  .acts { justify-content: flex-start; flex-wrap: wrap; }
+  .head { padding: 18px 16px 12px; }
+  .bulk { margin: 0 16px 12px; }
+}

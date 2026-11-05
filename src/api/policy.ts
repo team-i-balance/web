@@ -63,9 +63,31 @@ export async function publishToServer(): Promise<string> {
 
 export async function refreshAcks() { await loadAcks(); emit() }
 
+// 예시 데이터 모드의 PC 적용 현황: 40대 중 38대 적용, 2대는 모델이 옛 버전이라 거부
+type Acks = NonNullable<NonNullable<typeof S.api.pol>['acks']>
+let demo: Acks = { devices: 40, applied: 38, rejected: 2, reject_reasons: { model_mismatch: 2 } }
+export const acksNow = (): Acks | null => (S.api.live ? S.api.pol?.acks ?? null : demo)
+export const reasonKo = (k: string) => REASON_KO[k] || k
+
+// 예시 데이터에서 배포하면 PC들이 몇 초에 걸쳐 새 정책을 받아 가는 모습을 보여 준다
+let sim = 0
+export function simulateDemoAcks() {
+  clearInterval(sim)
+  demo = { devices: 40, applied: 0, rejected: 0, reject_reasons: {} }
+  emit()
+  sim = window.setInterval(() => {
+    const left = 40 - demo.applied - demo.rejected
+    if (left <= 0) { clearInterval(sim); return }
+    const n = Math.min(left, 3 + Math.floor(Math.random() * 6))
+    const rj = demo.rejected < 2 && demo.applied > 20 ? 1 : 0
+    demo = { ...demo, applied: demo.applied + n - rj, rejected: demo.rejected + rj, reject_reasons: rj ? { model_mismatch: demo.rejected + rj } : demo.reject_reasons }
+    emit()
+  }, 450)
+}
+
 // 직원 PC 적용 현황 한 줄
 export function pcStatus(): string | null {
-  const a = S.api.live ? S.api.pol?.acks : null
+  const a = acksNow()
   if (!a) return null
   if (!a.devices) return '아직 받은 PC 없음'
   const rj = Object.entries(a.reject_reasons).map(([k, n]) => `${REASON_KO[k] || k} ${n}`).join(', ')

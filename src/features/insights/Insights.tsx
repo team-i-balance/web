@@ -1,0 +1,100 @@
+// 현황: 기간(7일·30일) 동안 AI 입력·변환·원문 전송·되돌림. 서버에 없는 필드(대상 AI·부서)는 차트를 숨긴다.
+import { useState } from 'react'
+import { S, useStore } from '../../domain/store'
+import { QUEUE_KO } from '../../api/client'
+import { Segmented, Tag } from '../../ds'
+import { pad, pct } from '../../lib/util'
+import i from './insights.module.css'
+
+const DAY = 864e5
+const md = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
+
+// 일별 막대: 한 계열만 그리므로 범례 대신 제목이 이름을 맡는다
+function Daily({ days, k, raw }: { days: { d: Date; n: number; raw: number }[]; k: 'n' | 'raw'; raw?: boolean }) {
+  const [hov, setHov] = useState(-1)
+  const W = 600, H = 150, L = 28, B = 22, max = Math.max(1, ...days.map(d => d[k])), step = (W - L) / days.length, bw = Math.max(3, Math.min(28, step - 2))
+  const nice = max <= 5 ? max : Math.ceil(max / 5) * 5, ys = [0, nice / 2, nice].map(Math.round)
+  const y = (v: number) => (H - B) - (v / nice) * (H - B - 6)
+  const every = days.length > 14 ? 5 : 1
+  return (
+    <div className={i.chart} onMouseLeave={() => setHov(-1)}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${raw ? '원문 전송' : 'AI 입력'} 일별 건수`}>
+        <g className={i.grid}>{ys.map(v => <line key={v} x1={L} x2={W} y1={y(v)} y2={y(v)} />)}</g>
+        {ys.map(v => <text key={v} className={i.axis} x={L - 6} y={y(v) + 4} textAnchor="end">{v}</text>)}
+        {days.map((d, j) => {
+          const x = L + j * step + (step - bw) / 2, v = d[k], h = Math.max(v ? 2 : 0, (H - B) - y(v))
+          return <g key={j} onMouseEnter={() => setHov(j)}>
+            <rect className={i.hit} x={L + j * step} y={0} width={step} height={H - B} />
+            <rect className={`${i.hl} ${hov === j ? i.on : ''}`} x={L + j * step + 1} y={0} width={step - 2} height={H - B} rx={4} style={{ fill: hov === j ? 'var(--hover)' : 'transparent' }} />
+            {v > 0 && <path className={`${i.bar} ${raw ? i.raw : ''}`} d={`M${x},${H - B} V${H - B - h + 4} q0,-4 4,-4 h${bw - 8} q4,0 4,4 V${H - B} Z`} />}
+            {j % every === 0 && <text className={i.axis} x={x + bw / 2} y={H - 6} textAnchor="middle">{md(d.d)}</text>}
+          </g>
+        })}
+      </svg>
+      {hov >= 0 && <div className={i.tip} style={{ left: `${((L + hov * step + step / 2) / W) * 100}%`, top: `${(y(days[hov][k]) / H) * 100}%` }}>
+        {md(days[hov].d)} · <b>{days[hov][k]}건</b>{!raw && days[hov].raw > 0 ? ` · 원문 전송 ${days[hov].raw}` : ''}
+      </div>}
+    </div>
+  )
+}
+
+export default function Insights() {
+  useStore()
+  const [span, setSpan] = useState<'7' | '30'>('7')
+  const n = +span, end = new Date(S.now), from = new Date(+end - n * DAY)
+  const E = S.events.filter(e => e.time >= from && e.time <= end)
+  const days = Array.from({ length: n }, (_, j) => {
+    const d0 = new Date(end.getFullYear(), end.getMonth(), end.getDate() - (n - 1 - j)), d1 = new Date(+d0 + DAY)
+    const es = E.filter(e => e.time >= d0 && e.time < d1)
+    return { d: d0, n: es.length, raw: es.filter(e => e.action === 'raw').length }
+  })
+  const sens = E.filter(e => e.grade === 'S'), raw = E.filter(e => e.action === 'raw').length
+  const items = sens.flatMap(e => e.items)
+  const rev = items.filter(x => x.status === 'revert').length
+  const byType = Object.entries(items.reduce<Record<string, { n: number; rev: number }>>((m, x) => { const b = (m[x.type] ||= { n: 0, rev: 0 }); b.n++; if (x.status === 'revert' || x.status === 'raw') b.rev++; return m }, {}))
+    .sort((a, b) => b[1].n - a[1].n).slice(0, 8)
+  const tmax = Math.max(1, ...byType.map(([, b]) => b.n))
+  const byAi = S.api.live ? [] : Object.entries(E.reduce<Record<string, number>>((m, e) => ((m[e.ai] = (m[e.ai] || 0) + 1), m), {})).sort((a, b) => b[1] - a[1])
+  const amax = Math.max(1, ...byAi.map(([, v]) => v))
+  const st = S.api.live ? S.api.stats : null
+  return (
+    <div className={i.wrap}>
+      <div className={i.head}>
+        <div><h1>현황</h1><p>{md(from)} – {md(end)} · {S.api.live ? '서버 데이터' : '예시 데이터'} · {pad(end.getHours())}:{pad(end.getMinutes())} 기준</p></div>
+        <Segmented label="기간" value={span} onChange={setSpan} items={[{ k: '7', t: '7일' }, { k: '30', t: '30일' }]} />
+      </div>
+      <div className={i.tiles}>
+        <div className={i.tile}><span>AI 입력</span><b>{E.length.toLocaleString()}</b><small>하루 평균 {Math.round(E.length / n)}건</small></div>
+        <div className={i.tile}><span>개인정보 변환</span><b>{sens.length.toLocaleString()}</b><small>입력의 {pct(sens.length, E.length)}%</small></div>
+        <div className={i.tile}><span>원문 전송</span><b style={{ color: raw ? 'var(--danger)' : undefined }}>{raw}</b><small>민감 입력의 {pct(raw, sens.length)}%</small></div>
+        <div className={i.tile}><span>항목 되돌림률</span><b>{pct(rev, items.length)}%</b><small>{items.length}개 항목 중 {rev}개</small></div>
+      </div>
+      <div className={i.grid}>
+        <section className={i.card}><h2>AI 입력<small>일별</small></h2><Daily days={days} k="n" /></section>
+        <section className={i.card}><h2>원문 전송<small>일별 · 사유 선택 건너뜀</small></h2><Daily days={days} k="raw" raw /></section>
+      </div>
+      <div className={i.grid}>
+        <section className={i.card}>
+          <h2>탐지 항목<small>건수 · 원문으로 나간 비율</small></h2>
+          {byType.length ? <div className={i.hbars}>{byType.map(([t, b]) => { const r = pct(b.rev, b.n); return (
+            <div key={t} className={i.hb} title={`${t} ${b.n}개 중 ${b.rev}개 원문`}><span>{t}</span><span className={i.track}><i style={{ width: `${(b.n / tmax) * 100}%` }} /></span>
+              <em><span className={r >= 30 ? i.warn : undefined}>{r}%</span><small>{b.n}개</small></em></div>) })}</div>
+            : <p className={i.note}>이 기간에 민감 입력이 없어요</p>}
+          <details><summary>표로 보기</summary><table className={i.table}><thead><tr><th>항목</th><th>건수</th><th>원문</th></tr></thead><tbody>{byType.map(([t, b]) => <tr key={t}><td>{t}</td><td>{b.n}</td><td>{b.rev}</td></tr>)}</tbody></table></details>
+        </section>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
+          {byAi.length > 0 && <section className={i.card}>
+            <h2>대상 AI<small>입력 건수</small></h2>
+            <div className={i.hbars}>{byAi.map(([t, v]) => <div key={t} className={i.hb}><span>{t}</span><span className={i.track}><i style={{ width: `${(v / amax) * 100}%` }} /></span><em>{v}건</em></div>)}</div>
+          </section>}
+          {st && <section className={i.card}>
+            <h2>서버 전체<small>기간과 상관없이 · /logs/stats</small></h2>
+            <div className={i.queues}>{Object.entries(st.by_queue).map(([k, v]) => <div key={k} className={i.q}>{QUEUE_KO[k] || k}<b>{v}</b></div>)}</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}><Tag>수용률 {Math.round(st.acceptance_rate * 100)}%</Tag><Tag>되돌림률 {Math.round(st.revert_rate * 100)}%</Tag>{st.evasion_suspect > 0 && <Tag tone="warn">회피 의심 {st.evasion_suspect}</Tag>}</div>
+          </section>}
+          {S.api.live && <p className={i.note}>대상 AI와 부서는 서버가 아직 보내지 않아 빼 두었어요.</p>}
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -1,6 +1,6 @@
 // 앱 상태: 도메인 데이터(정책·이벤트·사건)와 화면 상태를 한곳에 두고, 바꾼 뒤 emit() 으로 다시 그린다.
 import { useSyncExternalStore } from 'react'
-import type { AiEvent, Case, Cause, Conclusion, FpGroup, Method } from './types'
+import type { AiEvent, Case, Cause, Conclusion, FpGroup, Method, PolicyChange } from './types'
 import { CONCLUSION, GRADE, LATE_REASON, ME, initialPolicy, pick, seedData } from './seed'
 import { fmt, josa, partial } from '../lib/util'
 
@@ -29,7 +29,12 @@ export const S = {
   policy,
   events: seeded.events as AiEvent[],
   cases: seeded.cases as Case[],
-  api: { base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
+  // 배포 기록: 예시 데이터는 지난 두 번을 깔아 두고, 서버 모드에서는 이 브라우저에서 배포한 것만 쌓인다
+  history: [
+    { version: 'v11', at: new Date('2026-10-21T10:12:00'), changes: [{ what: '자동 변환 추가: 은행명 바로 뒤에 오는 숫자 묶음 → 계좌번호 대체', src: 'INC-2391' }, { what: '탐지 제외 추가: "02-1234-5678" (회사 대표번호)', src: '오탐 신고' }], server: false },
+    { version: 'v12', at: new Date('2026-10-28T14:02:00'), changes: [{ what: '자동 변환 추가: "CU-"로 시작하는 6자리 고객번호 → 고객ID 대체', src: 'INC-2440' }, { what: '사업자번호 탐지 끔', src: '직접 수정' }], server: false },
+  ] as { version: string; at: Date; changes: PolicyChange[]; server: boolean }[],
+  api: { state: 'connecting' as 'connecting' | 'live' | 'offline' | 'off', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
   ui: {
     sel: null as Queue | null,
     cur: {} as Partial<Record<Queue, string>>,
@@ -42,6 +47,9 @@ export const S = {
     toast: null as { id: number; msg: string } | null,
     utoast: null as UndoToast | null,
     view: null as null | { s: number; x: number; y: number; keep?: boolean },
+    palette: false,
+    help: false,
+    fpPicked: new Set<string>(),
   },
 }
 // 서버 정책 상태: 마지막 배포 번들과 직원 PC 적용 현황(/policy/latest · /policy/acks)
@@ -111,6 +119,7 @@ export function publish(nv = nextVersion()) {
   const P = S.policy
   P.learned.forEach(r => { if (!r.live) { r.live = true; r.at = clock(); r.fresh = true } })
   P.dict.forEach(d => delete d.draft); P.exclude.forEach(d => delete d.draft)
+  S.history.push({ version: nv, at: clock(), changes: [...P.changes], server: S.api.live })
   P.version = nv; P.deployed = fmt(clock()); P.changes = []
   toast(`${nv}를 서명해 배포했어요`)
 }

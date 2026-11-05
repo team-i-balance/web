@@ -1,0 +1,97 @@
+/* 디자인 토큰 — C 정밀 계기. 라이트가 기본, [data-theme=dark] 또는 시스템 다크에서 바뀐다.
+   강조색(--acc)은 "지금 처리할 곳"에만 쓴다. 선택·탭 같은 일반 상태는 중립색. */
+@font-face {
+  font-family: 'Pretendard Variable';
+  src: url('/fonts/PretendardVariable.woff2') format('woff2');
+  font-weight: 45 920;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  /* 면 */
+  --bg: #eef0f4;
+  --surface: #ffffff;
+  --surface-2: #fafbfc;
+  --well: #f4f5f8;
+  --seg: #e3e6ec;
+  --chip: #e9ebf0;
+  --hover: #f1f2f6;
+  --press: #e6e8ee;
+  --scrim: rgba(16, 18, 28, 0.32);
+  /* 글자 */
+  --fg: #14161c;
+  --sub: #4e5463;
+  --mute: #6e7383;
+  --faint: #9196a4;
+  /* 선 */
+  --line: #e1e4ea;
+  --line-2: #c9cdd6;
+  /* 강조: 지금 처리할 곳 */
+  --acc: #5b45f0;
+  --acc-on: #ffffff;
+  --acc-ink: #4632d6;
+  --acc-tile: #f6f4ff;
+  --acc-ring: rgba(91, 69, 240, 0.14);
+  /* 상태 */
+  --danger: #d2293f;
+  --danger-soft: rgba(210, 41, 63, 0.08);
+  --ok: #119a63;
+  --ok-soft: rgba(17, 154, 99, 0.12);
+  --warn: #a15c07;
+  --warn-soft: rgba(217, 119, 6, 0.12);
+  --focus: #5b45f0;
+  /* 깊이 */
+  --sh-1: 0 1px 2px rgba(20, 22, 40, 0.05);
+  --sh-2: 0 1px 2px rgba(20, 22, 40, 0.05), 0 12px 32px rgba(20, 22, 40, 0.08);
+  --sh-3: 0 2px 6px rgba(20, 22, 40, 0.06), 0 24px 64px rgba(20, 22, 40, 0.18);
+  /* 글자 크기 */
+  --font: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  --t-11: 11px; --t-12: 12px; --t-13: 13px; --t-14: 14px; --t-15: 15px; --t-16: 16px;
+  --t-18: 18px; --t-20: 20px; --t-24: 24px; --t-28: 28px; --t-32: 32px;
+  /* 간격 4pt */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px;
+  /* 모서리 */
+  --r-xs: 5px; --r-sm: 8px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px; --r-full: 999px;
+  /* 움직임 */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --d-1: 120ms; --d-2: 200ms; --d-3: 320ms;
+  /* 배치 */
+  --rail: 232px;
+  --top: 56px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #0c0d11; --surface: #15161c; --surface-2: #181a21; --well: #1c1e26; --seg: #15161c; --chip: #262934;
+    --hover: #1e2029; --press: #252833; --scrim: rgba(0, 0, 0, 0.56);
+    --fg: #ecedf2; --sub: #a3a7b6; --mute: #858a9b; --faint: #626778;
+    --line: #24262f; --line-2: #363947;
+    --acc: #8b7bff; --acc-on: #0c0d11; --acc-ink: #b3a8ff; --acc-tile: #1b1a2c; --acc-ring: rgba(139, 123, 255, 0.18);
+    --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
+    --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --focus: #a99dff;
+    --sh-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+    --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
+    --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0c0d11; --surface: #15161c; --surface-2: #181a21; --well: #1c1e26; --seg: #15161c; --chip: #262934;
+  --hover: #1e2029; --press: #252833; --scrim: rgba(0, 0, 0, 0.56);
+  --fg: #ecedf2; --sub: #a3a7b6; --mute: #858a9b; --faint: #626778;
+  --line: #24262f; --line-2: #363947;
+  --acc: #8b7bff; --acc-on: #0c0d11; --acc-ink: #b3a8ff; --acc-tile: #1b1a2c; --acc-ring: rgba(139, 123, 255, 0.18);
+  --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
+  --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --focus: #a99dff;
+  --sh-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
+  --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --d-1: 0ms; --d-2: 0ms; --d-3: 0ms; }
+}

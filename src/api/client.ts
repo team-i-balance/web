@@ -62,7 +62,9 @@ function casesFrom(events: AiEvent[]): Case[] {
 }
 
 export async function connect(): Promise<boolean> {
-  for (const base of candidates()) {
+  const cands = candidates()
+  S.api.state = cands.length ? 'connecting' : 'off'; emit()
+  for (const base of cands) {
     S.api.base = base
     try {
       const h = await get<{ status: string }>('/health')
@@ -76,12 +78,12 @@ export async function connect(): Promise<boolean> {
       let stats: ServerStats | null = null
       try { stats = await get<ServerStats>('/logs/stats') } catch { /* 통계는 없어도 된다 */ }
       try { await loadPolicy() } catch { /* 정책 API가 없는 서버면 콘솔 정책 그대로 */ }
-      Object.assign(S.api, { live: true, count: evs.length, stats, synced: new Date() })
+      Object.assign(S.api, { state: 'live', live: true, count: evs.length, stats, synced: new Date() })
       emit()
       return true
     } catch { /* 다음 후보 */ }
   }
-  S.api.base = null; S.api.live = false
+  S.api.base = null; S.api.live = false; S.api.state = cands.length ? 'offline' : 'off'
   emit()
   return false
 }

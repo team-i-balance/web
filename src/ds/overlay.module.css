@@ -1,0 +1,38 @@
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 50; animation: fade var(--d-2) var(--ease); }
+.dialog {
+  position: fixed; z-index: 51; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(520px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-3);
+  animation: pop var(--d-2) var(--ease);
+}
+.wide { width: min(640px, calc(100vw - 32px)); }
+.sheet {
+  position: fixed; z-index: 51; top: 8px; right: 8px; bottom: 8px; width: min(480px, calc(100vw - 16px));
+  display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-3);
+  animation: slide var(--d-3) var(--ease);
+}
+.head { display: flex; align-items: flex-start; gap: 12px; padding: 20px 22px 0; }
+.title { font-size: var(--t-18); font-weight: 700; letter-spacing: -0.02em; }
+.desc { color: var(--sub); font-size: var(--t-13); margin-top: 4px; }
+.close { margin-left: auto; margin-top: -4px; margin-right: -8px; }
+.body { padding: 18px 22px; overflow: auto; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.foot > :first-child:not(:only-child) { margin-right: auto; }
+@keyframes fade { from { opacity: 0; } }
+@keyframes pop { from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); } }
+@keyframes slide { from { opacity: 0; transform: translateX(24px); } }
+
+/* ── 알림 */
+.toasts { position: fixed; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); }
+.toast {
+  pointer-events: auto; display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 8px 8px 16px;
+  background: var(--fg); color: var(--surface); border-radius: var(--r-lg); box-shadow: var(--sh-3); font-size: var(--t-14); font-weight: 500;
+}
+.toast.plain { padding-right: 16px; }
+.toastBtn { height: 30px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: color-mix(in srgb, currentColor 14%, transparent); color: inherit; font-weight: 700; font-size: var(--t-13); display: inline-flex; align-items: center; gap: 6px; }
+.toastBtn:hover { background: color-mix(in srgb, currentColor 24%, transparent); }
+.toast { position: relative; }
+.toastKbd { font-size: 11px; opacity: 0.7; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; }
+.toastBar { position: absolute; left: 12px; right: 12px; bottom: 4px; height: 2px; border-radius: 1px; background: currentColor; opacity: 0.25; transform-origin: left; animation: shrink 10s linear forwards; }
+@keyframes shrink { to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .toastBar { animation: none; } }
