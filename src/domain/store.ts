@@ -106,8 +106,9 @@ export function setEntityGrade(i: number, g: 'O' | 'S' | 'C') {
   change(`${e.name} 등급: ${GRADE[b]} → ${GRADE[g]}`); emit()
 }
 export function setEntityMethod(i: number, m: Method) { const e = S.policy.entities[i], b = e.method; e.method = m; change(`${e.name} 변환 방식: ${b} → ${m}`); emit() }
-export function deleteDict(i: number) { const d = S.policy.dict.splice(i, 1)[0]; change(`회사 고유 단어 삭제: ${partial('', d.term)}`); emit() }
-export function addDict(term: string, alias: string, type: string) { S.policy.dict.unshift({ term, alias, type, draft: true }); change(`회사 고유 단어 추가: ${term}`); emit() }
+// 변경 기록은 서버 초안에 저장되고 배포 기록으로도 남으니 단어는 일부만 적는다(평문을 남기지 않음)
+export function deleteDict(i: number) { const d = S.policy.dict.splice(i, 1)[0]; if (!d.draft || !unadd(w => w === `회사 고유 단어 추가: ${partial('', d.term)} (${d.type})`)) change(`회사 고유 단어 삭제: ${partial('', d.term)}`); emit() }
+export function addDict(term: string, alias: string, type: string) { S.policy.dict.unshift({ term, alias, type, draft: true }); change(`회사 고유 단어 추가: ${partial('', term)} (${type})`); emit() }
 // 아직 배포 안 한 항목을 지우면 '추가' 변경을 거둬들인다(추가·삭제가 함께 배포 목록에 남지 않게)
 const unadd = (hit: (what: string) => boolean) => { const C = S.policy.changes, k = C.findIndex(c => hit(c.what)); if (k < 0) return false; C.splice(k, 1); hooks.draft?.(); return true }
 export function deleteRule(i: number) { const r = S.policy.learned.splice(i, 1)[0]; if (r.live || !unadd(w => w === `자동 변환 추가: ${r.when} → ${r.type} ${r.method}`)) change(`자동 변환 삭제: ${r.when} → ${r.type} ${r.method}`, r.from); emit() }
