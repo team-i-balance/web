@@ -57,15 +57,16 @@ export default function Policy() {
   const rjTitle = a && a.rejected ? Object.entries(a.reject_reasons).map(([k, n]) => `${reasonKo(k)} ${n}대`).join(', ') : undefined
   const del = (label: string, on: () => void) => <Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={16} />} aria-label={label} onClick={on} />
   return (
+    <div className={ds.page}>
+    <div className={ds.pageHead}>
+      <h1>변환 정책</h1>
+      <span className={ds.pageMeta}>
+        {P.version === 'v0' ? '아직 배포한 정책 없음' : <span title={P.deployed ? `${P.deployed} 배포` : undefined}>{P.version} 적용 중</span>}
+        {a && <> · {a.devices ? `PC ${a.applied}/${a.devices}대` : '아직 받은 PC 없음'}{a.rejected > 0 && <> · <em className={p.rj} title={rjTitle}>거부 {a.rejected}대</em></>}</>}
+      </span>
+    </div>
     <div className={p.wrap}>
       <nav className={p.nav} aria-label="정책 구역">
-        <div className={p.navT}>
-          <b>변환 정책</b>
-          {P.version === 'v0'
-            ? <span className={p.navV}>아직 배포한 정책 없음</span>
-            : <span className={p.navV} title={P.deployed ? `${P.deployed} 배포` : undefined}>{P.version} 적용 중</span>}
-          {a && <span className={p.navPc}>{a.devices ? `PC ${a.applied}/${a.devices}대` : '아직 받은 PC 없음'}{a.rejected > 0 && <> · <em title={rjTitle}>거부 {a.rejected}대</em></>}</span>}
-        </div>
         {secs.map(([id, t, v, k]) => <a key={id} className={p.navA} href={`#policy`} aria-current={active === id ? 'location' : undefined} onClick={e => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
           <span className={p.navL}><i className={p.changed} data-on={dr(k) || undefined} aria-label={dr(k) ? '바뀜' : undefined} />{t}</span><small>{v}</small></a>)}
       </nav>
@@ -128,6 +129,7 @@ export default function Policy() {
         <Button variant="ghost" onClick={() => openDialog({ kind: 'changes' })}>변경 보기</Button>
         <Button variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button>
       </div>}
+    </div>
     </div>
   )
 }

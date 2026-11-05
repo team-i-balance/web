@@ -23,6 +23,7 @@ export default function Deploy() {
   const none = P.version === 'v0'
   return (
     <div className={d.wrap}>
+      <div className={ds.pageHead}><h1>배포·PC</h1></div>
       {P.changes.length > 0 && <Notice tone="now" title={`배포 대기 변경 ${P.changes.length}개 · 배포해야 PC에 적용돼요`}
         actions={<Button variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button>} />}
 

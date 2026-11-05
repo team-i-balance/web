@@ -2,11 +2,7 @@
 
 /* 왼쪽 구역 목록 */
 .nav { align-self: start; position: sticky; top: 12px; display: flex; flex-direction: column; gap: 2px; padding: 12px; background: var(--surface); border-radius: var(--r-xl); }
-.navT { padding: 6px 10px 12px; display: flex; flex-direction: column; gap: 2px; }
-.navT b { font-size: var(--t-22); font-weight: var(--w-title); letter-spacing: -0.02em; margin-bottom: 6px; }
-.navV { font-size: var(--t-13); font-weight: var(--w-label); color: var(--fg); }
-.navPc { font-size: var(--t-13); color: var(--mute); font-variant-numeric: tabular-nums; }
-.navPc em { font-style: normal; color: var(--warn); }
+.rj { font-style: normal; color: var(--warn); }
 .navA { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--r-md); color: var(--sub); text-decoration: none; font-size: var(--t-14); font-weight: var(--w-label); }
 .navA:hover, .navA[aria-current] { background: var(--hover); color: var(--fg); }
 .navA small { font-weight: var(--w-body); color: var(--mute); font-size: var(--t-12); font-variant-numeric: tabular-nums; }
@@ -65,5 +61,5 @@
 .bar b { font-size: var(--t-14); }
 .bar span { color: var(--sub); font-size: var(--t-13); margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @keyframes barIn { from { opacity: 0; transform: translate(-50%, 12px); } }
-@media (max-width: 1060px) { .wrap { grid-template-columns: minmax(0, 1fr); } .nav { position: static; flex-direction: row; flex-wrap: wrap; } .navT { width: 100%; } }
+@media (max-width: 1060px) { .wrap { grid-template-columns: minmax(0, 1fr); } .nav { position: static; flex-direction: row; flex-wrap: wrap; } }
 @media (max-width: 860px) { .bar { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); } .bar span { display: none; } .sh { padding: 16px 16px 8px; } .metas { padding: 8px 16px 16px; } }

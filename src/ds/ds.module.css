@@ -248,3 +248,10 @@ a.tagOutline:hover { color: var(--fg); box-shadow: inset 0 0 0 1px var(--line-2)
 .noticeB ul, .noticeB li { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 8px; } /* 목록은 앞으로 모은다(space-between 금지) */
 .noticeA { flex: none; display: flex; gap: 6px; align-items: center; align-self: center; }
 @media (max-width: 600px) { .notice { flex-wrap: wrap; } .noticeA { width: 100%; padding-left: 26px; } }
+
+/* ── 화면 머리(작업판 밖 모든 화면 공통): 제목 22 + 회색 메타 한 줄 + 오른쪽 도구. 패널 밖, 같은 높이 */
+.page { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.pageHead { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; min-height: 40px; }
+.pageHead h1 { font-size: var(--t-22); font-weight: var(--w-title); line-height: 1.3; letter-spacing: -0.01em; }
+.pageMeta { font-size: var(--t-13); color: var(--mute); }
+.pageTools { margin-left: auto; display: flex; align-items: center; gap: 8px; }

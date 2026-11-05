@@ -1,9 +1,6 @@
 /* 화면 면: ds.panel 과 같이 테두리 없이 면으로 나눈다 */
-.page { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 0; border-radius: var(--r-xl); }
+.page { flex: none; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 0; border-radius: var(--r-xl); }
 /* 머리: 제목과 탭 한 줄, 높이 56 */
-.head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 8px 24px; min-height: 56px; }
-.head h1 { font-size: var(--t-22); font-weight: var(--w-title); letter-spacing: -0.01em; }
-.headR { margin-left: auto; min-height: 40px; display: flex; align-items: center; }
 /* 일괄 바: 탭 자리에 같은 높이(40)로 들어간다 */
 .bulk { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 4px 0 12px; border-radius: var(--r-md); background: var(--well); font-size: var(--t-13); }
 .bulk b { font-weight: var(--w-label); margin-right: 8px; font-variant-numeric: tabular-nums; }
@@ -59,7 +56,6 @@ tr[data-open] .chev { transform: rotate(180deg); }
   .t tr td.chevC { display: none; }
   .sent { max-width: none; white-space: normal; }
   .acts { justify-content: flex-start; flex-wrap: wrap; }
-  .head { padding: 8px 16px; }
   .t tbody tr.cases td, .t[data-tab='done'] tbody tr.cases td { padding: 0 16px 12px; }
   .cases li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 }

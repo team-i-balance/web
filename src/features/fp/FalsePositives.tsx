@@ -38,11 +38,11 @@ export default function FalsePositives() {
   const [open, setOpen] = useState<string | null>(null)
   const isOpen = tab === 'open'
   return (
-    <section className={f.page} aria-label="오탐 신고">
-      <div className={f.head}>
+    <div className={ds.page}>
+      <div className={ds.pageHead}>
         <h1>오탐 신고</h1>
         {/* 고르면 탭 자리에 같은 높이로 일괄 바를 바꿔 끼운다(표가 밀리지 않게) */}
-        <div className={f.headR}>{isOpen && sel.length > 0
+        <div className={ds.pageTools}>{isOpen && sel.length > 0
           ? <div className={f.bulk} role="region" aria-label="고른 값 처리">
             <b>{sel.length}개 골랐어요</b>
             <Button size="sm" variant="ghost" onClick={clear}>해제</Button>
@@ -51,6 +51,7 @@ export default function FalsePositives() {
           : <Segmented label="상태" value={tab} onChange={setTab} items={[{ k: 'open', t: '처리할 신고', n: counts.open }, { k: 'done', t: '처리함', n: counts.done }]} />}
         </div>
       </div>
+      <section className={f.page} aria-label="오탐 신고">
       {groups.length ? <div className={f.scroll}><table className={clsx(ds.table, ds.table2, f.t)} data-tab={tab}>
         <colgroup>
           {isOpen && <col className={f.cPick} />}<col className={f.cChev} /><col className={f.cVal} /><col className={f.cCnt} /><col /><col className={f.cAct} />
@@ -81,6 +82,7 @@ export default function FalsePositives() {
         })}</tbody>
       </table></div>
         : <Empty center icon={<Flag size={20} />} title={isOpen ? '처리할 신고가 없어요' : '아직 처리한 신고가 없어요'} text={'직원이 "오탐"으로 되돌리면 여기에 모여요'}>{isOpen && <LinkButton href="#home">작업판으로</LinkButton>}</Empty>}
-    </section>
+      </section>
+    </div>
   )
 }

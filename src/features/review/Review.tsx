@@ -138,13 +138,14 @@ export default function Review({ id: idArg }: { id?: string }) {
 
   const rows = (xs: Case[]) => xs.map(x => <Row key={x.id} x={x} on={x.id === c?.id} pick={tab === 'opt'} />)
   return (
+    <div className={ds.page}>
+    <div className={ds.pageHead}>
+      <h1>위반 검토</h1>
+      <Segmented label="목록" value={tab} onChange={setTab} items={[
+        { k: 'req', t: '필수', n: count('req'), now: anyReady }, { k: 'opt', t: '선택', n: count('opt') }, { k: 'closed', t: '종결', n: count('closed') }]} />
+    </div>
     <div className={clsx(r.wrap, idArg && r.has)}>
       <section className={clsx(r.pane, r.listPane)} aria-label="건 목록">
-        <div className={r.listH}>
-          <h1>위반 검토</h1>
-          <Segmented label="목록" value={tab} onChange={setTab} items={[
-            { k: 'req', t: '필수', n: count('req'), now: anyReady }, { k: 'opt', t: '선택', n: count('opt') }, { k: 'closed', t: '종결', n: count('closed') }]} />
-        </div>
         {tab === 'opt' && picked.length > 0 && <div className={r.bulk}><b>{picked.length}건 골랐어요</b>
           <Button size="sm" variant="ghost" onClick={() => { S.ui.picked.clear(); emit() }}>해제</Button>
           <Button size="sm" variant="primary" onClick={() => openDialog({ kind: 'bulk', ids: picked })}>문제 없음으로 종결</Button></div>}
@@ -159,6 +160,7 @@ export default function Review({ id: idArg }: { id?: string }) {
       <section className={clsx(r.pane, r.detailPane)} aria-label="건 상세" data-detail>
         {c ? <Detail key={c.id} c={c} /> : <Empty center icon={<Inbox size={20} />} title="건을 고르세요" text="왼쪽 목록에서 고르면 여기에 열려요" />}
       </section>
+    </div>
     </div>
   )
 }

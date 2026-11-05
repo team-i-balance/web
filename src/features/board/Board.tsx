@@ -14,7 +14,7 @@ import { openDialog } from '../dialogs'
 import { partial, rpath } from '../../lib/util'
 import b from './board.module.css'
 
-const SW = 1120, SH = 212, W = 200, H = 64, AY = 32, BY = 132, PAD = 20, TOP = 24
+const SW = 1120, SH = 256, W = 200, H = 80, AY = 36, BY = 164, PAD = 24, TOP = 48
 const cx = (x: number) => x + W / 2, my = (y: number) => y + H / 2
 const POS: Record<string, [number, number]> = { in: [0, AY], conv: [300, AY], raw: [640, AY], fp: [200, BY], opt: [420, BY], req: [640, BY], pol: [920, BY] }
 const DECIDE = [['violation', '위반으로 기록', '위반 이력이 남아요'], ['legit', '이번 건 예외 인정', '같은 입력 자동 변환 규칙 초안이 생겨요'], ['fp', '오탐으로 기록', '개인정보가 아닌 값을 잡았어요']] as const
@@ -72,15 +72,18 @@ export default function Board() {
     { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 대기 ${wait.length}` : '', q: 'req' as Queue },
     { id: 'pol', l: '재발 방지 배포', v: P.changes.length ? `대기 ${P.changes.length}` : P.version, s: P.changes.length ? '서명 후 배포' : pc ?? '적용 중', q: 'pol' as Queue },
   ]
+  // 고른 대기열까지 들어오는 길은 강조색으로 이어 보인다
+  const PATH: Record<Queue, number[]> = { req: [0, 1, 2], opt: [0, 4], fp: [0, 3], pol: [5, 6] }
+  const onPath = new Set(PATH[SEL] ?? [])
   const EG: { c: string; p: number[][] }[] = [
     { c: '', p: [[W, my(AY)], [300, my(AY)]] },
     { c: '', p: [[500, my(AY)], [640, my(AY)]] },
     { c: raw ? b.edgeHot : '', p: [[cx(640), AY + H], [cx(640), BY]] },
     { c: '', p: [[330, AY + H], [330, BY]] },
     { c: '', p: [[470, AY + H], [470, BY]] },
-    { c: clsx(b.edgeLoop, P.changes.length && b.edgeOn), p: [[840, my(BY)], [920, my(BY)]] },
-    { c: clsx(b.edgeLoop, lastPub && b.edgeOn), p: [[cx(920), BY], [cx(920), 12], [400, 12], [400, AY]] },
-  ]
+    { c: b.edgeLoop, p: [[840, my(BY)], [920, my(BY)]] },
+    { c: b.edgeLoop, p: [[cx(920), BY], [cx(920), 14], [400, 14], [400, AY]] },
+  ].map((e, i) => (onPath.has(i) ? { ...e, c: clsx(e.c, b.edgePath) } : e))
 
   // ── 패널 내용
   const types = (c: Case) => typesOf(c).join(' · ')
@@ -180,12 +183,16 @@ export default function Board() {
   return (
     <div className={b.board}>
       <section className={b.flow} aria-label="흐름도" data-coach="flow">
-        <div className={b.flowHead}>흐름 · 최근 7일{live && includeTest && <Tag tone="warn">시험 이벤트 포함</Tag>}{truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
+        <div className={b.flowHead}><h2>처리 흐름</h2><span>최근 7일</span>{live && includeTest && <Tag tone="warn">시험 이벤트 포함</Tag>}{truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
         <div className={b.scroller} ref={scroller}>
           <div className={b.stageBox} style={{ width: boxW, height: SH * scale + TOP, marginLeft: off, marginRight: off }}>
             <div className={b.stage} style={{ width: SW, height: SH, top: TOP, transform: `scale(${scale})` }}>
               <svg className={b.edges} width={SW} height={SH} aria-hidden="true">
-                {EG.map((e, i) => <path key={i} className={clsx(b.edge, e.c)} d={rpath(e.p, 12)} />)}
+                <defs>
+                  <marker id="fa" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path className={b.arrow} d="M1 1 L7 4 L1 7" /></marker>
+                  <marker id="fa-on" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path className={clsx(b.arrow, b.arrowOn)} d="M1 1 L7 4 L1 7" /></marker>
+                </defs>
+                {EG.map((e, i) => <path key={i} className={clsx(b.edge, e.c)} d={rpath(e.p, 12)} markerEnd={`url(#${onPath.has(i) ? 'fa-on' : 'fa'})`} />)}
               </svg>
               {N.map(x => {
                 const [lx, ly] = POS[x.id], q = x.q, w = q ? work[q] : 0, isSel = q === SEL
@@ -193,8 +200,8 @@ export default function Board() {
                   <span className={b.nl}>{x.l}{q && w > 0 && (isSel || String(w) !== String(x.v)) && <span className={clsx(b.pill, isSel && b.pillNow)}>{isSel ? '지금' : '할 일'} {w}</span>}</span>
                   <span className={b.nb}><span className={clsx(b.nv, x.danger && b.danger)}>{x.v}</span><span className={b.ns}>{x.s}</span></span>
                 </>
-                if (!q && !x.go) return <div key={x.id} className={clsx(b.node, b.tile)} style={{ left: lx, top: ly }} title={x.t}>{inner}</div>
-                if (x.go) return <button key={x.id} type="button" className={clsx(b.node, b.tile)} style={{ left: lx, top: ly }} onClick={() => select(x.go!)} aria-label={`${x.l} ${x.v}건, 필수 검토로`}>{inner}</button>
+                if (!q && !x.go) return <div key={x.id} className={clsx(b.node, b.tile, x.danger && b.leak)} style={{ left: lx, top: ly }} title={x.t}>{inner}</div>
+                if (x.go) return <button key={x.id} type="button" className={clsx(b.node, b.tile, x.danger && b.leak)} style={{ left: lx, top: ly }} onClick={() => select(x.go!)} aria-label={`${x.l} ${x.v}건, 필수 검토로`}>{inner}</button>
                 return <button key={x.id} type="button" className={clsx(b.node, b.act, !w && b.idle, isSel && (now ? b.selNow : b.sel))} style={{ left: lx, top: ly }}
                   onClick={() => select(q!)} aria-pressed={isSel} aria-label={`${x.l} ${x.v}${w ? `, 처리할 일 ${w}건` : ''}`}>{inner}</button>
               })}

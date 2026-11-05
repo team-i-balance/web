@@ -2,32 +2,39 @@
 
 /* ── 흐름도 */
 .flow { position: relative; flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); overflow: hidden; }
-.flowHead { position: absolute; left: 20px; top: 12px; display: flex; gap: 10px; align-items: baseline; font-size: var(--t-14); color: var(--fg); font-weight: var(--w-title); z-index: 1; } /* Devs 구역 제목 */
+.flowHead { position: absolute; left: 24px; top: 16px; display: flex; gap: 8px; align-items: baseline; z-index: 1; }
+.flowHead h2 { font-size: var(--t-16); font-weight: var(--w-title); }
+.flowHead > span { font-size: var(--t-13); color: var(--mute); }
 .scroller { overflow-x: auto; overflow-y: hidden; }
 .stageBox { position: relative; margin: 0 auto; }
 .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .edges { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
-.edge { fill: none; stroke: var(--line-2); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.edgeLoop { stroke-dasharray: 5 6; stroke-width: 1.5; }
-.edgeOn { stroke: var(--acc); stroke-width: 3; }
-.edgeHot { stroke: color-mix(in srgb, var(--danger) 45%, var(--surface)); }
+.edge { fill: none; stroke: var(--line-2); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.edgeLoop { stroke-dasharray: 5 6; }
+.edgeHot { stroke: color-mix(in srgb, var(--danger) 55%, var(--surface)); }
+/* 고른 대기열까지 들어오는 길: 강조색 굵은 선 */
+.edgePath { stroke: var(--acc); stroke-width: 2.5; }
+.arrow { fill: none; stroke: var(--line-2); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.arrowOn { stroke: var(--acc); }
 
 .node {
-  position: absolute; width: 200px; height: 64px; display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
-  padding: 10px 14px; border-radius: var(--r-md); text-align: left; font: inherit; color: var(--fg);
+  position: absolute; width: 200px; height: 80px; display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
+  padding: 12px 16px; border-radius: var(--r-md); text-align: left; font: inherit; color: var(--fg);
 }
-.tile { background: var(--well); border: 0; }
+.tile { background: var(--well); border: 1px solid transparent; }
+/* 원문이 나간 지점: 위험색을 옅게 깔아 흐름에서 먼저 보이게 */
+.leak { background: color-mix(in srgb, var(--danger) 10%, var(--well)); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
 button.tile:hover { background: var(--hover); }
 .act { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); transition: border-color var(--d-1) var(--ease), box-shadow var(--d-2) var(--ease), transform var(--d-1) var(--ease); }
 .act:hover { border-color: var(--line-2); transform: translateY(-1px); }
 .act.idle { box-shadow: none; }
 .act.idle .nv { color: var(--sub); }
-.sel, .selNow { border-color: var(--acc); background: var(--acc-tile); box-shadow: inset 0 0 0 1px var(--acc); } /* Devs 선택 카드: 옅은 강조 면 + 강조 테두리 */
+.sel, .selNow { border-color: var(--acc); background: var(--acc-tile); box-shadow: inset 0 0 0 1px var(--acc); } /* 테두리 2px 효과 */ /* Devs 선택 카드: 옅은 강조 면 + 강조 테두리 */
 .nl { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: var(--t-13); line-height: 1.5; color: var(--fg); font-weight: var(--w-label); }
 .sel .nl, .selNow .nl { font-weight: var(--w-title); }
 .selNow .nl { color: var(--acc-ink); }
 .nb { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.nv { font-size: var(--t-22); font-weight: var(--w-title); letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
+.nv { font-size: var(--t-28); font-weight: var(--w-title); letter-spacing: -0.02em; line-height: 1; white-space: nowrap; }
 .ns { font-size: var(--t-13); color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .danger { color: var(--danger); }
 .pill { font-size: var(--t-12); font-weight: var(--w-label); padding: 1px 7px; border-radius: var(--r-full); background: var(--chip); color: var(--fg); }

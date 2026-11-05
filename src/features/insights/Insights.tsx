@@ -59,10 +59,10 @@ export default function Insights() {
   const files = E.filter(e => e.file).length
   return (
     <div className={i.wrap}>
-      <div className={i.head}>
+      <div className={ds.pageHead}>
         <h1>현황</h1>
-        <span className={i.meta}>{md(from)} – {md(end)} · {pad(end.getHours())}:{pad(end.getMinutes())} 기준</span>
-        <div className={i.tools}>
+        <span className={ds.pageMeta}>{md(from)} – {md(end)} · {pad(end.getHours())}:{pad(end.getMinutes())} 기준</span>
+        <div className={ds.pageTools}>
           <Segmented label="기간" value={span} onChange={setSpan} items={[{ k: '7', t: '7일' }, { k: '30', t: '30일' }]} />
           {live && <Button icon={<Download size={14} />} disabled={ex?.busy} onClick={() => runExport()}>{ex?.busy ? '내보내는 중…' : `${n}일 로그 내보내기`}</Button>}
         </div>

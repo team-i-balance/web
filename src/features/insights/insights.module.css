@@ -1,10 +1,5 @@
 .wrap { display: flex; flex-direction: column; gap: 24px; }
 /* 화면 머리: 제목과 도구 한 줄, 56 안쪽 */
-.head { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; min-height: 40px; }
-.head h1 { font-size: var(--t-22); font-weight: var(--w-title); line-height: 1.3; }
-.meta { color: var(--mute); font-size: var(--t-13); font-variant-numeric: tabular-nums; }
-.head > :last-child { margin-left: auto; }
-.tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
 .tile { background: var(--surface); border-radius: var(--r-xl); padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
