@@ -33,3 +33,7 @@
 .kv dd.mono { font-family: var(--mono); font-size: var(--t-12); } /* 서명 키·해시만 고정폭 */
 @media (max-width: 960px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 600px) { .card { padding: 18px 16px; } .stats { grid-template-columns: 1fr; } }
+.vd { grid-column: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.vd .kv { width: 100%; }
+.vlist { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+@media (max-width: 640px) { .vd { grid-column: 1 / -1; } }

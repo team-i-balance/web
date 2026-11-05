@@ -101,6 +101,11 @@ async function allEvents(from: Date, max = 20): Promise<ServerEvent[]> {
 // 기간 통계(/logs/stats?start&end). 분모가 그 기간 전체라 목록 개수 제한과 상관없다.
 export const periodStats = (days: number) => get<ServerStats>('/logs/stats?' + new URLSearchParams({ start: new Date(Date.now() - days * 864e5).toISOString(), end: new Date().toISOString(), ...(S.api.includeTest ? { include_test: 'true' } : {}) }), 5000)
 
+// 로그 내보내기(/logs/export): 서버가 보안팀 공개키로 암호화해 서버 쪽 파일로 쓴다. 브라우저로 내려받지 않는다.
+// 한 번에 최대 1000건, 더 있으면 next_cursor 로 같은 기간을 이어서 내보낸다
+export interface ExportResult { exported: number; file: string; public_key_fingerprint: string; next_cursor?: number | null }
+export const exportLogs = (start: Date, end: Date, cursor?: number | null) => post<ExportResult>('/logs/export?' + new URLSearchParams({ start: start.toISOString(), end: end.toISOString(), limit: '1000', ...(S.api.includeTest ? { include_test: 'true' } : {}), ...(cursor ? { cursor: String(cursor) } : {}) }))
+
 // 시험 이벤트(test=true)는 서버가 기본으로 뺀다(#27). 시연할 때만 켠다. 검토 건(/cases)에는 들어오지 않는다.
 export function setIncludeTest(v: boolean) {
   S.api.includeTest = v

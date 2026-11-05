@@ -3,7 +3,8 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../../domain/store'
 import { QUEUE_KO } from '../../api/client'
 import { useInsightsModel } from './model'
-import { Button, Segmented, Tag } from '../../ds'
+import { Button, Notice, Segmented, Tag } from '../../ds'
+import { Download } from 'lucide-react'
 import { pad, pct } from '../../lib/util'
 import i from './insights.module.css'
 
@@ -49,13 +50,23 @@ export default function Insights() {
   useStore()
   const [span, setSpan] = useState<'7' | '30'>('7')
   const [more, setMore] = useState(20)
-  const { n, end, from, E, days, sens, raw, items, rev, byType, tmax, byAi, amax, st, live } = useInsightsModel(span)
+  const { n, end, from, E, days, sens, raw, items, rev, byType, tmax, byAi, amax, st, live, ex, runExport } = useInsightsModel(span)
   return (
     <div className={i.wrap}>
       <div className={i.head}>
         <div><h1>현황</h1><p>{md(from)} – {md(end)} · {live ? '서버 데이터' : '예시 데이터'} · {pad(end.getHours())}:{pad(end.getMinutes())} 기준</p></div>
-        <Segmented label="기간" value={span} onChange={setSpan} items={[{ k: '7', t: '7일' }, { k: '30', t: '30일' }]} />
+        <div className={i.tools}>
+          <Segmented label="기간" value={span} onChange={setSpan} items={[{ k: '7', t: '7일' }, { k: '30', t: '30일' }]} />
+          {live && <Button icon={<Download size={14} />} disabled={ex?.busy} onClick={() => runExport()}>{ex?.busy ? '내보내는 중…' : `${n}일 로그 내보내기`}</Button>}
+        </div>
       </div>
+      {ex && !ex.busy && (ex.err
+        ? <Notice tone="error" title="로그를 내보내지 못했어요">{ex.err}</Notice>
+        : ex.last && <Notice tone="success" title={`${ex.total.toLocaleString()}건을 암호화해 서버에 저장했어요`}
+          actions={ex.last.next_cursor ? <Button size="sm" onClick={() => runExport(true)}>이어서 내보내기</Button> : undefined}>
+          보안팀 공개키(지문 <code>{ex.last.public_key_fingerprint}</code>)로 잠갔어요. 파일 <code>{ex.last.file.split('/').pop()}</code>
+          {ex.last.next_cursor ? ' · 이 기간에 남은 로그가 더 있어요' : ' · 이 기간 로그를 모두 내보냈어요'}
+        </Notice>)}
       <div className={i.tiles}>
         <div className={i.tile}><span>AI 입력</span><b>{E.length.toLocaleString()}</b><small>하루 평균 {Math.round(E.length / n)}건{E.some(e => e.file) ? ` · 파일 ${E.filter(e => e.file).length}건` : ''}</small></div>
         <div className={i.tile}><span>개인정보 변환</span><b>{sens.length.toLocaleString()}</b><small>입력의 {pct(sens.length, E.length)}%</small></div>
@@ -84,6 +95,7 @@ export default function Insights() {
             <h2>서버 집계<small>{n}일 · 전체 이벤트 기준</small></h2>
             <div className={i.queues}>{Object.entries(st.by_queue).map(([k, v]) => <div key={k} className={i.q}>{QUEUE_KO[k] || k}<b>{v}</b></div>)}</div>
             {st.by_action && <div className={i.queues}>{Object.entries(st.by_action).map(([k, v]) => <div key={k} className={i.q}>{ACTION_KO[k] || k}<b>{v}</b></div>)}</div>}
+            {st.by_policy_version && <div className={i.queues}>{Object.entries(st.by_policy_version).sort(([a], [b]) => (a === 'none' ? 1 : b === 'none' ? -1 : +b - +a)).map(([k, v]) => <div key={k} className={i.q}>{k === 'none' ? '정책 받기 전' : `정책 v${k}`}<b>{v}</b></div>)}</div>}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}><Tag>수용률 {Math.round(st.acceptance_rate * 100)}%</Tag><Tag>되돌림률 {Math.round(st.revert_rate * 100)}%</Tag>{st.evasion_suspect > 0 && <Tag tone="warn">회피 의심 {st.evasion_suspect}</Tag>}</div>
           </section>}
           {live && byAi.length === 0 && <p className={i.note}>대상 AI는 서버 이벤트에 값이 있을 때만 보여요.</p>}

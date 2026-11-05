@@ -1,7 +1,7 @@
 // 현황 모델: 기간 동안의 숫자와 서버 집계. 화면 모양은 Insights.tsx 가 맡는다.
 import { useEffect, useState } from 'react'
 import { S, type ServerStats } from '../../domain/store'
-import { periodStats } from '../../api/client'
+import { exportLogs, periodStats, type ExportResult } from '../../api/client'
 
 const DAY = 864e5
 export function useInsightsModel(span: '7' | '30') {
@@ -24,5 +24,15 @@ export function useInsightsModel(span: '7' | '30') {
   const [pst, setPst] = useState<ServerStats | null>(null)
   useEffect(() => { if (S.api.live) periodStats(n).then(setPst, () => setPst(null)) }, [n, S.api.synced])
   const st = S.api.live ? pst ?? S.api.stats : null
-  return { n, end, from, E, days, sens, raw, items, rev, byType, tmax, byAi, amax, st, live: S.api.live }
+  // 로그 내보내기: 기간을 고정해 두고 next_cursor 로 이어 간다
+  const [ex, setEx] = useState<null | { busy: boolean; total: number; last?: ExportResult; err?: string; range: [Date, Date] }>(null)
+  useEffect(() => setEx(null), [n])
+  const runExport = async (cont = false) => {
+    const range: [Date, Date] = cont && ex ? ex.range : [new Date(Date.now() - n * DAY), new Date()]
+    const base = cont && ex ? ex.total : 0
+    setEx({ busy: true, total: base, last: cont ? ex?.last : undefined, range })
+    try { const r = await exportLogs(range[0], range[1], cont ? ex?.last?.next_cursor : null); setEx({ busy: false, total: base + r.exported, last: r, range }) }
+    catch (e) { setEx({ busy: false, total: base, last: cont ? ex?.last : undefined, err: String((e as Error)?.message || e), range }) }
+  }
+  return { n, end, from, E, days, sens, raw, items, rev, byType, tmax, byAi, amax, st, live: S.api.live, ex, runExport }
 }

@@ -60,6 +60,34 @@ async function loadHistory() {
   } catch { historyFromServer = false }
 }
 
+// 버전 하나의 내용(/policy/{n})과 바로 앞 버전 대비 바뀐 점. 값은 해시라 단어·제외 값은 개수만 보여 준다.
+export interface VersionView { keyid: string | null; rules: { label: string; description: string; action: string }[]; on: number; off: string[]; dict: number; exclude: number; changed: string[] }
+const vcache = new Map<number, Envelope>()
+async function envelope(n: number) { let e = vcache.get(n); if (!e) { e = await get<Envelope>(`/policy/${n}`, 5000); vcache.set(n, e) } return e }
+export async function loadVersion(n: number): Promise<VersionView> {
+  const env = await envelope(n), p = decode(env.payload)
+  const prev = n > 1 ? await envelope(n - 1).then(e => decode(e.payload), () => null) : null
+  const types = Object.entries(p.types || {}), changed: string[] = []
+  if (prev) {
+    const pt = prev.types || {}
+    for (const [k, t] of types) {
+      const o = pt[k]; if (!o) { changed.push(`${k} 추가`); continue }
+      if (!!o.on !== !!t.on) changed.push(`${k} 탐지 ${t.on ? '켬' : '끔'}`)
+      if (o.grade !== t.grade) changed.push(`${k} 등급 ${o.grade} → ${t.grade}`)
+      if (o.method !== t.method) changed.push(`${k} ${o.method} → ${t.method}`)
+    }
+    const key = (r: { label: string; description: string; action: string }) => `${r.description} → ${r.label} ${r.action}`
+    const pr = new Set((prev.rules || []).map(key)), cr = new Set((p.rules || []).map(key))
+    cr.forEach(r => { if (!pr.has(r)) changed.push(`자동 변환 추가: ${r}`) }); pr.forEach(r => { if (!cr.has(r)) changed.push(`자동 변환 삭제: ${r}`) })
+    const diff = (a: { h: string }[] = [], b: { h: string }[] = [], what: string) => {
+      const A = new Set(a.map(x => x.h)), B = new Set(b.map(x => x.h)), add = [...B].filter(h => !A.has(h)).length, del = [...A].filter(h => !B.has(h)).length
+      if (add) changed.push(`${what} ${add}개 추가`); if (del) changed.push(`${what} ${del}개 삭제`)
+    }
+    diff(prev.dict, p.dict, '회사 고유 단어'); diff(prev.exclude, p.exclude, '탐지 제외')
+  }
+  return { keyid: env.signatures[0]?.keyid ?? null, rules: p.rules || [], on: types.filter(([, t]) => t.on !== false).length, off: types.filter(([, t]) => t.on === false).map(([k]) => k), dict: p.dict?.length ?? 0, exclude: p.exclude?.length ?? 0, changed }
+}
+
 // 서버의 최신 배포본을 콘솔 정책에 반영한다. 아직 배포가 없으면 v0(규칙 없음)부터.
 export async function loadPolicy() {
   S.api.pol = { keyid: null, sha: null, acks: null }
