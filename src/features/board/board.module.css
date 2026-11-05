@@ -2,7 +2,7 @@
 
 /* ── 흐름도 */
 .flow { position: relative; flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); overflow: hidden; }
-.flowHead { position: absolute; left: 20px; top: 14px; display: flex; gap: 10px; align-items: baseline; font-size: var(--t-12); color: var(--mute); font-weight: 600; z-index: 1; }
+.flowHead { position: absolute; left: 20px; top: 14px; display: flex; gap: 10px; align-items: baseline; font-size: var(--t-14); color: var(--fg); font-weight: 700; z-index: 1; } /* Devs 구역 제목 */
 .scroller { overflow-x: auto; overflow-y: hidden; }
 .stageBox { position: relative; margin: 0 auto; }
 .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
@@ -68,7 +68,7 @@ button.tile:hover { background: var(--hover); }
 .reason > p { font-size: var(--t-14); line-height: 1.6; }
 .decide { margin-top: 8px; display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 10px; }
 .hint { font-size: var(--t-12); color: var(--mute); }
-.big { font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+.big { font-size: var(--t-32); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
 .big em { font-style: normal; color: var(--ok); }
 .changes { display: flex; flex-direction: column; gap: 8px; }
 .change { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--r-md); background: var(--well); font-size: var(--t-14); }

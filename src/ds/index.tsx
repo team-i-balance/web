@@ -94,13 +94,13 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean | 'ind
   )
 }
 
-// ── 세그먼트: 탭처럼 쓰는 선택
+// ── 세그먼트: 탭처럼 쓰는 선택. 모양은 Devs 필터 칩(알약, 고른 것은 강조색 + 체크)
 export function Segmented<K extends string>({ value, onChange, items, label }: { value: K; onChange: (k: K) => void; items: { k: K; t: string; n?: number; now?: boolean }[]; label: string }) {
   return (
     <div className={s.seg} role="tablist" aria-label={label}>
       {items.map(i => (
         <button key={i.k} type="button" role="tab" aria-selected={value === i.k} className={s.segItem} onClick={() => onChange(i.k)}>
-          {i.t}{i.n != null && <Badge n={i.n} tone={i.now && i.n ? 'now' : undefined} />}
+          {value === i.k && <Check size={14} strokeWidth={2.5} aria-hidden="true" />}{i.t}{i.n != null && <Badge n={i.n} tone={i.now && i.n ? 'now' : undefined} />}
         </button>
       ))}
     </div>

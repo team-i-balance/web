@@ -4,7 +4,7 @@ import { useStore } from '../../domain/store'
 import { QUEUE_KO } from '../../api/client'
 import { useInsightsModel } from './model'
 import { Button, Notice, Segmented, Tag } from '../../ds'
-import { Download } from 'lucide-react'
+import { Download, MessageSquareText, Shuffle, Send, Undo2 } from 'lucide-react'
 import { pad, pct } from '../../lib/util'
 import i from './insights.module.css'
 
@@ -27,6 +27,7 @@ function Daily({ days, k, raw }: { days: { d: Date; n: number; raw: number }[]; 
   return (
     <div className={i.chart} ref={box} onMouseLeave={() => setHov(-1)}>
       <svg viewBox={`0 0 ${W} ${H}`} height={H} role="img" aria-label={`${raw ? '원문 전송' : 'AI 입력'} 일별 건수`}>
+        <defs><linearGradient id={`bar-${k}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" style={{ stopColor: raw ? 'var(--danger)' : 'var(--acc)' }} /><stop offset="1" style={{ stopColor: raw ? 'var(--danger)' : 'var(--acc)', stopOpacity: 0.45 }} /></linearGradient></defs>
         <g className={i.grid}>{ys.map(v => <line key={v} x1={L} x2={W} y1={y(v)} y2={y(v)} />)}</g>
         {ys.map(v => <text key={v} className={i.axis} x={L - 6} y={y(v) + 4} textAnchor="end">{v}</text>)}
         {days.map((d, j) => {
@@ -34,7 +35,7 @@ function Daily({ days, k, raw }: { days: { d: Date; n: number; raw: number }[]; 
           return <g key={j} onMouseEnter={() => setHov(j)}>
             <rect className={i.hit} x={L + j * step} y={0} width={step} height={H - B} />
             <rect className={`${i.hl} ${hov === j ? i.on : ''}`} x={L + j * step + 1} y={0} width={step - 2} height={H - B} rx={4} style={{ fill: hov === j ? 'var(--hover)' : 'transparent' }} />
-            {v > 0 && <path className={`${i.bar} ${raw ? i.raw : ''}`} d={`M${x},${H - B} V${H - B - h + 4} q0,-4 4,-4 h${bw - 8} q4,0 4,4 V${H - B} Z`} />}
+            {v > 0 && <path className={i.bar} style={{ fill: `url(#bar-${k})` }} d={`M${x},${H - B} V${H - B - h + 4} q0,-4 4,-4 h${bw - 8} q4,0 4,4 V${H - B} Z`} />}
             {j % every === 0 && <text className={i.axis} x={x + bw / 2} y={H - 6} textAnchor="middle">{md(d.d)}</text>}
           </g>
         })}
@@ -68,10 +69,10 @@ export default function Insights() {
           {ex.last.next_cursor ? ' · 이 기간에 남은 로그가 더 있어요' : ' · 이 기간 로그를 모두 내보냈어요'}
         </Notice>)}
       <div className={i.tiles}>
-        <div className={i.tile}><span>AI 입력</span><b>{E.length.toLocaleString()}</b><small>하루 평균 {Math.round(E.length / n)}건{E.some(e => e.file) ? ` · 파일 ${E.filter(e => e.file).length}건` : ''}</small></div>
-        <div className={i.tile}><span>개인정보 변환</span><b>{sens.length.toLocaleString()}</b><small>입력의 {pct(sens.length, E.length)}%</small></div>
-        <div className={i.tile}><span>원문 전송</span><b style={{ color: raw ? 'var(--danger)' : undefined }}>{raw}</b><small>민감 입력의 {pct(raw, sens.length)}%</small></div>
-        <div className={i.tile}><span>항목 되돌림률</span><b>{pct(rev, items.length)}%</b><small>{items.length}개 항목 중 {rev}개</small></div>
+        <div className={i.tile}><span>AI 입력<MessageSquareText size={20} /></span><b>{E.length.toLocaleString()}</b><small>하루 평균 {Math.round(E.length / n)}건{E.some(e => e.file) ? ` · 파일 ${E.filter(e => e.file).length}건` : ''}</small></div>
+        <div className={i.tile}><span>개인정보 변환<Shuffle size={20} /></span><b>{sens.length.toLocaleString()}</b><small>입력의 {pct(sens.length, E.length)}%</small></div>
+        <div className={i.tile}><span>원문 전송<Send size={20} /></span><b style={{ color: raw ? 'var(--danger)' : undefined }}>{raw}</b><small>민감 입력의 {pct(raw, sens.length)}%</small></div>
+        <div className={i.tile}><span>항목 되돌림률<Undo2 size={20} /></span><b>{pct(rev, items.length)}%</b><small>{items.length}개 항목 중 {rev}개</small></div>
       </div>
       <div className={i.grid}>
         <section className={i.card}><h2>AI 입력<small>일별</small></h2><Daily days={days} k="n" /></section>
@@ -80,8 +81,8 @@ export default function Insights() {
       <div className={i.grid}>
         <section className={i.card}>
           <h2>탐지 항목<small>건수 · 원문으로 나간 비율</small></h2>
-          {byType.length ? <div className={i.hbars}>{byType.map(([t, b]) => { const r = pct(b.rev, b.n); return (
-            <div key={t} className={i.hb} title={`${t} ${b.n}개 중 ${b.rev}개 원문`}><span>{t}</span><span className={i.track}><i style={{ width: `${(b.n / tmax) * 100}%` }} /></span>
+          {byType.length ? <div className={i.hbars}>{byType.map(([t, b], j) => { const r = pct(b.rev, b.n); return (
+            <div key={t} className={i.hb} title={`${t} ${b.n}개 중 ${b.rev}개 원문`}><span>{t}</span><span className={i.track}><i style={{ width: `${(b.n / tmax) * 100}%`, background: `var(--c${(j % 5) + 1})` }} /></span>
               <em><span className={r >= 30 ? i.warn : undefined}>{r}%</span><small>{b.n}개</small></em></div>) })}</div>
             : <p className={i.note}>이 기간에 민감 입력이 없어요</p>}
           <details><summary>표로 보기</summary><table className={i.table}><thead><tr><th>항목</th><th>건수</th><th>원문</th></tr></thead><tbody>{byType.map(([t, b]) => <tr key={t}><td>{t}</td><td>{b.n}</td><td>{b.rev}</td></tr>)}</tbody></table></details>
@@ -89,7 +90,7 @@ export default function Insights() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
           {byAi.length > 0 && <section className={i.card}>
             <h2>대상 AI<small>입력 건수</small></h2>
-            <div className={i.hbars}>{byAi.map(([t, v]) => <div key={t} className={i.hb}><span>{t}</span><span className={i.track}><i style={{ width: `${(v / amax) * 100}%` }} /></span><em>{v}건</em></div>)}</div>
+            <div className={i.hbars}>{byAi.map(([t, v], j) => <div key={t} className={i.hb}><span>{t}</span><span className={i.track}><i style={{ width: `${(v / amax) * 100}%`, background: `var(--c${(j % 5) + 1})` }} /></span><em>{v}건</em></div>)}</div>
           </section>}
           {st && <section className={i.card}>
             <h2>서버 집계<small>{n}일 · 전체 이벤트 기준</small></h2>

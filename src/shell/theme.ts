@@ -1,11 +1,11 @@
-// 테마: 저장한 값(라이트/다크)이 없으면 시스템 설정을 따른다.
+// 테마: 저장한 값(라이트/다크)이 없으면 다크(Devs 디자인 시스템이 다크 기준).
 import { emit } from '../domain/store'
 
 type Theme = 'light' | 'dark'
 const KEY = 'console-theme'
 const read = (): Theme | null => { try { const v = localStorage.getItem(KEY); return v === 'light' || v === 'dark' ? v : null } catch { return null } }
 
-export function initTheme() { const t = read(); if (t) document.documentElement.dataset.theme = t }
+export function initTheme() { document.documentElement.dataset.theme = read() ?? 'dark' }
 export function currentTheme(): Theme {
   const t = document.documentElement.dataset.theme
   if (t === 'light' || t === 'dark') return t
