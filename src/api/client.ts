@@ -6,6 +6,7 @@ import { S, ent, emit, toast, type ServerStats } from '../domain/store'
 import { loadPolicy } from './policy'
 import { loadCases } from './cases'
 import { loadFpDecisions } from './fp'
+import { baseline, startLive, stopLive } from './live'
 
 export interface ServerEvent {
   id: number; created_at: string; grade: string; action: string; reason: string | null
@@ -75,7 +76,7 @@ export function fromServer(ev: ServerEvent): AiEvent {
 }
 // 필수·선택은 보낼 때 사유를 남겼는지로 나눈다(사유 요청 뒤 낸 사유는 필수 그대로)
 const sentWithReason = (e: AiEvent) => { const s = e.server as ServerEvent | undefined; return !!(s?.reason && !s.reason_requested_at) }
-function casesFrom(events: AiEvent[]): Case[] {
+export function casesFrom(events: AiEvent[]): Case[] {
   return events.filter(e => e.grade === 'S' && (e.action === 'raw' || (e.action === 'revert' && e.items.some(i => i.reason === '업무상 필요')))).map(e => ({
     id: 'INC-' + e.id, ev: e, need: sentWithReason(e) ? 'opt' : 'req', time: e.time, user: e.user, dept: e.dept, items: e.items, file: null,
     status: 'open', close: null, timeline: [],
@@ -84,7 +85,7 @@ function casesFrom(events: AiEvent[]): Case[] {
 }
 
 // 기간 이벤트를 끝까지 읽는다(/logs/events 의 cursor 페이지 넘김). 예전 서버는 cursor 를 무시하므로 같은 페이지가 오면 멈춘다.
-async function allEvents(from: Date, max = 20): Promise<ServerEvent[]> {
+export async function allEvents(from: Date, max = 20): Promise<ServerEvent[]> {
   S.api.truncated = false
   const q = new URLSearchParams({ limit: '1000', start: from.toISOString(), ...(S.api.includeTest ? { include_test: 'true' } : {}) }), out: ServerEvent[] = []
   for (let i = 0; i < max; i++) {
@@ -115,12 +116,15 @@ export function setIncludeTest(v: boolean) {
 export async function connect(): Promise<boolean> {
   const cands = candidates()
   let denied = false // 서버는 살아 있는데 토큰이 없거나 틀림(401·403)
+  stopLive()
   S.api.state = 'connecting'; emit()
   for (const base of cands) {
     S.api.base = base
     try {
       const h = await get<{ status: string }>('/health')
       if (h.status !== 'ok') continue
+      // 데이터를 읽기 전에 변경 표시값을 먼저 받아 둔다(읽는 사이에 바뀐 것도 다음 확인에서 잡힌다)
+      await baseline()
       const evs = await allEvents(new Date(Date.now() - 30 * 864e5))
       S.now = new Date(); S.loaded = Date.now()
       S.events = evs.map(fromServer).sort((a, b) => +b.time - +a.time)
@@ -130,8 +134,9 @@ export async function connect(): Promise<boolean> {
       try { stats = await periodStats(7) } catch { /* 통계는 없어도 된다 */ }
       try { await loadPolicy() } catch { /* 정책 API가 없는 서버면 콘솔 정책 그대로 */ }
       try { await loadFpDecisions() } catch { /* 오탐 판단 API가 없는 서버면 정책의 탐지 제외로만 되살린다 */ }
-      Object.assign(S.api, { state: 'live', live: true, count: S.events.filter(e => +e.time >= Date.now() - 7 * 864e5).length, stats, synced: new Date() })
+      Object.assign(S.api, { state: 'live', live: true, count: S.events.filter(e => +e.time >= Date.now() - 7 * 864e5).length, stats, synced: new Date(), stale: false })
       emit()
+      startLive()
       return true
     } catch (e) { if (/^40[13]$/.test((e as Error).message)) denied = true /* 다음 후보 */ }
   }

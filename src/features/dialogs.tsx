@@ -6,6 +6,7 @@ import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, josa, partial } from '../lib/util'
 import { QUEUE_KO, connect, post, setIncludeTest } from '../api/client'
 import { afterServerPublish, applyOnServer, publishToServer, reasonKo } from '../api/policy'
+import { EVERY } from '../api/live'
 import { Button, Checkbox, Field, Input, KV, Notice, Select, Switch, Tag, TextArea } from '../ds'
 import { Modal } from '../ds/Overlay'
 import f from './dialogs.module.css'
@@ -191,6 +192,7 @@ function Server() {
       <KV rows={[
         ['주소', a.base === '/api' ? '같은 주소 프록시 → 백엔드' : a.base],
         ['불러온 시각', a.synced ? fmt(a.synced) : '—'],
+        ['실시간 갱신', a.stale ? '서버 응답이 없어 다시 시도하는 중' : `${EVERY / 1000}초마다 변경 확인`],
         ['최근 7일', `${a.count}건${a.truncated ? ' (너무 많아 일부만 불러옴)' : ''}`],
         ...(st ? [['서버 전체', `${st.total}건`], ['수용률 · 되돌림률', `${pct(st.acceptance_rate)} · ${pct(st.revert_rate)}`]] as [string, string][] : []),
       ]} />

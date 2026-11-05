@@ -32,7 +32,7 @@ function navBadge(r: Route): ReactNode {
 
 const connText = () => {
   const a = S.api
-  return a.state === 'live' ? `서버 ${a.count}건` : a.state === 'connecting' ? '연결하는 중' : a.state === 'auth' ? '인증 필요' : '연결 안 됨'
+  return a.state === 'live' ? `서버 ${a.count}건${a.stale ? ' · 갱신 멈춤' : ''}` : a.state === 'connecting' ? '연결하는 중' : a.state === 'auth' ? '인증 필요' : '연결 안 됨'
 }
 const openPalette = () => { S.ui.palette = true; emit() }
 const Brand = () => (

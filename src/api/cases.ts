@@ -63,8 +63,11 @@ export async function loadCaseDetail(c: Case) {
 // ── 서버 저장
 const queue = new Map<string, Promise<unknown>>()
 const mine = new Set<string>() // 이 화면에서 종결해 서버에 저장된 건(되돌리기는 이것만 다시 연다)
+let inflight = 0 // 서버에 보내는 중인 판단 수. 실시간 갱신은 0일 때만 건 목록을 바꾼다
+export const casesBusy = () => inflight > 0
+const track = <T,>(p: Promise<T>) => { inflight++; p.finally(() => { inflight-- }).catch(() => {}); return p }
 function enqueue(id: string, job: () => Promise<unknown>) {
-  const next = (queue.get(id) || Promise.resolve()).then(job, job)
+  const next = track((queue.get(id) || Promise.resolve()).then(job, job))
   queue.set(id, next)
   return next
 }
@@ -97,9 +100,9 @@ function onCloseMany(all: Case[]) {
   one.forEach(onClose)
   for (let i = 0; i < cs.length; i += 100) {
     const part = cs.slice(i, i + 100), ids = part.map(c => c.id)
-    const job = Promise.all(ids.map(id => queue.get(id))).then(() => post<{ items: unknown[] }>('/cases/close-bulk', { ids, conclusion: 'legit', memo }))
+    const job = track(Promise.all(ids.map(id => queue.get(id))).then(() => post<{ items: unknown[] }>('/cases/close-bulk', { ids, conclusion: 'legit', memo }))
       .then(() => ids.forEach(id => mine.add(id)))
-      .catch(e => refresh(`일괄 종결을 저장하지 못했어요 (${(e as Error).message}) · 최신 상태로 바꿨어요`))
+      .catch(e => refresh(`일괄 종결을 저장하지 못했어요 (${(e as Error).message}) · 최신 상태로 바꿨어요`)))
     ids.forEach(id => queue.set(id, job))
   }
 }

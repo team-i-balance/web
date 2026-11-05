@@ -13,7 +13,7 @@ export const hashOf = (orig: string) => { const m = /^⟦=.*#([0-9a-fA-F]{64})�
 const groupHash = (g: FpGroup) => hashOf(g.value)
 
 // 판단을 마친 값(done)을 읽어 같은 값의 신고를 '처리함'으로 둔다. 판단 뒤 새 신고가 오면 서버가 open 으로 돌려준다
-export async function loadFpDecisions() {
+async function fetchDone() {
   const done = new Map<string, 'keep' | 'exclude'>()
   let cursor: number | null = null
   for (let i = 0; i < 10; i++) {
@@ -22,6 +22,19 @@ export async function loadFpDecisions() {
     if (page.length < 1000) break
     cursor = page[page.length - 1].last_event_id
   }
+  return done
+}
+// 신고된 항목의 상태를 서버 판단 + 아직 보내지 않은 '유지'(되돌리기 대기) 기준으로 다시 정한다.
+// 실시간 갱신은 이벤트를 다시 읽으므로 전부 다시 계산한다(서버가 open 으로 돌린 값도 반영)
+export async function refreshFpDecisions() {
+  const done = await fetchDone()
+  S.events.forEach(e => e.items.forEach(it => {
+    const h = it.fp ? hashOf(it.orig) : null
+    if (h) it.fp = pending.has(h) ? 'keep' : done.get(h) ?? 'open'
+  }))
+}
+export async function loadFpDecisions() {
+  const done = await fetchDone()
   S.events.forEach(e => e.items.forEach(it => {
     const h = it.fp ? hashOf(it.orig) : null
     if (h && done.has(h)) it.fp = done.get(h)!

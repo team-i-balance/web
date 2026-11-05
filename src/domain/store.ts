@@ -29,7 +29,7 @@ export const S = {
   // 배포 기록: 서버 /policy/history 로 채운다
   history: [
   ] as { version: string; at: Date; changes: PolicyChange[]; server: boolean }[],
-  api: { truncated: false, includeTest: (() => { try { return localStorage.getItem('includeTest') === '1' } catch { return false } })(), state: 'connecting' as 'connecting' | 'live' | 'offline' | 'auth', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
+  api: { truncated: false, includeTest: (() => { try { return localStorage.getItem('includeTest') === '1' } catch { return false } })(), state: 'connecting' as 'connecting' | 'live' | 'offline' | 'auth', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy, stale: false },
   ui: {
     sel: null as Queue | null,
     cur: {} as Partial<Record<Queue, string>>,
