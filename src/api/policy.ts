@@ -18,13 +18,19 @@ async function sha256(s: string) {
   return 'sha256:' + [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+// 회사 고유 단어 종류 → 서버가 쓸 등급(S: 사내정보 · C: 기밀)
+export const DICT_TYPES: Record<string, { on: boolean; grade: 'S' | 'C'; method: string }> = { '프로젝트 코드명': { on: true, grade: 'S', method: '대체' }, '미공개 실적': { on: true, grade: 'C', method: '—' } }
+
 // 회사 고유 단어·탐지 제외 값은 평문 대신 해시로 보낸다
 export async function buildPayload(P: Policy) {
   return {
     schema: 1, org: ORG, thresholds: THRESHOLDS,
     rules: P.learned.map((r, i) => ({ id: `r-${i + 1}`, label: r.type.slice(0, 15), description: r.when.slice(0, 40), grade: ent(r.type)?.grade === 'C' ? 'C' : 'S', action: r.method })),
-    types: Object.fromEntries(P.entities.map(e => [e.name, { on: e.on, grade: e.grade, method: e.method }])),
-    dict: await Promise.all(P.dict.map(async d => ({ h: d.term.startsWith('⟦h=') ? d.term.slice(3, -1) : await sha256(d.term), type: d.type }))),
+    // 회사 고유 단어의 종류도 types 에 둔다. 서버는 그 grade 로 기밀(C)·사내정보를 고른다(policy_apply.py)
+    types: { ...DICT_TYPES, ...Object.fromEntries(P.entities.map(e => [e.name, { on: e.on, grade: e.grade, method: e.method }])) },
+    // 함께 잡을 표현도 단어마다 해시로 넣어야 서버가 잡는다
+    dict: (await Promise.all(P.dict.map(async d => d.term.startsWith('⟦h=') ? [{ h: d.term.slice(3, -1), type: d.type }]
+      : Promise.all([d.term, ...(d.alias || '').split(',').map(x => x.trim()).filter(Boolean)].map(async t => ({ h: await sha256(t), type: d.type })))))).flat(),
     // 서버 이벤트에서 온 값은 평문이 없으므로 서버가 준 값 해시(HMAC, #21)를 그대로 보낸다
     exclude: await Promise.all(P.exclude.map(async x => (x.term.startsWith('⟦h=') ? { h: x.term.slice(3, -1) } : x.term.startsWith('⟦=') ? { h: 'hmac:' + x.term.slice(x.term.indexOf('#') + 1, -1) } : { h: await sha256(x.term) }))),
   }

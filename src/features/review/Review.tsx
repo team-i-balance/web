@@ -53,8 +53,8 @@ function Detail({ c }: { c: Case }) {
         <DecideButton title="문제 없음" desc="정당한 업무 사용으로 종결해요" k="2" onClick={() => decide('ok')} /></div>{detail}</>
     : <><div className={r.decide}>
         <DecideButton title="위반으로 기록" desc="위반 이력이 남아요" k="1" onClick={() => decide('violation')} />
-        <DecideButton title="이번 건 예외 인정" desc="업무상 필요했어요 · 자동 변환 규칙 초안이 생겨요" k="2" onClick={() => decide('legit')} />
-        <DecideButton title="오탐으로 기록" desc="개인정보가 아니었어요" k="3" onClick={() => decide('fp')} /></div>{detail}</>
+        <DecideButton title="정당한 사용 · 규칙 추가" desc="업무상 필요했어요 · 이 항목을 서버 탐지에 더하는 규칙 초안이 생겨요" k="2" onClick={() => decide('legit')} />
+        <DecideButton title="오탐으로 기록" desc="이 건만 닫아요 · 탐지는 그대로예요" k="3" onClick={() => decide('fp')} /></div>{detail}</>
   // 직원 처리 열: 행마다 처리가 섞일 때만
   const mixed = new Set(c.items.map(i => i.status)).size > 1
   const del = <span className={clsx(ds.mask, ds.maskDel)}>삭제</span>

@@ -141,7 +141,13 @@ export function suggestRule(c: Case, type?: string) {
   const when = ty === '프로젝트 코드명' ? `"${it.orig}"${josa(it.orig, '이', '가').slice(it.orig.length)} 포함된 입력` : `${josa(ty, '이', '가')} 포함된 ${c.file ? '파일' : '입력'}`
   return { item: it, type: ty, method, when, current: cur }
 }
-export function addRule(c: Case, type: string, when: string, method: Method) {
+// 서버 SLM 은 규칙 label(=항목 이름)이 겹치거나 고정 라벨과 같으면 정책 전체를 적용하지 못한다(backend slm/__init__.py).
+// 그래서 같은 항목 규칙은 하나만 두고, 고정 라벨과 같은 이름은 규칙으로 만들지 않는다
+export const RESERVED_RULE = new Set(['사람 이름', '주소', '개인 민감정보'])
+export function addRule(c: Case, type: string, when: string, method: Method): string | null {
+  if (RESERVED_RULE.has(type)) return null
+  const same = S.policy.learned.find(r => r.type === type)
+  if (same) return `${same.when} → ${same.type} ${same.method}`
   const rule = `${when} → ${type} ${method}`
   S.policy.learned.push({ type, when, method, from: c.id, hits: 0, live: false })
   change(`자동 변환 추가: ${rule}`, c.id)
@@ -156,7 +162,7 @@ export function quickClose(c: Case, k: Conclusion | 'ok') {
     if (k === 'legit') { const s = suggestRule(c); rule = addRule(c, s.type, s.when, s.method) }
     closeCase(c, { k, cause: k === 'legit' ? 'fit' : null, /* 빠른 판단에서는 원인을 고르지 않았으니 남기지 않는다 */ memo: { violation: '사유 확인 — 위반', legit: '사유 확인 — 업무상 필요', fp: '개인정보 아님' }[k], rule })
   }
-  const label = { violation: '위반', legit: '예외 인정', fp: '오탐', ok: '문제 없음' }[k]
+  const label = { violation: '위반', legit: '정당한 사용 · 규칙 추가', fp: '오탐', ok: '문제 없음' }[k]
   const ruled = S.policy.learned.length > nL
   undoToast(`${c.user} · ${label}${ruled ? ' · 규칙 추가돼 배포 대기' : ''}`, () => {
     c.status = 'open'; c.close = null; c.timeline.pop(); S.policy.learned.length = nL; S.policy.changes.length = nC

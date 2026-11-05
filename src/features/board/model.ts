@@ -31,9 +31,8 @@ export function useBoardModel() {
   const eff = SEL === 'pol' && !!lastPub && !P.changes.length
 
   const steps: Step[] | null = !cur && SEL !== 'pol' ? null : ({
-    req: (cur as Case | null)?.reason ? [['원문 전송', 'done'], ['사유 도착', 'done'], ['판단', 'now'], ['규칙 배포', 'next'], ['서버 적용', 'next']]
-      : [['원문 전송', 'done'], ['사유 요청', 'now'], ['판단', 'next'], ['규칙 배포', 'next'], ['서버 적용', 'next']],
-    opt: [['되돌림', 'done'], ['사유 남김', 'done'], ['확인', 'now'], ['종결', 'next']],
+    req: [['원문 전송', 'done'], [(cur as Case | null)?.reason ? '사유 도착' : '사유 없음', 'done'], ['판단', 'now'], ['종결', 'next']],
+    opt: [['원문 전송', 'done'], ['사유 남김', 'done'], ['확인', 'now'], ['종결', 'next']],
     fp: [['오탐으로 되돌림', 'done'], ['판단', 'now'], ['배포', 'next'], ['서버 적용', 'next']],
     pol: eff ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'done'], ['서버 적용', behind ? 'now' : 'done']]
       : P.changes.length ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'now'], ['서버 적용', 'next']]

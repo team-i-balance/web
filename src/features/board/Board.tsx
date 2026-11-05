@@ -17,7 +17,7 @@ import b from './board.module.css'
 const SW = 1120, SH = 256, W = 200, H = 80, AY = 36, BY = 164, PAD = 24, TOP = 48
 const cx = (x: number) => x + W / 2, my = (y: number) => y + H / 2
 const POS: Record<string, [number, number]> = { in: [0, AY], conv: [300, AY], raw: [640, AY], fp: [200, BY], opt: [420, BY], req: [640, BY], pol: [920, BY] }
-const DECIDE = [['violation', '위반으로 기록', '위반 이력이 남아요'], ['legit', '이번 건 예외 인정', '같은 입력 자동 변환 규칙 초안이 생겨요'], ['fp', '오탐으로 기록', '개인정보가 아닌 값을 잡았어요']] as const
+const DECIDE = [['violation', '위반으로 기록', '위반 이력이 남아요'], ['legit', '정당한 사용 · 규칙 추가', '업무상 필요했어요 · 이 항목을 서버 탐지에 더하는 규칙 초안이 생겨요'], ['fp', '오탐으로 기록', '이 건만 닫아요 · 탐지는 그대로예요']] as const
 const slide = { initial: { opacity: 0, x: 16 }, animate: { opacity: 1, x: 0 }, transition: { duration: 0.2, ease: [0.2, 0.8, 0.2, 1] as const } }
 
 // 흐름도 크기: 폭에 맞춰 줄이고(최소 0.62배), 그보다 좁으면 가로로 밀어 본다

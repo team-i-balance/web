@@ -1,7 +1,7 @@
 // 변환 정책: 지금 적용 중인 정책을 고치면 초안으로 쌓이고, 아래 막대에서 서명 후 배포한다.
 import { useEffect, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
-import { S, useStore, metrics, deleteRule, setEntityOn, setEntityGrade, setEntityMethod, deleteDict, deleteExclude, setMeta } from '../../domain/store'
+import { S, useStore, metrics, deleteRule, setEntityOn, setEntityGrade, setEntityMethod, deleteDict, deleteExclude } from '../../domain/store'
 import { GRADE, METHODS } from '../../domain/defaults'
 import type { Method } from '../../domain/types'
 import { Button, Empty, Select, Switch, Tag, ds } from '../../ds'
@@ -44,13 +44,12 @@ export default function Policy() {
   const P = S.policy
   const pm7 = metrics(new Date(+S.now - 7 * 864e5))
   const dr = (k: RegExp) => P.changes.some(c => k.test(c.what))
-  const metaOn = Object.values(P.meta).filter(Boolean).length
   const secs: [string, string, string, RegExp][] = [
     ['p-types', '탐지 항목', `${P.entities.filter(e => e.on).length}/${P.entities.length}`, /탐지 (켬|끔)|등급:|변환 방식:/],
     ['p-rules', '자동 변환 규칙', `${P.learned.length}`, /자동 변환/],
     ['p-dict', '회사 고유 단어', `${P.dict.length}`, /고유 단어/],
     ['p-ex', '탐지 제외', `${P.exclude.length}`, /탐지 제외/],
-    ['p-file', '파일 사본', `${metaOn}/${Object.keys(P.meta).length}`, /파일 사본/],
+    ['p-file', '파일 사본', '늘 지움', /파일 사본/],
   ]
   const active = useActive(secs.map(x => x[0]))
   const st = serverStatus()
@@ -88,16 +87,15 @@ export default function Policy() {
         </section>
 
         <section className={p.sec} id="p-rules">
-          <div className={p.sh}><h2>자동 변환 규칙</h2></div>
-          {P.learned.length ? <div className={p.tbox}><table className={T}><thead><tr><th>항목</th><th>이런 경우에</th><th>이렇게</th><th>출처</th><th className="num">적용 횟수</th><th /></tr></thead><tbody>
+          <div className={p.sh}><div><h2>자동 변환 규칙</h2><p>서버 AI 탐지(SLM)가 이 항목을 더 찾아 사내정보로 가려요. 설명은 기록용이고 탐지에는 쓰이지 않아요</p></div></div>
+          {P.learned.length ? <div className={p.tbox}><table className={T}><thead><tr><th>항목</th><th>설명</th><th>이렇게</th><th>출처</th><th /></tr></thead><tbody>
             {[...P.learned].reverse().map((r, i) => <tr key={i}>
-              <td className={p.name}>{r.type} {r.type.length > 15 && <Tag tone="warn">15자 넘음</Tag>}</td>
+              <td className={p.name}>{r.type} {r.type.length > 15 && <Tag tone="warn">15자 넘음</Tag>}{P.learned.filter(x => x.type === r.type).length > 1 && <Tag tone="warn">같은 항목 규칙이 2개 · 배포하면 적용 실패</Tag>}</td>
               <td>{r.when} {r.when.length > 40 && <Tag tone="warn">40자 넘음</Tag>}<Draft on={!r.live} /></td>
               <td>{r.method}</td>
               <td>{/^INC-/.test(r.from) ? <a href={`#review/${r.from}`}>{r.from}</a> : r.from}</td>
-              <td className="num">{r.hits ? r.hits.toLocaleString() : <span className={p.faint}>—</span>}</td>
               <td className={p.act}>{del(`${r.type} 규칙 삭제`, () => deleteRule(P.learned.length - 1 - i))}</td></tr>)}
-          </tbody></table></div> : <Empty title="아직 규칙이 없어요" text="위반 검토에서 예외 인정하면 생겨요" />}
+          </tbody></table></div> : <Empty title="아직 규칙이 없어요" text="위반 검토에서 '정당한 사용 · 규칙 추가'를 고르면 생겨요" />}
         </section>
 
         <section className={p.sec} id="p-dict">
@@ -118,10 +116,8 @@ export default function Policy() {
         </section>
 
         <section className={p.sec} id="p-file">
-          <div className={p.sh}><h2>파일 사본에서 지울 숨은 정보</h2></div>
-          {Object.keys(P.meta).length
-            ? <div className={p.metas}>{Object.entries(P.meta).map(([k, v]) => <label key={k} className={p.meta}><span>{k}</span><Switch checked={v} label={`${k} 지우기`} onChange={x => setMeta(k, x)} /></label>)}</div>
-            : <Empty title="지울 정보가 없어요" text="파일을 올릴 때 사본에서 빼요" />}
+          {/* 서버(file_sanitizer)는 엑셀 사본을 새로 만들며 보이는 셀만 옮겨서 숨은 정보는 늘 빠진다. 정책으로 끄고 켤 수 없다 */}
+          <div className={p.sh}><div><h2>파일 사본의 숨은 정보</h2><p>서버가 엑셀(XLSX) 사본을 새로 만들면서 보이는 셀만 옮겨요. 작성자·메모·숨긴 시트와 행은 늘 빠지고, 끌 수 없어요</p></div></div>
         </section>
       </div>
       {P.changes.length > 0 && <div className={p.bar} role="region" aria-label="배포 대기 변경">

@@ -139,8 +139,8 @@ function AddDict() {
   return (
     <Modal open onClose={closeDialog} title="회사 고유 단어 추가" desc="정책 초안에 추가돼요" foot={<Foot ok="추가하기" onOk={ok} />}>
       <Field label="단어" htmlFor="dterm" error={err && '단어를 적어 주세요'}><Input id="dterm" autoFocus placeholder="예: 프로젝트 백두" value={term} aria-invalid={err} onChange={e => { setTerm(e.target.value); setErr(false) }} /></Field>
-      <Field label="함께 잡을 표현" htmlFor="dalias" hint="쉼표로 여러 개"><Input id="dalias" placeholder="예: BAEKDU, 백두 PJT" value={alias} onChange={e => setAlias(e.target.value)} /></Field>
-      <Field label="어떤 정보로 잡을까요" htmlFor="dtype"><Select id="dtype" value={type} onChange={e => setType(e.target.value)}><option>프로젝트 코드명</option><option>미공개 실적</option></Select></Field>
+      <Field label="함께 잡을 표현" htmlFor="dalias" hint="쉼표로 여러 개 · 띄어쓰기로 나뉜 4낱말 이하, 대소문자까지 똑같을 때만 잡아요"><Input id="dalias" placeholder="예: BAEKDU, 백두 PJT" value={alias} onChange={e => setAlias(e.target.value)} /></Field>
+      <Field label="어떤 정보로 잡을까요" htmlFor="dtype"><Select id="dtype" value={type} onChange={e => setType(e.target.value)}><option value="프로젝트 코드명">프로젝트 코드명 · 사내정보로 가려요</option><option value="미공개 실적">미공개 실적 · 기밀로 판정해요</option></Select></Field>
     </Modal>
   )
 }
