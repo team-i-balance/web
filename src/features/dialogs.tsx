@@ -198,9 +198,9 @@ function Server() {
         ['불러온 시각', a.synced ? fmt(a.synced) : '—'],
         ['실시간 갱신', a.stale ? '서버 응답이 없어 다시 시도하는 중' : `${EVERY / 1000}초마다 변경 확인`],
         ['최근 7일', `${a.count}건${a.truncated ? ' (너무 많아 일부만 불러옴)' : ''}`],
-        ...(st ? [['서버 전체', `${st.total}건`], ['수용률 · 되돌림률', `${pct(st.acceptance_rate)} · ${pct(st.revert_rate)}`]] as [string, string][] : []),
+        ...(st ? [['최근 7일 서버 집계', `${st.total}건`], ['수용률 · 되돌림률', `${pct(st.acceptance_rate)} · ${pct(st.revert_rate)}`]] as [string, string][] : []),
       ]} />
-      <label className={f.checkRow} style={{ justifyContent: 'space-between' }}><span><b>시험 이벤트 포함</b><br /><small style={{ color: 'var(--mute)' }}>흐름도·현황 숫자에만 들어가요. 검토 건은 되지 않아요</small></span>
+      <label className={f.checkRow} style={{ justifyContent: 'space-between' }}><span><b>시험 이벤트 포함</b><br /><small style={{ color: 'var(--mute)' }}>흐름도·현황·오탐 신고 숫자에 들어가요. 위반 검토 건은 되지 않아요</small></span>
         <Switch checked={a.includeTest} label="시험 이벤트 포함" onChange={v => { setIncludeTest(v).then(ok => toast(ok ? `서버 데이터 ${S.api.count}건을 다시 불러왔어요` : '서버에 연결하지 못했어요')) }} /></label>
       {st && Object.keys(st.by_queue).length > 0 && <div className={f.tags}>{Object.entries(st.by_queue).map(([k, v]) => <Tag key={k}>{QUEUE_KO[k] || k} {v}</Tag>)}</div>}
       {out && <Note>{out}</Note>}

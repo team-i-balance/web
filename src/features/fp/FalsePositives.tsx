@@ -74,7 +74,7 @@ export default function FalsePositives() {
             {isOpen && <td className={f.pick}><Checkbox checked={picked.has(k)} label={`${partial(g.type, g.value)} 고르기`} onChange={v => toggle(k, v)} /></td>}
             <td className={f.chevC}><ChevronDown size={16} className={f.chev} aria-hidden="true" /></td>
             <td><div className={f.val}><b>{partial(g.type, g.value)}</b><span>{g.type}{cs.length > 0 && <a className={clsx(ds.tag, ds.tagOutline)} href={`#review/${cs[0]!.id}`}>선택 검토 있음</a>}</span></div></td>
-            <td className={clsx('num', f.cnt)}><b>{g.refs.length}회</b>{g.users.size < g.refs.length && <span>직원 {g.users.size}명</span>}</td>
+            <td className={clsx('num', f.cnt)}><b>{g.refs.length}회</b>{(() => { const u = [...g.users].filter(x => x !== '직원 미전송').length; return u > 0 && u < g.refs.length && <span>직원 {u}명</span> })()}</td>
             <td className={f.sent}><Sent segs={sentence(g, 0, true)} /></td>
             <td><div className={f.acts}>{isOpen
               ? <><Button size="sm" variant="ghost" className={f.exBtn} onClick={() => openDialog({ kind: 'exclude', groupKey: k })}>탐지 제외 검토</Button><Button size="sm" variant="quiet" onClick={() => keep([g])}>탐지 결과 유지</Button></>

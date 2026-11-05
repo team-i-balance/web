@@ -9,7 +9,7 @@ export function useBoardModel() {
   // ── 데이터
   const wk = new Date(+S.now - 7 * 864e5)
   const E = S.events.filter(e => e.time >= wk), n = (f: (e: (typeof E)[number]) => boolean) => E.filter(f).length
-  const pub = n(e => e.grade === 'O'), conf = n(e => e.grade === 'C'), confOut = n(e => e.grade === 'C' && (e.action === 'raw' || e.action === 'revert')), sens = n(e => e.grade === 'S'), raw = n(e => e.action === 'raw')
+  const pub = n(e => e.grade === 'O'), conf = n(e => e.grade === 'C'), confOut = n(e => e.grade === 'C' && (e.action === 'raw' || e.action === 'revert')), sens = n(e => e.grade === 'S'), raw = n(e => e.action === 'raw' || e.action === 'revert') /* 원문 그대로·원문으로 되돌림 둘 다 원문이 나감 */
   const req = openOf('req'), ready = req.filter(c => c.reason).sort((a, b2) => +b2.time - +a.time), wait = req.filter(c => !c.reason)
   const opt = openOf('opt').sort((a, b2) => +b2.time - +a.time), fps = fpGroups(true), P = S.policy
   const fresh = P.learned.filter(r => r.live && r.fresh).map(r => r.type)

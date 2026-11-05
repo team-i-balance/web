@@ -32,7 +32,8 @@ export default function Deploy() {
           <h2>서버 탐지에 쓰는 정책</h2>
           {live && <Button className={d.end} size="sm" variant="ghost" icon={<RefreshCw size={16} />} onClick={() => refreshActive()}>새로고침</Button>}
         </div>
-        {none ? <Empty icon={<ServerCog size={20} />} title="아직 배포한 정책이 없어요" text="정책을 고친 뒤 서명 후 배포하면 서버 탐지에 바로 적용돼요" />
+        {!live ? <Empty icon={<ServerCog size={20} />} title="서버에 연결되지 않았어요" text="연결되면 서버가 쓰는 정책을 보여 줘요" />
+          : none ? <Empty icon={<ServerCog size={20} />} title="아직 배포한 정책이 없어요" text="정책을 고친 뒤 서명 후 배포하면 서버 탐지에 바로 적용돼요" />
           : <div className={d.top}>
             <div className={d.left}>
               <p className={d.sum}><b className="num">{act ? `v${act.version}` : '없음'}</b><span>{act ? `${act.at ? fmt(new Date(act.at)) + ' 적용 · ' : ''}직원 입력은 모두 이 정책으로 검사해요` : '서버가 아직 어떤 정책도 쓰지 않아요 · 기본 탐지만 해요'}</span></p>

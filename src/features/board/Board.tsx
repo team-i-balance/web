@@ -65,12 +65,12 @@ export default function Board() {
   // ── 흐름도
   const N = [
     { id: 'in', l: 'AI 입력', v: E.length, s: '' },
-    { id: 'conv', l: '개인정보 변환', v: sens, s: '', t: `공개 ${pub} · 기밀 ${conf}${confOut ? `(원문 전송 ${confOut})` : ''}` },
-    { id: 'raw', l: '원문 전송', v: raw, s: '원문 그대로 보냄', danger: raw > 0, go: 'req' as Queue },
+    { id: 'conv', l: '개인정보 탐지', v: sens + conf, s: '', t: `민감 ${sens} · 기밀 ${conf}${confOut ? `(원문 전송 ${confOut})` : ''} · 공개 ${pub}` },
+    { id: 'raw', l: '원문 전송', v: raw, s: '원문 그대로·되돌림', danger: raw > 0, go: 'req' as Queue },
     { id: 'fp', l: '오탐 신고', v: fps.length, s: '잘못 잡힌 값', q: 'fp' as Queue },
     { id: 'opt', l: '선택 검토', v: opt.length, s: '사유 남기고 보냄', q: 'opt' as Queue },
     { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 대기 ${wait.length}` : '사유 없이 보냄', q: 'req' as Queue },
-    { id: 'pol', l: '재발 방지 배포', v: P.changes.length ? `대기 ${P.changes.length}` : P.version, s: P.changes.length ? '서명 후 배포' : pc ?? '적용 중', q: 'pol' as Queue },
+    { id: 'pol', l: '재발 방지 배포', v: P.changes.length ? `대기 ${P.changes.length}` : P.version, s: P.changes.length ? '서명 후 배포' : pc ?? (live ? '' : '연결 안 됨'), q: 'pol' as Queue },
   ]
   // 고른 대기열까지 들어오는 길은 강조색으로 이어 보인다
   // 원문 전송은 보낼 때 사유를 남겼는지에 따라 선택 검토(남김)와 필수 검토(안 남김)로 갈린다
@@ -173,14 +173,14 @@ export default function Board() {
         {pcRow && <div className={b.pcPad}>{pcRow}</div>}
       </div>
     )
-    side = P.learned.slice().reverse().map((r, i) => <div key={i} className={b.nx}><b>{r.type}<small>{r.live ? '적용 중' : '배포 대기'}</small></b><span>{r.when} → {r.method}</span></div>)
+    side = P.learned.slice().reverse().map((r, i) => <div key={i} className={b.nx}><b>{r.type}<small>{r.live ? '배포됨' : '배포 대기'}</small></b><span>{r.when} → {r.method}</span></div>)
   }
   const hasSide = !loading && (SEL === 'pol' ? P.learned.length > 0 : Q.length > 1 || (SEL === 'req' && wait.length > 0))
 
   return (
     <div className={b.board}>
       <section className={b.flow} aria-label="흐름도" data-coach="flow">
-        <div className={b.flowHead}><h2>처리 흐름</h2><span>최근 7일</span>{live && includeTest && <Tag tone="warn">시험 이벤트 포함</Tag>}{truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
+        <div className={b.flowHead}><h2>처리 흐름</h2><span>입력은 최근 7일 · 검토는 열린 건 전체</span>{live && includeTest && <Tag tone="warn">시험 이벤트 포함</Tag>}{truncated && <Tag tone="warn">일부만 불러옴</Tag>}</div>
         <div className={b.scroller} ref={scroller}>
           <div className={b.stageBox} style={{ width: boxW, height: SH * scale + TOP, marginLeft: off, marginRight: off }}>
             <div className={b.stage} style={{ width: SW, height: SH, top: TOP, transform: `scale(${scale})` }}>

@@ -55,7 +55,7 @@ export default function Insights() {
   useStore()
   const [span, setSpan] = useState<'7' | '30'>('7')
   const [more, setMore] = useState(20)
-  const { n, end, from, E, days, sens, raw, items, rev, byType, tmax, byAi, amax, st, live, ex, runExport } = useInsightsModel(span)
+  const { n, end, from, E, days, raw, sent, byType, tmax, byAi, amax, st, live, ex, runExport } = useInsightsModel(span)
   const files = E.filter(e => e.file).length
   return (
     <div className={i.wrap}>
@@ -76,13 +76,14 @@ export default function Insights() {
         </Notice>)}
       <div className={i.tiles}>
         <div className={i.tile}><span>AI 입력</span><b>{E.length.toLocaleString()}</b>{files > 0 && <small>파일 {files}건</small>}</div>
-        <div className={i.tile}><span>개인정보 변환</span><b>{sens.length.toLocaleString()}</b><small>입력의 {pct(sens.length, E.length)}%</small></div>
-        <div className={i.tile}><span>원문 전송</span><b className={raw ? i.danger : undefined}>{raw}</b><small>민감 입력의 {pct(raw, sens.length)}%</small></div>
-        <div className={i.tile}><span>항목 되돌림률</span><b>{pct(rev, items.length)}%</b><small>{items.length}개 항목 중 {rev}개</small></div>
+        <div className={i.tile}><span>변환해서 보냄</span><b>{sent.toLocaleString()}</b><small>입력의 {pct(sent, E.length)}%</small></div>
+        <div className={i.tile}><span>원문 전송</span><b className={raw ? i.danger : undefined}>{raw}</b><small>원문 그대로·되돌림 · 입력의 {pct(raw, E.length)}%</small></div>
+        {/* 항목별 되돌림은 서버에 없어(값 정보 미전송) 서버가 센 되돌림률만 보인다 */}
+        {st && <div className={i.tile}><span>되돌림률</span><b>{Math.round(st.revert_rate * 100)}%</b><small>서버 집계 · 되돌린 건 / 전체</small></div>}
       </div>
       <div className={i.grid}>
         <section className={ds.panel}><h2>AI 입력</h2><Daily days={days} k="n" /></section>
-        <section className={ds.panel}><h2 title="사유 선택 건너뜀">원문 전송</h2><Daily days={days} k="raw" raw /></section>
+        <section className={ds.panel}><h2 title="원문 그대로 보냄 + 원문으로 되돌림">원문 전송</h2><Daily days={days} k="raw" raw /></section>
       </div>
       <div className={i.grid}>
         <section className={ds.panel}>
@@ -108,7 +109,7 @@ export default function Insights() {
           {st && <section className={ds.panel}>
             <h2>서버 집계</h2>
             <div className={i.queues}>{Object.entries(st.by_queue).map(([k, v]) => <div key={k} className={i.q}>{QUEUE_KO[k] || k}<b>{v}</b></div>)}</div>
-            {st.by_policy_version && <div className={i.queues}>{Object.entries(st.by_policy_version).sort(([a], [b]) => (a === 'none' ? 1 : b === 'none' ? -1 : +b - +a)).map(([k, v]) => <div key={k} className={i.q}>{k === 'none' ? '정책 받기 전' : `정책 v${k}`}<b>{v}</b></div>)}</div>}
+            {st.by_policy_version && <div className={i.queues}>{Object.entries(st.by_policy_version).sort(([a], [b]) => (a === 'none' ? 1 : b === 'none' ? -1 : +b - +a)).map(([k, v]) => <div key={k} className={i.q}>{k === 'none' ? '버전 기록 없음' : `정책 v${k}`}<b>{v}</b></div>)}</div>}
             {st.by_action && <details className={i.more}><summary>처리별 건수</summary><div className={i.queues}>{Object.entries(st.by_action).map(([k, v]) => <div key={k} className={i.q}>{ACTION_KO[k] || k}<b>{v}</b></div>)}</div></details>}
             {st.evasion_suspect > 0 && <div><Tag tone="warn">회피 의심 {st.evasion_suspect}</Tag></div>}
           </section>}
@@ -124,7 +125,7 @@ export default function Insights() {
             <td className={i.nowrap}>{e.ai === 'AI 미전송' ? '—' : e.ai}{e.file && <Tag>{e.file.name}</Tag>}</td>
             <td>{[...new Set(e.items.map(x => x.type))].join(', ') || '—'}</td>
             <td>{e.grade === 'C' && <Tag tone="warn">{GRADE_KO[e.grade]}</Tag>}</td>
-            <td className={i.nowrap}>{e.action === 'raw' ? <Tag tone="danger">{ACT_KO[e.action]}</Tag> : ACT_KO[e.action]}</td>
+            <td className={i.nowrap}>{e.action === 'raw' || e.action === 'revert' ? <Tag tone="danger">{ACT_KO[e.action]}</Tag> : ACT_KO[e.action]}</td>
           </tr>)}
         </tbody></table></div> : <p className={i.note}>이 기간에 들어온 입력이 없어요</p>}
         {E.length > more && <div><Button size="sm" onClick={() => setMore(m => m + 50)}>더 보기</Button></div>}

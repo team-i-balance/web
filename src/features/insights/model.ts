@@ -4,15 +4,17 @@ import { S, type ServerStats } from '../../domain/store'
 import { exportLogs, periodStats, type ExportResult } from '../../api/client'
 
 const DAY = 864e5
+// 원문이 나간 건: 원문 그대로(send_as_is)와 원문으로 되돌림(revert_original) 둘 다
+const out = (e: { action: string }) => e.action === 'raw' || e.action === 'revert'
 export function useInsightsModel(span: '7' | '30') {
   const n = +span, end = new Date(S.now), from = new Date(+end - n * DAY)
   const E = S.events.filter(e => e.time >= from && e.time <= end)
   const days = Array.from({ length: n }, (_, j) => {
     const d0 = new Date(end.getFullYear(), end.getMonth(), end.getDate() - (n - 1 - j)), d1 = new Date(+d0 + DAY)
     const es = E.filter(e => e.time >= d0 && e.time < d1)
-    return { d: d0, n: es.length, raw: es.filter(e => e.action === 'raw').length }
+    return { d: d0, n: es.length, raw: es.filter(out).length }
   })
-  const sens = E.filter(e => e.grade === 'S'), raw = E.filter(e => e.action === 'raw').length
+  const sens = E.filter(e => e.grade === 'S'), raw = E.filter(out).length, sent = E.filter(e => e.action === 'sent').length
   const items = sens.flatMap(e => e.items)
   const rev = items.filter(x => x.status === 'revert').length
   const byType = Object.entries(items.reduce<Record<string, { n: number; rev: number }>>((m, x) => { const b = (m[x.type] ||= { n: 0, rev: 0 }); b.n++; if (x.status === 'revert' || x.status === 'raw') b.rev++; return m }, {}))
@@ -34,5 +36,5 @@ export function useInsightsModel(span: '7' | '30') {
     try { const r = await exportLogs(range[0], range[1], cont ? ex?.last?.next_cursor : null); setEx({ busy: false, total: base + r.exported, last: r, range }) }
     catch (e) { setEx({ busy: false, total: base, last: cont ? ex?.last : undefined, err: String((e as Error)?.message || e), range }) }
   }
-  return { n, end, from, E, days, sens, raw, items, rev, byType, tmax, byAi, amax, st, live: S.api.live, ex, runExport }
+  return { n, end, from, E, days, sens, raw, sent, items, rev, byType, tmax, byAi, amax, st, live: S.api.live, ex, runExport }
 }
