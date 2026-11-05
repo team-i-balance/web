@@ -1,6 +1,6 @@
 // 변환 정책: 지금 적용 중인 정책을 고치면 초안으로 쌓이고, 아래 막대에서 서명 후 배포한다.
 import { Plus, Trash2 } from 'lucide-react'
-import { S, useStore, metrics, setEntityOn, setEntityGrade, setEntityMethod, deleteDict, deleteExclude, setMeta } from '../../domain/store'
+import { S, useStore, metrics, deleteRule, setEntityOn, setEntityGrade, setEntityMethod, deleteDict, deleteExclude, setMeta } from '../../domain/store'
 import { GRADE, METHODS } from '../../domain/seed'
 import type { Method } from '../../domain/types'
 import { Button, Select, Switch, Tag } from '../../ds'
@@ -54,13 +54,14 @@ export default function Policy() {
 
         <section className={p.sec} id="p-rules">
           <div className={p.sh}><div><h2>자동 변환 규칙</h2><p>위반 검토에서 예외 인정하면 생겨요</p></div></div>
-          <div className={p.tbox}>{P.learned.length ? <table className={p.t}><thead><tr><th>항목</th><th>이런 경우에</th><th>이렇게</th><th>출처</th><th style={{ textAlign: 'right' }}>적용</th></tr></thead><tbody>
+          <div className={p.tbox}>{P.learned.length ? <table className={p.t}><thead><tr><th>항목</th><th>이런 경우에</th><th>이렇게</th><th>출처</th><th style={{ textAlign: 'right' }}>적용</th><th /></tr></thead><tbody>
             {[...P.learned].reverse().map((r, i) => <tr key={i}>
               <td className={p.name}>{r.type} {r.type.length > 15 && <Tag tone="warn">15자 넘음</Tag>}</td>
               <td>{r.when} {r.when.length > 40 && <Tag tone="warn">40자 넘음</Tag>} <Draft on={!r.live} /></td>
               <td>{r.method}</td>
               <td>{/^INC-/.test(r.from) ? <a href={`#review/${r.from}`}>{r.from}</a> : r.from}</td>
-              <td style={{ textAlign: 'right' }}>{r.hits ? r.hits.toLocaleString() + '회' : <span className={p.faint}>—</span>}</td></tr>)}
+              <td style={{ textAlign: 'right' }}>{r.hits ? r.hits.toLocaleString() + '회' : <span className={p.faint}>—</span>}</td>
+              <td style={{ textAlign: 'right' }}><Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={15} />} aria-label={`${r.type} 규칙 삭제`} onClick={() => deleteRule(P.learned.length - 1 - i)} /></td></tr>)}
           </tbody></table> : <p className={p.faint} style={{ padding: '0 12px 14px' }}>아직 규칙이 없어요</p>}</div>
         </section>
 

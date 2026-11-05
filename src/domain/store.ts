@@ -113,6 +113,7 @@ export function setEntityGrade(i: number, g: 'O' | 'S' | 'C') {
 export function setEntityMethod(i: number, m: Method) { const e = S.policy.entities[i], b = e.method; e.method = m; change(`${e.name} 변환 방식: ${b} → ${m}`); emit() }
 export function deleteDict(i: number) { const d = S.policy.dict.splice(i, 1)[0]; change(`회사 고유 단어 삭제: ${partial('', d.term)}`); emit() }
 export function addDict(term: string, alias: string, type: string) { S.policy.dict.unshift({ term, alias, type, draft: true }); change(`회사 고유 단어 추가: ${term}`); emit() }
+export function deleteRule(i: number) { const r = S.policy.learned.splice(i, 1)[0]; change(`자동 변환 삭제: ${r.when} → ${r.type} ${r.method}`, r.from); emit() }
 export function deleteExclude(i: number) { const d = S.policy.exclude.splice(i, 1)[0]; change(`탐지 제외 삭제: "${partial('', d.term)}"`); emit() }
 export function setMeta(k: string, v: boolean) { S.policy.meta[k] = v; change(`파일 사본: ${k} ${v ? '제거' : '유지'}`); emit() }
 export function publish(nv = nextVersion()) {

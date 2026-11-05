@@ -63,7 +63,7 @@ export default function Insights() {
   const byType = Object.entries(items.reduce<Record<string, { n: number; rev: number }>>((m, x) => { const b = (m[x.type] ||= { n: 0, rev: 0 }); b.n++; if (x.status === 'revert' || x.status === 'raw') b.rev++; return m }, {}))
     .sort((a, b) => b[1].n - a[1].n).slice(0, 8)
   const tmax = Math.max(1, ...byType.map(([, b]) => b.n))
-  const byAi = S.api.live ? [] : Object.entries(E.reduce<Record<string, number>>((m, e) => ((m[e.ai] = (m[e.ai] || 0) + 1), m), {})).sort((a, b) => b[1] - a[1])
+  const byAi = Object.entries(E.filter(e => e.ai !== 'AI 미전송').reduce<Record<string, number>>((m, e) => ((m[e.ai] = (m[e.ai] || 0) + 1), m), {})).sort((a, b) => b[1] - a[1])
   const amax = Math.max(1, ...byAi.map(([, v]) => v))
   // 서버 통계는 고른 기간으로 다시 받는다
   const [pst, setPst] = useState<ServerStats | null>(null)

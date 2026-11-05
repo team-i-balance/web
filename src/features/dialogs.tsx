@@ -4,7 +4,7 @@ import { TriangleAlert } from 'lucide-react'
 import { S, emit, useStore, hooks, caseById, closeCase, addRule, suggestRule, change, fpGroups, groupKey, fpExclude, publish, nextVersion, addDict, ent, toast, type Dialog } from '../domain/store'
 import { CAUSES, CONCLUSION, METHODS } from '../domain/seed'
 import type { Cause, Conclusion, Method } from '../domain/types'
-import { convert, fmt, partial } from '../lib/util'
+import { convert, fmt, josa, partial } from '../lib/util'
 import { QUEUE_KO, connect, post, setIncludeTest } from '../api/client'
 import { afterServerPublish, publishToServer, simulateDemoAcks } from '../api/policy'
 import { Button, Checkbox, Field, Input, KV, Select, Switch, Tag, TextArea, ds } from '../ds'
@@ -105,7 +105,7 @@ function Exclude({ groupKey: key, onDone }: { groupKey: string; onDone?: () => v
       <div className={f.valueCard}><span className={f.mut}>{g.type}</span><b className={f.big}>{partial(g.type, g.value)}</b></div>
       <KV rows={[['범위', '정확히 이 값만'], ['근거', `오탐 신고 ${g.refs.length}회 · 직원 ${g.users.size}명`], ['효과', `최근 7일 기준 ${less}건이 덜 잡혀요`]]} />
       {noHash && <Note warn>이 신고에는 서버의 값 해시가 없어 제외 규칙을 만들 수 없어요. 직원 앱이 값 해시를 보내야 해요.</Note>}
-      {PERSONAL.includes(g.type) && <Note warn>{g.type}은 개인정보예요. 회사 대표번호처럼 공개된 값일 때만 제외하세요.</Note>}
+      {PERSONAL.includes(g.type) && <Note warn>{josa(g.type, '은', '는')} 개인정보예요. 회사 대표번호처럼 공개된 값일 때만 제외하세요.</Note>}
       <Field label="제외 사유" htmlFor="why" error={err && '제외 사유를 적어 주세요'}>
         <Input id="why" autoFocus placeholder="예: 회사 대표번호 (홈페이지 공개)" value={why} aria-invalid={err} onChange={e => { setWhy(e.target.value); setErr(false) }} onKeyDown={e => { if (e.key === 'Enter') ok() }} />
       </Field>

@@ -69,7 +69,8 @@ export function fromServer(ev: ServerEvent): AiEvent {
       reason: action === 'revert' ? rsn : null, fp: action === 'revert' && rsn === '오탐' ? 'open' : null }))
   const h = (ev.content_hash || String(ev.id)).slice(0, 4)
   return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || `직원 ${h}`, dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: ev.source === 'file' ? { name: '엑셀 파일', meta: [] } : null,
-    tpl: ev.source === 'file' ? '엑셀 파일 · 내용은 서버에 저장하지 않아요' : '본문은 서버에 저장하지 않아요', items, grade, action,
+    // 본문은 서버에 없다. 항목별 가린 값(#21)이 있으면 그것만 이어서 보여 준다
+    tpl: (ev.items?.some(i => i.preview) ? items.map((_, i) => `{${i}}`).join('  ') + '  · ' : '') + (ev.source === 'file' ? '엑셀 파일 · 내용은 서버에 저장하지 않아요' : '본문은 서버에 저장하지 않아요'), items, grade, action,
     conf: ev.detection_confidence === 'high' ? 0.95 : ev.detection_confidence === 'medium' ? 0.75 : 0.5, ver: '', server: ev, test: !!ev.test } // 서버 이벤트에는 당시 정책 버전이 없다
 }
 function casesFrom(events: AiEvent[]): Case[] {

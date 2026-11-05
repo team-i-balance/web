@@ -77,7 +77,8 @@ function Palette() {
   const run = (f: () => void) => () => { close(); f() }
   if (!open) return null
   const w = boardWork(), nx = QUEUE_ORDER.find(k => w[k])
-  const cases = S.cases.filter(c => c.status === 'open').slice(0, 40)
+  // 열린 건을 먼저, 종결한 건은 최근 것부터
+  const cases = [...S.cases.filter(c => c.status === 'open'), ...S.cases.filter(c => c.status === 'closed').sort((a, b) => +b.close!.at - +a.close!.at)].slice(0, 80)
   const fps = fpGroups(true).slice(0, 20)
   return (
     <Modal open onClose={close} title="찾기·이동" wide>
@@ -91,9 +92,9 @@ function Palette() {
           <Command.Group heading="화면" className={sh.palGroup}>
             {(Object.keys(ROUTE_NAME) as Route[]).map(k => <Command.Item key={k} value={'화면 ' + ROUTE_NAME[k]} className={sh.palItem} onSelect={run(() => go(k))}>{ICON[k]}{ROUTE_NAME[k]}</Command.Item>)}
           </Command.Group>
-          {cases.length > 0 && <Command.Group heading="열린 건" className={sh.palGroup}>
+          {cases.length > 0 && <Command.Group heading="건" className={sh.palGroup}>
             {cases.map(c => <Command.Item key={c.id} value={`${c.user} ${c.dept} ${c.id} ${c.ev.ai}`} className={sh.palItem} onSelect={run(() => go('review/' + c.id))}>
-              <UserRound size={16} />{c.user}<span className={sh.palMeta}>{c.need === 'req' ? '필수' : '선택'} · {c.ev.ai} · {c.id}</span></Command.Item>)}
+              <UserRound size={16} />{c.user}<span className={sh.palMeta}>{c.status === 'closed' ? '종결' : c.need === 'req' ? '필수' : '선택'} · {c.ev.ai} · {c.id}</span></Command.Item>)}
           </Command.Group>}
           {fps.length > 0 && <Command.Group heading="오탐 신고 값" className={sh.palGroup}>
             {fps.map(g => <Command.Item key={g.type + g.value} value={`오탐 ${g.type} ${partial(g.type, g.value)}`} className={sh.palItem} onSelect={run(() => go('fp'))}>
