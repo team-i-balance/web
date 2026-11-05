@@ -10,7 +10,7 @@
 .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .edges { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
 .edge { fill: none; stroke: var(--line-2); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.edgeLoop { stroke-dasharray: 5 6; }
+.edgeLoop { stroke-dasharray: 5 6; opacity: .45; }
 .edgeHot { stroke: color-mix(in srgb, var(--danger) 55%, var(--surface)); }
 /* 고른 대기열까지 들어오는 길: 강조색 굵은 선 */
 .edgePath { stroke: var(--acc); stroke-width: 2.5; }
@@ -100,3 +100,6 @@ button.nx:hover { background: var(--chip); }
   .ph, .pb, .pcPad { padding-left: 16px; padding-right: 16px; }
   .phR { margin-left: 0; width: 100%; }
 }
+
+/* 판단 아래 참고 한 줄(지금 정책·처리 당시 버전) */
+.polNote { margin: 0; font-size: var(--t-13); color: var(--mute); }

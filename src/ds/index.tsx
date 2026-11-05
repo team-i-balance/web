@@ -31,10 +31,10 @@ export function LinkButton({ variant, size, icon, className, children, ...rest }
 export const Kbd = ({ children }: { children: ReactNode }) => <kbd className={s.kbd}>{children}</kbd>
 
 // 판단 버튼: 제목, 결과 한 줄, 단축키
-export function DecideButton({ title, desc, k, onClick }: { title: string; desc: string; k?: string; onClick: () => void }) {
+export function DecideButton({ title, desc, k, onClick }: { title: string; desc?: string; k?: string; onClick: () => void }) {
   return (
     <button type="button" className={s.decide} onClick={onClick} aria-keyshortcuts={k} data-decide={k}>
-      <b>{title}</b>{k && <Kbd>{k}</Kbd>}<span>{desc}</span>
+      <b>{title}</b>{k && <Kbd>{k}</Kbd>}{desc && <span>{desc}</span>}
     </button>
   )
 }

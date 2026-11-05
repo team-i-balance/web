@@ -83,6 +83,11 @@ export function fpGroups(open: boolean): FpGroup[] {
   return Object.values(g).sort((a, b) => b.refs.length - a.refs.length)
 }
 export const groupKey = (g: FpGroup) => g.type + '|' + g.value
+// 오탐 묶음에서 직원이 쓴 사유 글(같은 글은 한 번)과 이름을 아는 직원 수
+export const fpReasons = (g: FpGroup) => [...new Set(g.refs.map(r => (r.e.server as { reason_text?: string | null } | undefined)?.reason_text).filter((x): x is string => !!x))]
+export const fpPeople = (g: FpGroup) => [...g.users].filter(u => u !== '직원 미전송').length
+// 서버가 주지 않은 값('부서 미전송' 등)은 화면에 쓰지 않는다
+export const known = (...xs: (string | null | undefined)[]) => xs.filter(x => x && !/미전송$/.test(x)).join(' · ')
 export function metrics(from: Date, to: Date = S.now) {
   const sens = S.events.filter(e => e.grade === 'S' && e.time >= from && e.time < to && e.action !== 'cancel')
   const items = sens.flatMap(e => e.items)

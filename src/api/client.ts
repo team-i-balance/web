@@ -75,7 +75,7 @@ export function fromServer(ev: ServerEvent): AiEvent {
   // 직원 ID가 없으면 '직원 미전송'. 본문 해시는 사람이 아니라 글을 가리켜서 직원처럼 쓰지 않는다
   return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || '직원 미전송', dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: ev.source === 'file' ? { name: '엑셀 파일', meta: [] } : null,
     // 본문은 서버에 없다. 항목별 가린 값(#21)이 있으면 그것만 이어서 보여 준다
-    tpl: (ev.items?.some(i => i.preview) ? items.map((_, i) => `{${i}}`).join('  ') + '  · ' : '') + (ev.source === 'file' ? '엑셀 파일 · 내용은 서버에 저장하지 않아요' : '본문은 서버에 저장하지 않아요'), items, grade, action,
+    tpl: ev.items?.some(i => i.preview) ? items.map((_, i) => `{${i}}`).join('  ') : '', items, grade, action,
     conf: ev.detection_confidence === 'high' ? 0.95 : ev.detection_confidence === 'medium' ? 0.75 : 0.5, ver: ev.policy_version != null ? 'v' + ev.policy_version : '', server: ev, test: !!ev.test }
 }
 // 필수·선택은 보낼 때 사유를 남겼는지로 나눈다(사유 요청 뒤 낸 사유는 필수 그대로)
