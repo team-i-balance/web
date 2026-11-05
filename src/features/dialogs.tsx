@@ -1,13 +1,12 @@
 // 대화상자: 결론 내기 · 탐지 제외(오른쪽 패널) · 서명 후 배포 · 변경 내용 · 고유 단어 추가 · 일괄 종결 · 서버
 import { useState, type ReactNode } from 'react'
-import { TriangleAlert } from 'lucide-react'
 import { S, emit, useStore, hooks, caseById, closeCase, addRule, suggestRule, change, fpGroups, groupKey, fpExclude, publish, nextVersion, addDict, ent, toast, type Dialog } from '../domain/store'
 import { CAUSES, CONCLUSION, METHODS } from '../domain/seed'
 import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, josa, partial } from '../lib/util'
 import { QUEUE_KO, connect, post, setIncludeTest } from '../api/client'
 import { afterServerPublish, publishToServer, simulateDemoAcks } from '../api/policy'
-import { Button, Checkbox, Field, Input, KV, Select, Switch, Tag, TextArea, ds } from '../ds'
+import { Button, Checkbox, Field, Input, KV, Notice, Select, Switch, Tag, TextArea, ds } from '../ds'
 import { Modal } from '../ds/Overlay'
 import f from './dialogs.module.css'
 
@@ -15,7 +14,7 @@ export const PERSONAL = ['이름', '주민등록번호', '카드번호', '계좌
 export const closeDialog = () => { S.ui.dialog = null; emit() }
 export const openDialog = (d: Dialog) => { S.ui.dialog = d; emit() }
 
-const Note = ({ warn, children }: { warn?: boolean; children: ReactNode }) => <div className={warn ? f.warn : f.note}>{warn && <TriangleAlert size={15} />}<div>{children}</div></div>
+const Note = ({ warn, error, children }: { warn?: boolean; error?: boolean; children: ReactNode }) => <Notice tone={error ? 'error' : warn ? 'warning' : 'info'}>{children}</Notice>
 const Foot = ({ ok, onOk, busy, okLabel, disabled }: { ok: string; onOk: () => void; busy?: boolean; okLabel?: string; disabled?: boolean }) => <>
   <Button variant="ghost" onClick={closeDialog}>취소</Button>
   <Button variant="primary" onClick={onOk} disabled={busy || disabled}>{busy ? okLabel : ok}</Button>
@@ -157,7 +156,7 @@ function Publish({ onDone }: { onDone?: () => void }) {
       desc={S.api.live ? '서버가 버전을 매겨 서명해요. 직원 PC는 서명이 맞는 정책만 받아요.' : '서명한 정책만 직원 PC가 받아요.'}
       foot={<Foot ok="서명 후 배포하기" okLabel="서명하는 중…" busy={busy} onOk={ok} />}>
       <ChangeList />
-      {err && <Note warn>배포하지 못했어요: {err}</Note>}
+      {err && <Note error>배포하지 못했어요: {err}</Note>}
     </Modal>
   )
 }

@@ -3,7 +3,7 @@ import { MonitorCheck, RefreshCw, History } from 'lucide-react'
 import clsx from 'clsx'
 import { S, useStore } from '../../domain/store'
 import { acksNow, historyFromServer, reasonKo, refreshAcks } from '../../api/policy'
-import { Button, Empty, Meter, Tag } from '../../ds'
+import { Button, Empty, Meter, Notice, Tag } from '../../ds'
 import { openDialog } from '../dialogs'
 import { fmt } from '../../lib/util'
 import d from './deploy.module.css'
@@ -15,10 +15,8 @@ export default function Deploy() {
   const left = a ? a.devices - a.applied - a.rejected : 0
   return (
     <div className={d.wrap}>
-      {P.changes.length > 0 && <div className={clsx(d.pending, d.full)}>
-        <b>배포 대기 변경 {P.changes.length}개</b><span>서명 후 배포해야 직원 PC에 적용돼요</span>
-        <Button variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button>
-      </div>}
+      {P.changes.length > 0 && <div className={d.full}><Notice tone="info" title={`배포 대기 변경 ${P.changes.length}개`}
+        actions={<Button variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button>}>서명 후 배포해야 직원 PC에 적용돼요</Notice></div>}
 
       <section className={d.card} aria-label="지금 적용된 정책">
         <div className={d.ch}><h2>지금 정책</h2>{live ? <Tag tone="ok" dot>서버 기준</Tag> : <Tag dot>예시 데이터</Tag>}</div>
@@ -45,7 +43,7 @@ export default function Deploy() {
               <div className={clsx(d.stat, a.rejected > 0 && d.bad)}><span>거부</span><b>{a.rejected}</b></div>
               <div className={d.stat}><span>기다리는 중</span><b>{left}</b></div>
             </div>
-            {a.rejected > 0 && <div className={d.reasons}>{Object.entries(a.reject_reasons).map(([k, n]) => <div key={k} className={d.reason}><span>{reasonKo(k)}</span><span>{n}대</span></div>)}</div>}
+            {a.rejected > 0 && <Notice tone="warning" title={`거부한 PC ${a.rejected}대`}><ul className={d.reasons}>{Object.entries(a.reject_reasons).map(([k, n]) => <li key={k}><span>{reasonKo(k)}</span><span>{n}대</span></li>)}</ul></Notice>}
             <p className={d.note}>PC는 서명과 버전을 확인한 뒤에만 새 정책을 적용해요. 거부한 PC는 지금 정책을 그대로 써요.</p>
           </>}
       </section>

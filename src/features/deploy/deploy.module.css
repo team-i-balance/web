@@ -14,12 +14,10 @@
 .stat.bad b { color: var(--danger); }
 .stat.good b { color: var(--ok); }
 .big { font-size: var(--t-32); font-weight: 800; letter-spacing: -0.03em; }
-.reasons { display: flex; flex-direction: column; gap: 6px; }
-.reason { display: flex; justify-content: space-between; padding: 10px 12px; border-radius: var(--r-md); background: var(--danger-soft); color: var(--danger); font-size: var(--t-13); font-weight: 600; }
+.reasons { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+.reasons li { display: flex; justify-content: space-between; gap: 12px; }
+.reasons li span:last-child { color: var(--fg); font-weight: 600; }
 .note { font-size: var(--t-12); color: var(--mute); }
-.pending { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: var(--r-lg); background: var(--acc-tile); box-shadow: inset 0 0 0 1px var(--acc-ring); }
-.pending b { color: var(--acc-ink); }
-.pending > :last-child { margin-left: auto; }
 .hist { display: flex; flex-direction: column; }
 .hi { display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); }
 .hi:first-child { border-top: 0; padding-top: 4px; }

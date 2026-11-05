@@ -3,7 +3,7 @@ import { forwardRef, useId, type ButtonHTMLAttributes, type ReactNode, type Anch
 import * as RSwitch from '@radix-ui/react-switch'
 import * as RCheck from '@radix-ui/react-checkbox'
 import * as RTip from '@radix-ui/react-tooltip'
-import { Check, Minus } from 'lucide-react'
+import { Check, Minus, CircleCheck, TriangleAlert, CircleAlert, Info } from 'lucide-react'
 import clsx from 'clsx'
 import type { Case } from '../domain/types'
 import { partial } from '../lib/util'
@@ -46,6 +46,20 @@ export function Badge({ n, tone, label }: { n: number | string; tone?: 'now' | '
 export function Tag({ children, tone, dot }: { children: ReactNode; tone?: 'danger' | 'ok' | 'warn' | 'now' | 'outline'; dot?: boolean }) {
   const t = { danger: s.tagDanger, ok: s.tagOk, warn: s.tagWarn, now: s.tagNow, outline: s.tagOutline }
   return <span className={clsx(s.tag, tone && t[tone])}>{dot && <i className={s.dot} />}{children}</span>
+}
+
+// ── 알림 상자: 성공·경고·오류·안내. 아이콘 + 제목 한 줄 + 설명(두 줄 이내) + 행동
+export type NoticeTone = 'success' | 'warning' | 'error' | 'info'
+const NOTICE_ICON = { success: CircleCheck, warning: TriangleAlert, error: CircleAlert, info: Info }
+export function Notice({ tone = 'info', title, children, actions }: { tone?: NoticeTone; title?: ReactNode; children?: ReactNode; actions?: ReactNode }) {
+  const I = NOTICE_ICON[tone]
+  return (
+    <div className={clsx(s.notice, s[tone])} role={tone === 'error' ? 'alert' : undefined}>
+      <I size={16} className={s.noticeI} aria-hidden="true" />
+      <div className={s.noticeB}>{title && <b>{title}</b>}{children && <div>{children}</div>}</div>
+      {actions && <div className={s.noticeA}>{actions}</div>}
+    </div>
+  )
 }
 
 // ── 입력

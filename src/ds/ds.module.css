@@ -6,20 +6,25 @@
   border: 1px solid var(--line-2); background: var(--surface); color: var(--fg);
   font-size: var(--t-14); font-weight: 600; line-height: 1; white-space: nowrap; text-decoration: none;
   box-shadow: var(--sh-1);
-  transition: background var(--d-1) var(--ease), border-color var(--d-1) var(--ease), transform var(--d-1) var(--ease), box-shadow var(--d-1) var(--ease);
+  transition: background var(--d-1) var(--ease), border-color var(--d-1) var(--ease), color var(--d-1) var(--ease);
 }
+/* 상태 4단계: 기본 → 올림 → 누름 → 비활성(Devs 버튼 규칙). 채운 강조(now)는 한 화면에 하나 */
 .btn:hover:not(:disabled) { background: var(--hover); }
-.btn:active:not(:disabled) { background: var(--press); transform: translateY(0.5px); }
-.btn:disabled { opacity: 0.5; }
+.btn:active:not(:disabled) { background: var(--press); }
+.btn:disabled { background: var(--well); border-color: transparent; color: var(--faint); box-shadow: none; cursor: not-allowed; }
 .btn svg { flex: none; }
 .sm { --h: 30px; padding: 0 10px; font-size: var(--t-13); border-radius: var(--r-sm); gap: 5px; }
 .lg { --h: 44px; padding: 0 18px; font-size: var(--t-15); border-radius: var(--r-lg); }
 .primary { background: var(--fg); color: var(--surface); border-color: var(--fg); }
-.primary:hover:not(:disabled) { background: var(--fg); opacity: 0.88; }
-.now { background: var(--acc); color: var(--acc-on); border-color: var(--acc); box-shadow: 0 0 0 4px var(--acc-ring); }
-.now:hover:not(:disabled) { background: var(--acc); filter: brightness(1.06); }
+.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--fg) 86%, var(--surface)); border-color: transparent; }
+.primary:active:not(:disabled) { background: color-mix(in srgb, var(--fg) 72%, var(--surface)); }
+.now { background: var(--acc); color: var(--acc-on); border-color: var(--acc); }
+.now:hover:not(:disabled) { background: color-mix(in srgb, var(--acc) 86%, #000); border-color: transparent; }
+.now:active:not(:disabled) { background: color-mix(in srgb, var(--acc) 72%, #000); }
 .ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--sub); }
 .ghost:hover:not(:disabled) { background: var(--hover); color: var(--fg); }
+.ghost:active:not(:disabled) { background: var(--press); color: var(--fg); }
+.ghost:disabled { background: transparent; }
 .danger { color: var(--danger); }
 .iconOnly { width: var(--h); padding: 0; }
 .kbd {
@@ -155,3 +160,22 @@
 /* ── 진행 막대 */
 .meter { height: 6px; border-radius: 3px; background: var(--chip); overflow: hidden; }
 .meter i { display: block; height: 100%; border-radius: 3px; background: var(--ok); transition: width var(--d-3) var(--ease); }
+
+/* ── 알림 상자(Devs Toast 규칙): 상태색 테두리 + 옅은 바탕 + 아이콘, 제목은 상태색, 설명은 보조색 */
+.notice {
+  --tone: var(--sub);
+  display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent); background: color-mix(in srgb, var(--tone) 8%, transparent);
+  font-size: var(--t-13); color: var(--sub);
+}
+.notice.success { --tone: var(--ok); }
+.notice.warning { --tone: var(--warn); }
+.notice.error { --tone: var(--danger); }
+.notice.info { --tone: var(--info); }
+.noticeI { flex: none; margin-top: 1px; color: var(--tone); }
+.noticeB { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; line-height: 1.5; }
+.noticeB > b { color: var(--tone); font-weight: 600; font-size: var(--t-14); }
+.noticeB > b + div { color: var(--sub); }
+.noticeB > div:only-child { color: var(--fg); }
+.noticeA { flex: none; display: flex; gap: 6px; align-items: center; align-self: center; }
+@media (max-width: 600px) { .notice { flex-wrap: wrap; } .noticeA { width: 100%; padding-left: 26px; } }

@@ -1,4 +1,4 @@
-/* 디자인 토큰 — C 정밀 계기. 라이트가 기본, [data-theme=dark] 또는 시스템 다크에서 바뀐다.
+/* 디자인 토큰 — C 정밀 계기. 다크 면은 Devs 디자인 시스템의 3단계(바탕 #1E2126 → 상자 #25292D → 요소 #343A40)를 따른다. 라이트가 기본, [data-theme=dark] 또는 시스템 다크에서 바뀐다.
    강조색(--acc)은 "지금 처리할 곳"에만 쓴다. 선택·탭 같은 일반 상태는 중립색. */
 @font-face {
   font-family: 'Pretendard Variable';
@@ -41,6 +41,7 @@
   --ok-soft: rgba(17, 154, 99, 0.12);
   --warn: #a15c07;
   --warn-soft: rgba(217, 119, 6, 0.12);
+  --info: #1f7fb8;
   --focus: #5b45f0;
   /* 깊이 */
   --sh-1: 0 1px 2px rgba(20, 22, 40, 0.05);
@@ -67,13 +68,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --bg: #0c0d11; --surface: #15161c; --surface-2: #181a21; --well: #1c1e26; --seg: #101116; --seg-on: #2a2d39; --chip: #262934;
-    --hover: #1e2029; --press: #252833; --scrim: rgba(0, 0, 0, 0.56);
-    --fg: #ecedf2; --sub: #a3a7b6; --mute: #858a9b; --faint: #767c8e;
-    --line: #24262f; --line-2: #363947;
+    --bg: #1e2126; --surface: #25292d; --surface-2: #2b3035; --well: #343a40; --seg: #1a1d21; --seg-on: #343a40; --chip: #3b4148;
+    --hover: #383e45; --press: #42484f; --scrim: rgba(0, 0, 0, 0.56);
+    --fg: #f1f3f5; --sub: #adb5bd; --mute: #929aa3; --faint: #7a828b;
+    --line: #343a40; --line-2: #495057;
     --acc: #8b7bff; --acc-on: #0c0d11; --acc-ink: #b3a8ff; --acc-tile: #1b1a2c; --acc-ring: rgba(139, 123, 255, 0.18);
     --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
-    --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --focus: #a99dff;
+    --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #a99dff;
     --sh-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
     --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
     --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);
@@ -81,13 +82,13 @@
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0c0d11; --surface: #15161c; --surface-2: #181a21; --well: #1c1e26; --seg: #101116; --seg-on: #2a2d39; --chip: #262934;
-  --hover: #1e2029; --press: #252833; --scrim: rgba(0, 0, 0, 0.56);
-  --fg: #ecedf2; --sub: #a3a7b6; --mute: #858a9b; --faint: #767c8e;
-  --line: #24262f; --line-2: #363947;
+  --bg: #1e2126; --surface: #25292d; --surface-2: #2b3035; --well: #343a40; --seg: #1a1d21; --seg-on: #343a40; --chip: #3b4148;
+  --hover: #383e45; --press: #42484f; --scrim: rgba(0, 0, 0, 0.56);
+  --fg: #f1f3f5; --sub: #adb5bd; --mute: #929aa3; --faint: #7a828b;
+  --line: #343a40; --line-2: #495057;
   --acc: #8b7bff; --acc-on: #0c0d11; --acc-ink: #b3a8ff; --acc-tile: #1b1a2c; --acc-ring: rgba(139, 123, 255, 0.18);
   --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
-  --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --focus: #a99dff;
+  --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #a99dff;
   --sh-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
   --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
   --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);

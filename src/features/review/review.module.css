@@ -80,7 +80,5 @@
   .foot > :not(:first-child) { flex: 1 1 0; min-width: 0; height: auto; min-height: 40px; padding: 6px 8px; white-space: normal; font-size: var(--t-13); line-height: 1.3; }
 }
 
-.next { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: var(--r-md); background: var(--acc-tile); box-shadow: inset 0 0 0 1px var(--acc-ring); font-size: var(--t-13); color: var(--acc-ink); font-weight: 600; }
-.next span { margin-right: auto; }
 
 @media (max-width: 860px) { .foot { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); border-radius: var(--r-lg); } }
