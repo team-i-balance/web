@@ -80,3 +80,55 @@
 .next span { margin-right: auto; }
 
 @media (max-width: 860px) { .foot { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); border-radius: var(--r-lg); } }
+
+/* ── 새 디자인(?look=next): 목록은 구분선·왼쪽 2px 선택선, 상세 패널 안 면은 배경 하나만 */
+:global([data-look='next']) .pane { border-radius: 6px; box-shadow: none; }
+:global([data-look='next']) .listH { gap: 12px; padding: 16px 16px 0; }
+:global([data-look='next']) .listH h1 { font-size: 18px; font-weight: 600; }
+:global([data-look='next']) .bulk { margin: 8px 16px; padding: 6px 6px 6px 12px; border-radius: 4px; background: var(--surface-2); }
+:global([data-look='next']) .bulk b { font-weight: 500; }
+:global([data-look='next']) .list { padding: 0 0 8px; gap: 0; }
+:global([data-look='next']) .lh { padding: 16px 16px 6px; font-size: 12px; font-weight: 500; border-bottom: 1px solid var(--line); }
+:global([data-look='next']) .lh span { font-variant-numeric: tabular-nums; }
+:global([data-look='next']) .row { padding: 10px 16px; gap: 4px 10px; border-radius: 0; border-bottom: 1px solid var(--line); }
+:global([data-look='next']) .row:hover { background: var(--hover); }
+:global([data-look='next']) .row[aria-current='true'] { background: var(--acc-tile); box-shadow: inset 2px 0 0 var(--acc); }
+:global([data-look='next']) .who b { font-size: 14px; font-weight: 600; }
+:global([data-look='next']) .sub { gap: 4px; }
+
+:global([data-look='next']) .dh { padding: 16px 24px 0; }
+:global([data-look='next']) .dh h2 { font-size: 18px; font-weight: 600; line-height: 1.25; margin-top: 8px; }
+:global([data-look='next']) .metaT { font-size: 13px; margin-top: 6px; }
+:global([data-look='next']) .dbody { padding: 16px 24px 24px; gap: 24px; }
+:global([data-look='next']) .col { gap: 24px; }
+:global([data-look='next']) .sec { gap: 8px; }
+:global([data-look='next']) .sec h3 { font-size: 12px; font-weight: 600; color: var(--sub); }
+:global([data-look='next']) .quote { padding: 12px 16px; border-radius: 4px; background: var(--surface-2); font-size: 14px; line-height: 1.5; }
+:global([data-look='next']) .verdict { padding: 12px 16px; border-radius: 4px; font-size: 13px; }
+:global([data-look='next']) .verdict b { font-size: 14px; font-weight: 600; }
+:global([data-look='next']) .vBad { border-color: var(--line); background: none; box-shadow: inset 0 0 0 0 transparent; }
+:global([data-look='next']) .vBad b { color: var(--danger); }
+:global([data-look='next']) .vOk { border-color: var(--line); background: none; }
+:global([data-look='next']) .vOk b { color: var(--ok); }
+:global([data-look='next']) .text { padding: 12px 16px; border-radius: 4px; background: var(--surface-2); }
+:global([data-look='next']) .table { font-size: 13px; }
+:global([data-look='next']) .table th { height: 36px; padding: 0 12px; font-size: 12px; font-weight: 500; background: var(--surface-2); }
+:global([data-look='next']) .table td { height: 40px; padding: 8px 12px; vertical-align: middle; }
+:global([data-look='next']) .tbox { border-radius: 4px; }
+:global([data-look='next']) .leak { font-weight: 600; }
+
+:global([data-look='next']) .pi { grid-template-columns: 6px 1fr; gap: 12px; padding-bottom: 12px; }
+:global([data-look='next']) .pi::before { left: 2.5px; top: 14px; width: 1px; }
+:global([data-look='next']) .pd { width: 6px; height: 6px; border: 0; background: var(--line-2); margin-top: 7px; }
+:global([data-look='next']) .piDone .pd { background: var(--ok); }
+:global([data-look='next']) .piBad .pd { background: var(--danger); }
+:global([data-look='next']) .piNow .pd { background: var(--acc); box-shadow: none; }
+:global([data-look='next']) .piNow .pt b { color: var(--fg); }
+:global([data-look='next']) .pt b { font-weight: 500; }
+:global([data-look='next']) .tl { gap: 12px; }
+
+:global([data-look='next']) .foot { padding: 12px 24px; background: var(--surface); border-radius: 0 0 6px 6px; box-shadow: none; }
+:global([data-look='next']) .note { padding: 8px 12px; border-radius: 4px; background: var(--surface-2); }
+:global([data-look='next']) .next { padding: 8px 8px 8px 12px; border-radius: 4px; background: var(--surface-2); box-shadow: none; color: var(--fg); font-weight: 500; }
+@media (max-width: 860px) { :global([data-look='next']) .foot { border-radius: 0; } }
+@media (max-width: 600px) { :global([data-look='next']) .dh, :global([data-look='next']) .dbody { padding-left: 16px; padding-right: 16px; } :global([data-look='next']) .foot { padding: 12px 16px; } }
