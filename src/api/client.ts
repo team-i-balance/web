@@ -20,7 +20,8 @@ export interface ServerEvent {
 }
 
 const TYPE_KO: Record<string, string> = { NAME: '이름', PHONE: '전화번호', EMAIL: '이메일', ADDRESS: '주소', ID_NUMBER: '주민등록번호', ID: '주민등록번호', ACCOUNT: '계좌번호', CARD: '카드번호', DOB: '생년월일',
-  USERNAME: '아이디', IP_ADDRESS: 'IP 주소', BUSINESS_NUMBER: '사업자번호', API_KEY: 'API 키', ACCESS_TOKEN: '액세스 토큰', PASSWORD: '비밀번호' }
+  USERNAME: '아이디', IP_ADDRESS: 'IP 주소', BUSINESS_NUMBER: '사업자번호', API_KEY: 'API 키', ACCESS_TOKEN: '액세스 토큰', PASSWORD: '비밀번호',
+  SENSITIVE: '민감정보', CONFIDENTIAL: '기밀', INTERNAL: '사내정보' }
 const GRADE_IN: Record<string, Grade> = { public_O: 'O', sensitive_S: 'S', confidential_C: 'C' }
 export const QUEUE_KO: Record<string, string> = { real_violation: '실제 위반', violation_candidate: '위반 후보(업무상 필요)', detection_improve: '탐지 개선(오탐)', pre_warning: '사전 경고' }
 
