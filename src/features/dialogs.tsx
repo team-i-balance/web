@@ -26,8 +26,11 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
   const types = [...new Set(leaked.map(i => i.type))]
   const s0 = suggestRule(c)
   const demo = S.ui.guide >= 0
-  const [k, setK] = useState<Conclusion>(c.need === 'opt' ? 'legit' : 'violation')
-  const [cause, setCause] = useState<Cause>(c.need === 'opt' || demo ? 'fit' : 'care')
+  const [k, setK] = useState<Conclusion>(c.need === 'opt' || demo ? 'legit' : 'violation')
+  // 원인은 위반일 때만 고른다. 정당한 업무 사용은 '변환 결과가 업무에 맞지 않음'(fit)으로 정해져 있다(빠른 판단 2와 같음)
+  const VIOLATION_CAUSES: Cause[] = ['care', 'intent']
+  const [vCause, setVCause] = useState<Cause>('care')
+  const cause: Cause | null = k === 'violation' ? vCause : k === 'legit' ? 'fit' : null
   const [mk, setMk] = useState(true)
   const [type, setType] = useState(s0.type)
   const sug = suggestRule(c, type)
@@ -37,7 +40,7 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
   const [exi, setExi] = useState(0)
   const [memo, setMemo] = useState(demo ? '사유 확인 — 변환본이 거래처 업무에 맞지 않아 원문을 보냄. 고의성 없음, 같은 입력은 자동 변환으로 막음' : '')
   const [err, setErr] = useState(false)
-  const ruleable = k !== 'fp' && !!CAUSES[cause].rule
+  const ruleable = !!cause && !!CAUSES[cause].rule
   const src = c.items.find(i => i.type === type) || sug.item
   const w = (when ?? sug.when)
   const ok = () => {
@@ -49,7 +52,7 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
       S.policy.exclude.unshift({ term: it.orig, why: '위반 검토에서 탐지 오류로 확인', from: c.id, draft: true })
       change(`탐지 제외 추가: ${it.type} "${partial(it.type, it.orig)}"`, c.id)
     }
-    closeCase(c, { k, cause: k === 'fp' ? null : cause, memo: memo.trim(), rule })
+    closeCase(c, { k, cause, memo: memo.trim(), rule })
     S.ui.dialog = null
     toast(rule || (k === 'fp' && ex) ? '종결했어요 · 서명 후 배포하면 적용돼요' : '종결했어요')
     onDone?.()
@@ -64,8 +67,8 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
           </label>
         ))}
       </div>
-      {k !== 'fp' && <Field label="원인" htmlFor="cause"><Select id="cause" value={cause} onChange={e => setCause(e.target.value as Cause)}>
-        {(Object.entries(CAUSES) as [Cause, { t: string }][]).map(([key, v]) => <option key={key} value={key}>{v.t}</option>)}
+      {k === 'violation' && <Field label="원인" htmlFor="cause"><Select id="cause" value={vCause} onChange={e => setVCause(e.target.value as Cause)}>
+        {VIOLATION_CAUSES.map(key => <option key={key} value={key}>{CAUSES[key].t}</option>)}
       </Select></Field>}
       {ruleable && <div className={f.box}>
         <label className={f.checkRow}><Checkbox checked={mk} onChange={setMk} label="재발 방지 규칙 만들기" /><b>재발 방지 — 같은 입력은 다음부터 자동 변환</b></label>
@@ -77,7 +80,7 @@ function CloseCase({ caseId, onDone }: { caseId: string; onDone?: () => void }) 
           {method === (ent(type)?.method ?? '') && <div className={f.span}><Note warn>지금 기본 방식과 같아서 바뀌는 게 없어요</Note></div>}
         </div>}
       </div>}
-      {k !== 'fp' && !CAUSES[cause].rule && <Note>이 원인은 자동 변환으로 막을 수 없어요. 결론과 판단 근거만 남겨요.</Note>}
+      {k === 'violation' && <Note>위반은 자동 변환 규칙 없이 결론과 판단 근거만 남겨요.</Note>}
       {k === 'fp' && <div className={f.box}>
         <label className={f.checkRow}><Checkbox checked={ex} onChange={setEx} label="탐지 제외에 추가" /><b>잘못 잡힌 값을 탐지 제외에 추가</b></label>
         {ex && <><Select value={exi} onChange={e => setExi(+e.target.value)} aria-label="제외할 값">{leaked.map((i, n) => <option key={n} value={n}>{i.type} · {partial(i.type, i.orig)}</option>)}</Select>
