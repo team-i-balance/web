@@ -9,7 +9,7 @@ import { Button, Checkbox, Empty, Id, LinkButton, Segmented, Sentence, Tag, type
 import { isNext } from '../../shell/theme'
 import { openDialog } from '../dialogs'
 import { useReviewModel } from './model'
-import { loadCaseDetail } from '../../api/cases'
+import { loadCaseDetail, requestReason } from '../../api/cases'
 import { fmt, partial } from '../../lib/util'
 import r from './review.module.css'
 
@@ -57,7 +57,7 @@ function Detail({ c }: { c: Case }) {
   const decide = (k: 'violation' | 'legit' | 'fp' | 'ok') => { quickClose(c, k); emit() }
   const detail = <Button variant="ghost" icon={<SlidersHorizontal size={15} />} onClick={() => openDialog({ kind: 'close', caseId: c.id })}>세부 설정으로 결론</Button>
   const actions = c.status === 'closed' ? <><span /><Button onClick={() => reopen(c)}>다시 열기</Button></>
-    : !c.reason ? <>{S.api.live ? <span /> : <Button variant="ghost" onClick={() => demoReason(c)}>사유 도착시키기 · 데모</Button>}<Button variant="primary" onClick={() => openDialog({ kind: 'close', caseId: c.id })}>사유 없이 결론 내기</Button></>
+    : !c.reason ? <>{S.api.live ? <Button variant="ghost" onClick={() => requestReason(c)}>사유 다시 요청</Button> : <Button variant="ghost" onClick={() => demoReason(c)}>사유 도착시키기 · 데모</Button>}<Button variant="primary" onClick={() => openDialog({ kind: 'close', caseId: c.id })}>사유 없이 결론 내기</Button></>
     : c.need === 'opt' ? <>{detail}<Button danger onClick={() => decide('violation')} kbd="1">위반으로 기록</Button><Button variant={isNext() ? undefined : 'primary'} onClick={() => decide('ok')} kbd="2">문제 없음</Button></>
     : <>{detail}<Button danger onClick={() => decide('violation')} kbd="1">위반으로 기록</Button><Button onClick={() => decide('legit')} kbd="2">이번 건 예외 인정</Button><Button onClick={() => decide('fp')} kbd="3">오탐으로 기록</Button></>
   const tl = [{ t: c.time, who: c.user, what: `${leaked.map(i => i.type).join(', ')} ${c.need === 'req' ? '원문 전송' : '되돌림'}`, quote: null as string | null }, ...c.timeline.map(e => ({ ...e, quote: e.quote ?? null }))]

@@ -128,7 +128,8 @@ export function publish(nv = nextVersion()) {
 // ── 사건 처리
 // 서버 모드에서 판단을 저장하는 고리(api/cases.ts 가 채운다). 화면 상태를 바꾼 뒤 부른다.
 // reopen 의 undo=true 는 '방금 내가 한 판단 되돌리기'(내 종결이 서버에 저장됐을 때만 다시 연다)
-export const hooks: { close?: (c: Case) => void; closeMany?: (cs: Case[]) => void; reopen?: (c: Case, undo?: boolean) => void; draft?: () => void } = {}
+export const hooks: { close?: (c: Case) => void; closeMany?: (cs: Case[]) => void; reopen?: (c: Case, undo?: boolean) => void; draft?: () => void
+  fpDecide?: (g: FpGroup, d: 'keep' | 'exclude', why?: string) => void; fpUndo?: (g: FpGroup) => void } = {}
 const log = (c: Case, what: string, quote?: string | null) => c.timeline.push({ t: clock(), who: ME, cls: 'me', what, quote })
 export function closeCase(c: Case, res: { k: Conclusion; cause: Cause | null; memo: string; rule: string | null }, sync = true) {
   c.status = 'closed'; c.close = { ...res, by: ME, at: clock() }
@@ -173,12 +174,14 @@ export function demoReason(c: Case) {
 }
 export function fpKeep(g: FpGroup) {
   g.refs.forEach(r => (r.it.fp = 'keep'))
-  undoToast(`${partial(g.type, g.value)} · 탐지 결과 유지`, () => g.refs.forEach(r => (r.it.fp = 'open')))
+  hooks.fpDecide?.(g, 'keep')
+  undoToast(`${partial(g.type, g.value)} · 탐지 결과 유지`, () => { g.refs.forEach(r => (r.it.fp = 'open')); hooks.fpUndo?.(g) })
 }
 export function fpExclude(g: FpGroup, why: string) {
   S.policy.exclude.unshift({ term: g.value, why, from: `오탐 신고 ${g.refs.length}회`, draft: true })
   change(`탐지 제외 추가: "${partial(g.type, g.value)}" (${why})`, '오탐 신고')
   g.refs.forEach(r => (r.it.fp = 'exclude'))
+  hooks.fpDecide?.(g, 'exclude', why)
   toast('정책 초안에 추가했어요 · 서명 후 배포하면 적용돼요')
 }
 

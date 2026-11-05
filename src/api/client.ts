@@ -5,6 +5,7 @@ import type { AiEvent, Case, Grade, Item } from '../domain/types'
 import { S, ent, emit, toast, type ServerStats } from '../domain/store'
 import { loadPolicy } from './policy'
 import { loadCases } from './cases'
+import { loadFpDecisions } from './fp'
 
 export interface ServerEvent {
   id: number; created_at: string; grade: string; action: string; reason: string | null
@@ -123,6 +124,7 @@ export async function connect(): Promise<boolean> {
       let stats: ServerStats | null = null
       try { stats = await periodStats(7) } catch { /* 통계는 없어도 된다 */ }
       try { await loadPolicy() } catch { /* 정책 API가 없는 서버면 콘솔 정책 그대로 */ }
+      try { await loadFpDecisions() } catch { /* 오탐 판단 API가 없는 서버면 정책의 탐지 제외로만 되살린다 */ }
       Object.assign(S.api, { state: 'live', live: true, count: S.events.filter(e => +e.time >= Date.now() - 7 * 864e5).length, stats, synced: new Date() })
       emit()
       return true

@@ -98,5 +98,19 @@ function onCloseMany(cs: Case[]) {
   }
 }
 hooks.close = onClose
+// 사유 다시 요청: 직원 앱이 다음 실행 때 다시 묻는다(알림 발송은 아직 없음)
+export async function requestReason(c: Case) {
+  if (!S.api.live) return
+  try {
+    const ev = await post<ServerEvent>(`/events/${c.ev.id}/reason-request`)
+    if (ev.reason_requested_at) c.timeline.push({ t: new Date(ev.reason_requested_at), who: '보안팀', cls: 'me', what: '직원에게 사유 다시 요청' })
+    toast(`${c.user} 님에게 사유를 다시 요청했어요 · 직원 앱을 열면 다시 물어요`)
+  } catch (e) {
+    const m = (e as Error).message
+    toast(/ALREADY_SUBMITTED/.test(m) ? '이미 사유가 들어왔어요 · 최신 상태로 바꿨어요' : `사유를 다시 요청하지 못했어요 (${m})`)
+    if (/ALREADY_SUBMITTED/.test(m)) await refresh('사유가 도착해 있어요')
+  }
+  emit()
+}
 hooks.reopen = onReopen
 hooks.closeMany = onCloseMany
