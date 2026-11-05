@@ -29,7 +29,7 @@ export const S = {
   policy,
   events: seeded.events as AiEvent[],
   cases: seeded.cases as Case[],
-  api: { base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null },
+  api: { base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy },
   ui: {
     sel: null as Queue | null,
     cur: {} as Partial<Record<Queue, string>>,
@@ -44,6 +44,8 @@ export const S = {
     view: null as null | { s: number; x: number; y: number; keep?: boolean },
   },
 }
+// 서버 정책 상태: 마지막 배포 번들과 직원 PC 적용 현황(/policy/latest · /policy/acks)
+export interface ServerPolicy { keyid: string | null; sha: string | null; acks: { devices: number; applied: number; rejected: number; reject_reasons: Record<string, number> } | null }
 export interface ServerStats { total: number; acceptance_rate: number; revert_rate: number; evasion_suspect: number; by_queue: Record<string, number>; by_grade: Record<string, number> }
 
 let version = 0
@@ -105,8 +107,8 @@ export function deleteDict(i: number) { const d = S.policy.dict.splice(i, 1)[0];
 export function addDict(term: string, alias: string, type: string) { S.policy.dict.unshift({ term, alias, type, draft: true }); change(`회사 고유 단어 추가: ${term}`); emit() }
 export function deleteExclude(i: number) { const d = S.policy.exclude.splice(i, 1)[0]; change(`탐지 제외 삭제: "${d.term}"`); emit() }
 export function setMeta(k: string, v: boolean) { S.policy.meta[k] = v; change(`파일 사본: ${k} ${v ? '제거' : '유지'}`); emit() }
-export function publish() {
-  const P = S.policy, nv = nextVersion()
+export function publish(nv = nextVersion()) {
+  const P = S.policy
   P.learned.forEach(r => { if (!r.live) { r.live = true; r.at = clock(); r.fresh = true } })
   P.dict.forEach(d => delete d.draft); P.exclude.forEach(d => delete d.draft)
   P.version = nv; P.deployed = fmt(clock()); P.changes = []

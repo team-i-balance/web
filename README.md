@@ -42,7 +42,9 @@ npm run dev                  # http://localhost:5320
 |---|---|
 | 흐름도 숫자(입력·변환·원문 전송·오탐·선택·필수) | `/logs/events` 최근 7일로 계산 |
 | 선택 검토·오탐 신고·필수 검토 목록 | 이벤트에서 만든다. 직원·부서·AI·사유 글·잡힌 값은 서버에 없어 빈칸 |
-| 판단·되돌리기·정책 수정·서명 후 배포 | 화면 안에서만 동작(서버 API 없음) |
+| 서명 후 배포 | `/policy/publish` 로 보내면 서버가 버전을 매겨 서명·저장. 첫 화면에서 `/policy/latest` 를 읽어 버전·규칙·항목 켬/끔을 맞춘다. 회사 고유 단어·탐지 제외 값은 sha256 해시로 보낸다 |
+| PC 적용 현황 | `/policy/acks` (적용 n대 · 거부 n대와 사유) |
+| 판단·종결·되돌리기 | 화면 안에서만 동작(서버 API 없음) |
 
 빠진 API와 제안은 [docs/BACKEND-API-GAP.md](docs/BACKEND-API-GAP.md), 정책 번들·서명 형식은 [docs/BUNDLE-SPEC.md](docs/BUNDLE-SPEC.md)에 있다.
 

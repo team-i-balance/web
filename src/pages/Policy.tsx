@@ -4,6 +4,7 @@ import { S, useStore, metrics, nextVersion, setEntityOn, setEntityGrade, setEnti
 import { GRADE, METHODS } from '../domain/seed'
 import type { Method } from '../domain/types'
 import { openDialog } from '../ui/Dialogs'
+import { pcStatus } from '../api/policy'
 import { convert, pct } from '../lib/util'
 
 function RevCell({ b }: { b?: { n: number; rev: number } }) {
@@ -31,7 +32,7 @@ export default function Policy() {
     <section className="card">
       <div className="card-h">
         <div><h1 className="t32">변환 정책</h1>
-          <p className="d">{P.changes.length ? `현재 적용 ${P.version} · 편집 중 변경 ${P.changes.length}개 — 서명 후 배포해야 직원 PC에 ${nv}로 적용돼요` : `현재 적용 ${P.version} · ${P.deployed} 배포 · 바꾸면 초안으로 쌓여요`}</p></div>
+          <p className="d">{P.changes.length ? `현재 ${P.version} · 편집 중 변경 ${P.changes.length}개 — 서명 후 배포해야 직원 PC에 적용돼요` : P.version === 'v0' ? '아직 서버에 배포한 정책이 없어요 · 바꾸면 초안으로 쌓여요' : `현재 적용 ${P.version}${P.deployed ? ` · ${P.deployed} 배포` : ''} · 바꾸면 초안으로 쌓여요`}</p></div>
         {P.changes.length > 0 && <div className="row"><button className="btn ghost" onClick={() => openDialog({ kind: 'changes' })}>변경 내용 보기</button><button className="btn p" id="pub" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</button></div>}
       </div>
       <div className="polhead"><div className="pipe">
@@ -40,7 +41,7 @@ export default function Policy() {
           <button className={'pn' + (dr(k) ? ' draft' : '')} onClick={() => jump(id)}><span className="lab">{dr(k) ? '바뀜 · ' : ''}{t}</span><span className="v">{v}</span></button>
         </span>)}
         <span className={'pe' + (P.changes.length ? ' lit' : '')} />
-        <div className={'pn ship' + (P.changes.length ? ' now' : '')}><span className="lab">서명 · 배포</span><span className="v">{P.changes.length ? `대기 ${P.changes.length}건 → ${nv}` : `${P.version} 적용 중`}</span></div>
+        <div className={'pn ship' + (P.changes.length ? ' now' : '')}><span className="lab">서명 · 배포</span><span className="v">{P.changes.length ? `대기 ${P.changes.length}건 → ${S.api.live ? '서버 배포' : nv}` : pcStatus() ? `${P.version} · ${pcStatus()}` : `${P.version} 적용 중`}</span></div>
       </div></div>
       <div className="card-b" id="polBody" ref={body}><div className="psecs">
         <section className="psec" id="p1"><div className="psec-h"><h2 className="h20">탐지 항목과 변환 방식</h2></div>

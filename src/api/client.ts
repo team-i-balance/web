@@ -3,6 +3,7 @@
 // ?api=off 면 예시 데이터로만, ?api=http://host:port 면 그 서버로 바로 붙는다(CORS 허용 필요).
 import type { AiEvent, Case, Grade, Item } from '../domain/types'
 import { S, ent, emit, toast, type ServerStats } from '../domain/store'
+import { loadPolicy } from './policy'
 
 interface ServerEvent {
   id: number; created_at: string; grade: string; action: string; reason: string | null
@@ -14,7 +15,7 @@ const TYPE_KO: Record<string, string> = { NAME: '이름', PHONE: '전화번호',
 const GRADE_IN: Record<string, Grade> = { public_O: 'O', sensitive_S: 'S', confidential_C: 'C' }
 export const QUEUE_KO: Record<string, string> = { real_violation: '실제 위반', violation_candidate: '위반 후보(업무상 필요)', detection_improve: '탐지 개선(오탐)', pre_warning: '사전 경고' }
 
-async function get<T>(path: string, ms = 2500): Promise<T> {
+export async function get<T>(path: string, ms = 2500): Promise<T> {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms)
   try {
     const r = await fetch(S.api.base + path, { signal: ctl.signal })
@@ -22,8 +23,8 @@ async function get<T>(path: string, ms = 2500): Promise<T> {
     return (await r.json()) as T
   } finally { clearTimeout(t) }
 }
-export async function post<T>(path: string): Promise<T> {
-  const r = await fetch(S.api.base + path, { method: 'POST' })
+export async function post<T>(path: string, body?: unknown): Promise<T> {
+  const r = await fetch(S.api.base + path, body === undefined ? { method: 'POST' } : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
   const j = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error((j as { detail?: string }).detail || String(r.status))
   return j as T
@@ -74,6 +75,7 @@ export async function connect(): Promise<boolean> {
       S.ui.sel = null; S.ui.cur = {}
       let stats: ServerStats | null = null
       try { stats = await get<ServerStats>('/logs/stats') } catch { /* 통계는 없어도 된다 */ }
+      try { await loadPolicy() } catch { /* 정책 API가 없는 서버면 콘솔 정책 그대로 */ }
       Object.assign(S.api, { live: true, count: evs.length, stats, synced: new Date() })
       emit()
       return true

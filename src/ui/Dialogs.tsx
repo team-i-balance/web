@@ -5,6 +5,7 @@ import { CAUSES, CONCLUSION, METHODS } from '../domain/seed'
 import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, partial } from '../lib/util'
 import { QUEUE_KO, connect, post } from '../api/client'
+import { publishToServer } from '../api/policy'
 
 const PERSONAL = ['이름', '주민등록번호', '카드번호', '계좌번호', '전화번호', '이메일', '주소', '생년월일']
 export const closeDialog = () => { S.ui.dialog = null; emit() }
@@ -163,6 +164,25 @@ function AddDictDialog() {
   )
 }
 
+// 서버에 붙어 있으면 /policy/publish 로 서명·저장, 아니면 화면 안에서만 버전을 올린다
+function PublishDialog({ onDone }: { onDone?: () => void }) {
+  const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null)
+  const ok = async () => {
+    if (busy) return
+    let v: string | undefined
+    if (S.api.live) {
+      setBusy(true); setErr(null)
+      try { v = await publishToServer() } catch (e) { setErr((e as Error).message); setBusy(false); return }
+    }
+    S.ui.dialog = null; publish(v); onDone?.(); emit()
+  }
+  return (
+    <Shell title={S.api.live ? '서명 후 배포' : `${nextVersion()} 서명 후 배포`} ok={busy ? '서명하는 중…' : '서명 후 배포하기'} okDisabled={busy} onOk={ok}>
+      <p>서명한 정책만 직원 PC가 받아요.{S.api.live && ' 버전 번호는 서버가 매겨요.'}</p><ChangeList />
+      {err && <div className="note w"><div>배포하지 못했어요: {err}</div></div>}
+    </Shell>)
+}
+
 function ServerDialog() {
   const a = S.api, st = a.stats, pct = (x?: number) => Math.round((x || 0) * 100) + '%'
   const [out, setOut] = useState<ReactNode>('보안팀 공개키로 암호화한 파일을 서버에 만들어요.')
@@ -209,10 +229,7 @@ export function DialogHost() {
   switch (d.kind) {
     case 'close': return <CloseCaseDialog key={d.caseId} caseId={d.caseId} onDone={d.onDone} />
     case 'exclude': return <ExcludeDialog groupKey={d.groupKey} onDone={d.onDone} />
-    case 'publish': return (
-      <Shell title={`${nextVersion()} 서명 후 배포`} ok="서명 후 배포하기" onOk={() => { S.ui.dialog = null; publish(); d.onDone?.() }}>
-        <p>서명한 정책만 직원 PC가 받아요.</p><ChangeList />
-      </Shell>)
+    case 'publish': return <PublishDialog onDone={d.onDone} />
     case 'changes': return <Shell title={`배포 대기 변경 ${S.policy.changes.length}건`} ok="닫기" noCancel onOk={closeDialog}><ChangeList /></Shell>
     case 'addDict': return <AddDictDialog />
     case 'bulk': return <BulkDialog ids={d.ids} />

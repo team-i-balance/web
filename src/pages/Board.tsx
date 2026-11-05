@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { S, emit, useStore, openOf, fpGroups, groupKey, boardWork, QUEUE_ORDER, QUEUE_NAME, ago, ent, quickClose, fpKeep, demoReason, advanceBoard, closeCase, undoToast, type Queue } from '../domain/store'
 import { openDialog } from '../ui/Dialogs'
 import { connect } from '../api/client'
+import { pcStatus, refreshAcks } from '../api/policy'
 import { undoLast } from '../ui/Toasts'
 import { SentText, StepBar, typesOf, type Step } from '../ui/common'
 import { partial, rpath } from '../lib/util'
@@ -62,13 +63,14 @@ export default function Board() {
   const ci = cur ? Q.indexOf(cur) : -1
   const eff = SEL === 'pol' && !!lastPub && fresh.length > 0 && !P.changes.length
 
+  const pc = pcStatus()
   const steps: Step[] | null = !cur && SEL !== 'pol' ? null : ({
     req: [['원문 전송', 'done'], ['사유 도착', 'done'], ['판단', 'now'], ['규칙 배포', 'next', '예외 인정일 때'], ['PC 적용', 'next']],
     opt: [['되돌림', 'done', '업무상 필요'], ['사유 남김', 'done'], ['확인', 'now'], ['종결', 'next']],
     fp: [['오탐으로 되돌림', 'done', `${(cur as FpGroup | null)?.refs?.length ?? 0}회`], ['판단', 'now'], ['배포', 'next', '제외할 때'], ['PC 적용', 'next']],
     pol: eff ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'done', lastPub!], ['PC 적용', 'now', '5분 안에 받아요']]
       : P.changes.length ? [['판단', 'done'], ['규칙 생성', 'done', `${P.changes.length}건`], ['서명 후 배포', 'now'], ['PC 적용', 'next']]
-      : [['서명 후 배포', 'done', P.version], ['PC 적용', 'done']],
+      : [['서명 후 배포', 'done', P.version], ['PC 적용', pc && !S.api.pol?.acks?.applied ? 'now' : 'done', pc ?? undefined]],
   } as Record<Queue, Step[]>)[SEL]
 
   // ── 처리: 카드를 살짝 밀어낸 뒤 판단을 기록하고, 칸을 다 비우면 다음 할 일로
@@ -223,11 +225,12 @@ export default function Board() {
     big = eff ? <>
       <div className="nc-big">원문 전송 {raw} → {raw - caught}</div>
       <div className="nc-who"><span className="sub">{lastPub} 배포 · 지난 7일에 이 규칙이 있었다면</span></div>
+      {pc && <div className="nc-who"><span className="sub">{pc}</span><button className="btn sm ghost" onClick={() => refreshAcks()}>적용 현황 새로고침</button></div>}
       <div className="nc-a"><button className="btn p" onClick={() => { S.ui.lastPub = null; advanceBoard() }}>다음 할 일</button></div>
     </> : P.changes.length ? <>
       <div className="qlist">{P.changes.map((c, i) => <div className="chg" key={i}>{c.what}</div>)}</div>
       <div className="nc-a"><button className="btn p" id="pubBtn" onClick={() => openDialog({ kind: 'publish', onDone: () => { S.ui.lastPub = S.policy.version; emit() } })}>서명 후 배포</button></div>
-    </> : <div className="empty"><b>배포할 변경이 없어요</b><span className="sub">{P.version} 적용 중</span>{nextWork}</div>
+    </> : <div className="empty"><b>배포할 변경이 없어요</b><span className="sub">{P.version === 'v0' ? '아직 서버에 배포한 정책이 없어요' : `${P.version} 배포됨`}{pc ? ` · ${pc}` : ''}</span>{pc && <button className="btn sm ghost" onClick={() => refreshAcks()}>적용 현황 새로고침</button>}{nextWork}</div>
     next = P.learned.slice().reverse().map((r, i) => <div key={i} className="nx static"><b>{r.type}</b><span>{r.when} → {r.method}</span><em>{r.live ? '적용 중' : '배포 대기'}</em></div>)
   }
 
