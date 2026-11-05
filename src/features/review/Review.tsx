@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Inbox, SlidersHorizontal } from 'lucide-react'
 import clsx from 'clsx'
-import { S, emit, useStore, ago, quickClose, reopen } from '../../domain/store'
+import { S, emit, useStore, ago, quickClose, reopen, ent } from '../../domain/store'
 import { CAUSES, CONCLUSION } from '../../domain/defaults'
 import type { Case, Conclusion } from '../../domain/types'
 import { Button, Checkbox, DecideButton, Dot, Empty, LinkButton, Notice, Segmented, Sentence, Tag, ds, typesOf } from '../../ds'
@@ -86,13 +86,13 @@ function Detail({ c }: { c: Case }) {
           <section className={r.sec}><h3>보낸 내용</h3>
             <div className={r.text}><Sentence c={c} /></div>
             {c.items.some(i => i.reason === '오탐') && <div className={r.note}>{c.items.filter(i => i.reason === '오탐').map(i => i.type).join(', ')} 항목은 "오탐"으로 되돌려 <a href="#fp">오탐 신고</a>에서 따로 처리해요</div>}
-            <div className={r.tbox}><table className={clsx(ds.table, r.tbl)}><thead><tr><th>항목</th><th>나간 값</th><th>정책대로였다면</th>{mixed && <th>직원 처리</th>}</tr></thead><tbody>
+            <div className={r.tbox}><table className={clsx(ds.table, r.tbl)}><thead><tr><th>항목</th><th>나간 값</th><th>지금 정책</th>{mixed && <th>직원 처리</th>}</tr></thead><tbody>
               {c.items.map((it, i) => <tr key={i}><td className={r.type}>{it.type}</td>
                 <td>{it.status === 'conv' ? (it.conv === '' ? del : <span className={r.pol}>{it.conv}</span>) : <span className={r.leak}>{partial(it.type, it.orig)}</span>}</td>
-                <td>{it.conv === '' ? del : <span className={r.pol}>{it.conv}</span>}</td>
+                {/* 서버에는 변환 결과가 없어 이 항목에 지금 정책이 정한 방식을 보인다 */}
+                <td><span className={r.pol}>{ent(it.type) ? ent(it.type)!.method : '—'}</span></td>
                 {mixed && <td>{it.status === 'conv' ? <Tag>변환 유지</Tag> : it.status === 'revert' ? <Tag>되돌림 · {it.reason}</Tag> : <Tag>원문 전송</Tag>}</td>}</tr>)}
             </tbody></table></div>
-            {c.file && <div className={r.note}><b>{c.file.name}</b> · {c.need === 'req' ? '원본 파일이 올라갔어요 · 숨은 정보 포함' : '변환 사본이 올라갔어요 · 숨은 정보 제거'}</div>}
           </section>
           {c.timeline.length > 0 && <section className={r.sec}>
             {c.timeline.length <= 2

@@ -56,7 +56,7 @@ export function Coach() {
         <p className={c.x}>{s.x}</p>
         <div className={c.f}>
           <div className={c.dots}>{STEPS.map((_, i) => <i key={i} data-on={i === gi || undefined} data-done={i < gi || undefined} />)}</div>
-          <Button size="sm" variant="ghost" onClick={() => { location.hash = 'home'; location.reload() }}>처음으로</Button>
+          <Button size="sm" variant="ghost" onClick={() => goto(0)}>처음으로</Button>
           <Button size="sm" disabled={!gi} onClick={() => goto(gi - 1)}>이전</Button>
           <Button size="sm" variant="primary" onClick={() => goto(gi + 1)}>{gi === STEPS.length - 1 ? '마치기' : '다음'}</Button>
         </div>
