@@ -9,7 +9,7 @@ export function useBoardModel() {
   // ── 데이터
   const wk = new Date(+S.now - 7 * 864e5)
   const E = S.events.filter(e => e.time >= wk), n = (f: (e: (typeof E)[number]) => boolean) => E.filter(f).length
-  const pub = n(e => e.grade === 'O'), conf = n(e => e.grade === 'C'), sens = n(e => e.grade === 'S'), raw = n(e => e.action === 'raw')
+  const pub = n(e => e.grade === 'O'), conf = n(e => e.grade === 'C'), confOut = n(e => e.grade === 'C' && (e.action === 'raw' || e.action === 'revert')), sens = n(e => e.grade === 'S'), raw = n(e => e.action === 'raw')
   const req = openOf('req'), ready = req.filter(c => c.reason).sort((a, b2) => +b2.time - +a.time), wait = req.filter(c => !c.reason)
   const opt = openOf('opt').sort((a, b2) => +b2.time - +a.time), fps = fpGroups(true), P = S.policy
   const fresh = P.learned.filter(r => r.live && r.fresh).map(r => r.type)
@@ -60,7 +60,7 @@ export function useBoardModel() {
   const live = S.api.live, includeTest = S.api.includeTest, truncated = S.api.truncated
   const finishEffect = () => { S.ui.lastPub = null; advanceBoard() } // 배포 효과를 보고 다음 할 일로
   const publishDone = () => { S.ui.lastPub = S.policy.version; emit() } // 배포 대화상자가 끝나면 효과 화면으로
-  return { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, sens, raw, req, ready, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
+  return { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, ready, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
     Q, keyOf, cur, ci, eff, steps, act, decideCase, keepFp, select, pickItem, allOk }
 }
 export type BoardModel = ReturnType<typeof useBoardModel>

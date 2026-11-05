@@ -39,7 +39,7 @@ export default function Board() {
   const { scale, boxW, off } = useFit(scroller)
   const lock = useRef(0)
 
-  const { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, sens, raw, req, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
+  const { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
     Q, keyOf, cur, ci, eff, steps, decideCase, keepFp, select, pickItem, allOk } = useBoardModel()
 
   // ── 단축키: 1·2·3 판단, ↑↓ 다른 건, Z 되돌리기
@@ -65,7 +65,7 @@ export default function Board() {
   // ── 흐름도
   const N = [
     { id: 'in', l: 'AI 입력', v: E.length, s: '' },
-    { id: 'conv', l: '개인정보 변환', v: sens, s: '', t: `공개 ${pub} · 기밀 차단 ${conf}` },
+    { id: 'conv', l: '개인정보 변환', v: sens, s: '', t: `공개 ${pub} · 기밀 ${conf}${confOut ? `(원문 전송 ${confOut})` : ''}` },
     { id: 'raw', l: '원문 전송', v: lastPub && fresh.length ? `${raw} → ${raw - caught}` : raw, s: '원문 그대로 보냄', danger: raw > 0, go: 'req' as Queue },
     { id: 'fp', l: '오탐 신고', v: fps.length, s: '잘못 잡힌 값', q: 'fp' as Queue },
     { id: 'opt', l: '선택 검토', v: opt.length, s: '사유 남기고 보냄', q: 'opt' as Queue },

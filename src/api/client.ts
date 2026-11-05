@@ -53,8 +53,9 @@ function candidates(): string[] {
 // 서버 이벤트 1건 → 콘솔 이벤트. 서버는 원문·직원·AI를 저장하지 않으므로 그 칸은 비워 둔다.
 export function fromServer(ev: ServerEvent): AiEvent {
   const grade = GRADE_IN[ev.grade] || 'O', types = (ev.detected_types || []).map(t => TYPE_KO[t] || t)
-  const action: AiEvent['action'] = grade === 'C' ? 'block' : grade === 'O' ? 'pass'
-    : (({ send_transformed: 'sent', send_as_is: 'raw', revert_original: 'revert', cancel: 'cancel' } as Record<string, AiEvent['action']>)[ev.action] || 'sent')
+  // 처리는 서버에 남은 action 그대로 보여 준다. 서버는 기밀(C)도 원문 전송을 막지 않으므로 등급으로 '차단'이라 단정하지 않는다
+  const act = ({ send_transformed: 'sent', send_as_is: 'raw', revert_original: 'revert', cancel: 'cancel' } as Record<string, AiEvent['action']>)[ev.action] || 'sent'
+  const action: AiEvent['action'] = grade === 'C' && act === 'cancel' ? 'block' : grade === 'O' && act !== 'cancel' ? 'pass' : act
   const rsn = ev.reason === 'false_positive' ? '오탐' : ev.reason === 'business_need' ? '업무상 필요' : null
   // 항목별 정보(#21)가 오면 가린 값(preview)과 값 해시로 채운다. 원래 값은 서버에도 없다.
   const ko = (r?: string | null) => (r === 'false_positive' ? '오탐' : r === 'business_need' ? '업무상 필요' : null)
