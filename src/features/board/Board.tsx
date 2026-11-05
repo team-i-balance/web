@@ -66,7 +66,7 @@ export default function Board() {
   const N = [
     { id: 'in', l: 'AI 입력', v: E.length, s: '' },
     { id: 'conv', l: '개인정보 변환', v: sens, s: '', t: `공개 ${pub} · 기밀 차단 ${conf}` },
-    { id: 'raw', l: '원문 전송', v: lastPub && fresh.length ? `${raw} → ${raw - caught}` : raw, s: '사유 선택 건너뜀', danger: raw > 0, go: 'req' as Queue },
+    { id: 'raw', l: '원문 전송', v: lastPub && fresh.length ? `${raw} → ${raw - caught}` : raw, s: '원문 그대로 보냄', danger: raw > 0, go: 'req' as Queue },
     { id: 'fp', l: '오탐 신고', v: fps.length, s: '잘못 잡힌 값', q: 'fp' as Queue },
     { id: 'opt', l: '선택 검토', v: opt.length, s: '사유 남기고 보냄', q: 'opt' as Queue },
     { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 대기 ${wait.length}` : '', q: 'req' as Queue },
