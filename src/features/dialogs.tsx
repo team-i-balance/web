@@ -6,7 +6,7 @@ import { CAUSES, CONCLUSION, METHODS } from '../domain/seed'
 import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, partial } from '../lib/util'
 import { QUEUE_KO, connect, post } from '../api/client'
-import { publishToServer, simulateDemoAcks } from '../api/policy'
+import { afterServerPublish, publishToServer, simulateDemoAcks } from '../api/policy'
 import { Button, Checkbox, Field, Input, KV, Select, Tag, TextArea, ds } from '../ds'
 import { Modal } from '../ds/Overlay'
 import f from './dialogs.module.css'
@@ -145,7 +145,7 @@ function Publish({ onDone }: { onDone?: () => void }) {
       setBusy(true); setErr(null)
       try { v = await publishToServer() } catch (e) { setErr((e as Error).message); setBusy(false); return }
     }
-    S.ui.dialog = null; publish(v); if (!S.api.live) simulateDemoAcks(); onDone?.(); emit()
+    S.ui.dialog = null; publish(v); if (S.api.live) afterServerPublish(); else simulateDemoAcks(); onDone?.(); emit()
   }
   return (
     <Modal open onClose={closeDialog} title={S.api.live ? '서명 후 배포' : `${nextVersion()} 서명 후 배포`}

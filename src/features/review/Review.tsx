@@ -7,6 +7,7 @@ import { CAUSES, CONCLUSION } from '../../domain/seed'
 import type { Case } from '../../domain/types'
 import { Button, Checkbox, Empty, LinkButton, Segmented, Sentence, Tag, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
+import { loadCaseDetail } from '../../api/cases'
 import { fmt, partial } from '../../lib/util'
 import r from './review.module.css'
 
@@ -54,6 +55,7 @@ function Path({ c }: { c: Case }) {
 }
 
 function Detail({ c }: { c: Case }) {
+  useEffect(() => { loadCaseDetail(c) }, [c.id])
   const leaked = c.items.filter(i => i.status !== 'conv'), x = c.close
   const decide = (k: 'violation' | 'legit' | 'fp' | 'ok') => { quickClose(c, k); emit() }
   const detail = <Button variant="ghost" icon={<SlidersHorizontal size={15} />} onClick={() => openDialog({ kind: 'close', caseId: c.id })}>세부 설정으로 결론</Button>
@@ -71,8 +73,8 @@ function Detail({ c }: { c: Case }) {
             {c.need === 'req' ? <Tag tone="danger">필수</Tag> : <Tag>선택</Tag>}
             {x ? <Tag tone={x.k === 'violation' ? 'danger' : x.k === 'legit' ? 'ok' : undefined} dot>{CONCLUSION[x.k][0]}</Tag> : c.reason ? <Tag tone="now" dot>결론 차례</Tag> : <Tag dot>사유 대기</Tag>}
           </div>
-          <h2>{c.user} 님이 {leaked.map(i => i.type).join(', ')} 원문을 {c.ev.ai}에 보냈어요</h2>
-          <div className={r.metaT}>{c.dept} · {fmt(c.time)} ({ago(c.time)}) · 정책 {c.ev.ver}</div>
+          <h2>{c.user} 님이 {leaked.map(i => i.type).join(', ')} 원문을 {c.ev.ai === 'AI 미전송' ? 'AI' : c.ev.ai}에 보냈어요</h2>
+          <div className={r.metaT}>{c.dept} · {fmt(c.time)} ({ago(c.time)}){c.ev.ver ? ` · 정책 ${c.ev.ver}` : ''}</div>
         </div>
       </div>
       <div className={r.dbody}>

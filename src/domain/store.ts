@@ -125,10 +125,13 @@ export function publish(nv = nextVersion()) {
 }
 
 // ── 사건 처리
+// 서버 모드에서 판단을 저장하는 고리(api/cases.ts 가 채운다). 화면 상태를 바꾼 뒤 부른다.
+export const hooks: { close?: (c: Case) => void; reopen?: (c: Case) => void } = {}
 const log = (c: Case, what: string, quote?: string | null) => c.timeline.push({ t: clock(), who: ME, cls: 'me', what, quote })
 export function closeCase(c: Case, res: { k: Conclusion; cause: Cause | null; memo: string; rule: string | null }) {
   c.status = 'closed'; c.close = { ...res, by: ME, at: clock() }
   log(c, `종결 · ${CONCLUSION[res.k][0]}${res.rule ? ' · 자동 변환 등록' : ''}`, res.memo && res.memo !== '사유 확인' ? res.memo : null)
+  hooks.close?.(c)
 }
 export function suggestRule(c: Case, type?: string) {
   const leaked = c.items.filter(i => i.status !== 'conv'), it = (type && c.items.find(i => i.type === type)) || leaked.find(i => i.reason === '업무상 필요') || leaked[0] || c.items[0]
@@ -155,11 +158,12 @@ export function quickClose(c: Case, k: Conclusion | 'ok') {
   const label = { violation: '위반', legit: '예외 인정', fp: '오탐', ok: '문제 없음' }[k]
   const ruled = S.policy.learned.length > nL
   undoToast(`${c.user} · ${label}${ruled ? ' · 규칙 추가돼 배포 대기' : ''}`, () => {
-    c.status = 'open'; c.close = null; S.policy.learned.length = nL; S.policy.changes.length = nC
+    c.status = 'open'; c.close = null; c.timeline.pop(); S.policy.learned.length = nL; S.policy.changes.length = nC
+    hooks.reopen?.(c)
     S.ui.sel = c.need === 'opt' ? 'opt' : 'req'; S.ui.cur[S.ui.sel] = c.id
   })
 }
-export function reopen(c: Case) { c.status = 'open'; c.close = null; log(c, '다시 열기'); emit() }
+export function reopen(c: Case) { c.status = 'open'; c.close = null; log(c, '다시 열기'); hooks.reopen?.(c); emit() }
 export function demoReason(c: Case) {
   c.reason = { text: pick(LATE_REASON), at: clock(), when: '요청 받고 제출' }
   c.timeline.push({ t: clock(), who: c.user, cls: 'emp', what: '사유 제출', quote: c.reason.text })

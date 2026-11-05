@@ -30,8 +30,31 @@ export async function buildPayload(P: Policy) {
 
 const decode = (b64: string): Payload => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64), c => c.charCodeAt(0))))
 
+// PC 적용 현황: 지금 버전 기준(/policy/{n}/acks). 없으면 전체 요약(/policy/acks)
 async function loadAcks() {
-  try { const r = await get<{ summary: NonNullable<NonNullable<typeof S.api.pol>['acks']> }>('/policy/acks'); if (S.api.pol) S.api.pol.acks = r.summary } catch { /* 현황은 없어도 된다 */ }
+  type A = NonNullable<NonNullable<typeof S.api.pol>['acks']>
+  const n = +S.policy.version.slice(1)
+  try {
+    if (n > 0) { const r = await get<A>(`/policy/${n}/acks`); if (S.api.pol) S.api.pol.acks = r; return }
+  } catch { /* 예전 서버: 전체 요약으로 */ }
+  try { const r = await get<{ summary: A }>('/policy/acks'); if (S.api.pol) S.api.pol.acks = r.summary } catch { /* 현황은 없어도 된다 */ }
+}
+
+// 배포 기록(/policy/history). 이 브라우저에서 배포한 버전은 무엇이 바뀌었는지까지 남겨 둔 것을 쓴다
+interface HistoryItem { version: number; sha256: string; stored_at: string | null; rule_count: number }
+export let historyFromServer = false
+async function loadHistory() {
+  try {
+    const items = await get<HistoryItem[]>('/policy/history')
+    const local = new Map(S.history.filter(h => h.server).map(h => [h.version, h]))
+    S.history = items.sort((a, b) => a.version - b.version).map(h => {
+      const v = 'v' + h.version, l = local.get(v)
+      return { version: v, at: h.stored_at ? new Date(h.stored_at) : l?.at ?? new Date(0), changes: l?.changes ?? [{ what: `자동 변환 규칙 ${h.rule_count}개`, src: h.sha256.replace('sha256:', '').slice(0, 10) }], server: true }
+    })
+    const last = items.find(h => 'v' + h.version === S.policy.version)
+    if (last?.stored_at) S.policy.deployed = fmt(new Date(last.stored_at))
+    historyFromServer = true
+  } catch { historyFromServer = false }
 }
 
 // 서버의 최신 배포본을 콘솔 정책에 반영한다. 아직 배포가 없으면 v0(규칙 없음)부터.
@@ -50,7 +73,8 @@ export async function loadPolicy() {
     P.version = 'v0'; P.learned = []
   }
   P.deployed = ''; P.changes = []
-  await loadAcks()
+  S.history = []
+  await Promise.all([loadAcks(), loadHistory()])
 }
 
 // 서명 후 배포: 서버가 version+1 로 서명해 저장한다. 성공하면 서버가 매긴 버전을 돌려준다.
@@ -62,6 +86,8 @@ export async function publishToServer(): Promise<string> {
 }
 
 export async function refreshAcks() { await loadAcks(); emit() }
+// 서버에 배포한 직후: 새 버전 기준 현황과 기록을 다시 읽는다
+export async function afterServerPublish() { await Promise.all([loadAcks(), loadHistory()]); emit() }
 
 // 예시 데이터 모드의 PC 적용 현황: 40대 중 38대 적용, 2대는 모델이 옛 버전이라 거부
 type Acks = NonNullable<NonNullable<typeof S.api.pol>['acks']>

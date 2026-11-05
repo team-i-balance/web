@@ -1,13 +1,17 @@
 // 백엔드 연동 (team-i-balance/backend)
-// 브라우저는 같은 주소의 /api 만 부른다. 개발은 Vite 프록시, 배포는 api/[...path].ts 가 BACKEND_URL 로 넘긴다.
+// 브라우저는 같은 주소의 /api 만 부른다. 개발은 Vite 프록시, 배포는 api/proxy.ts 가 BACKEND_URL 로 넘긴다.
 // ?api=off 면 예시 데이터로만, ?api=http://host:port 면 그 서버로 바로 붙는다(CORS 허용 필요).
 import type { AiEvent, Case, Grade, Item } from '../domain/types'
 import { S, ent, emit, toast, type ServerStats } from '../domain/store'
 import { loadPolicy } from './policy'
+import { loadCases } from './cases'
 
-interface ServerEvent {
+export interface ServerEvent {
   id: number; created_at: string; grade: string; action: string; reason: string | null
   detection_confidence: string | null; detected_types: string[]; content_hash: string | null
+  reason_text?: string | null; reason_requested_at?: string | null; reason_at?: string | null
+  // 이슈 #21(PR #36)이 들어오면 채워진다
+  user_id?: string | null; dept?: string | null; target_ai?: string | null
 }
 
 const TYPE_KO: Record<string, string> = { NAME: '이름', PHONE: '전화번호', EMAIL: '이메일', ADDRESS: '주소', ID_NUMBER: '주민등록번호', ID: '주민등록번호', ACCOUNT: '계좌번호', CARD: '카드번호', DOB: '생년월일',
@@ -39,7 +43,7 @@ function candidates(): string[] {
 }
 
 // 서버 이벤트 1건 → 콘솔 이벤트. 서버는 원문·직원·AI를 저장하지 않으므로 그 칸은 비워 둔다.
-function fromServer(ev: ServerEvent): AiEvent {
+export function fromServer(ev: ServerEvent): AiEvent {
   const grade = GRADE_IN[ev.grade] || 'O', types = (ev.detected_types || []).map(t => TYPE_KO[t] || t)
   types.forEach(t => { if (!ent(t)) S.policy.entities.push({ name: t, grade: grade === 'C' ? 'C' : 'S', method: grade === 'C' ? '—' : '대체', sample: '', on: true }) })
   const action: AiEvent['action'] = grade === 'C' ? 'block' : grade === 'O' ? 'pass'
@@ -49,9 +53,9 @@ function fromServer(ev: ServerEvent): AiEvent {
     status: grade !== 'S' ? null : action === 'raw' ? 'raw' : action === 'revert' ? 'revert' : 'conv',
     reason: action === 'revert' ? rsn : null, fp: action === 'revert' && rsn === '오탐' ? 'open' : null }))
   const h = (ev.content_hash || String(ev.id)).slice(0, 4)
-  return { id: String(ev.id), time: new Date(ev.created_at), user: `직원 ${h}`, dept: '부서 미전송', ai: 'AI 미전송', file: null,
+  return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || `직원 ${h}`, dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: null,
     tpl: '본문은 서버에 저장하지 않아요', items, grade, action,
-    conf: ev.detection_confidence === 'high' ? 0.95 : 0.6, ver: S.policy.version, server: ev }
+    conf: ev.detection_confidence === 'high' ? 0.95 : 0.6, ver: '', server: ev } // 서버 이벤트에는 당시 정책 버전이 없다
 }
 function casesFrom(events: AiEvent[]): Case[] {
   return events.filter(e => e.grade === 'S' && (e.action === 'raw' || (e.action === 'revert' && e.items.some(i => i.reason === '업무상 필요')))).map(e => ({
@@ -73,7 +77,7 @@ export async function connect(): Promise<boolean> {
       const evs = await get<ServerEvent[]>('/logs/events?limit=1000&start=' + encodeURIComponent(start), 5000)
       S.now = new Date(); S.loaded = Date.now()
       S.events = evs.map(fromServer).sort((a, b) => +b.time - +a.time)
-      S.cases = casesFrom(S.events)
+      S.cases = (await loadCases().catch(() => null)) ?? casesFrom(S.events)
       S.ui.sel = null; S.ui.cur = {}
       let stats: ServerStats | null = null
       try { stats = await get<ServerStats>('/logs/stats') } catch { /* 통계는 없어도 된다 */ }

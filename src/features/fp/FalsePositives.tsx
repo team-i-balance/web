@@ -54,7 +54,7 @@ export default function FalsePositives() {
               ? <><Button size="sm" onClick={() => keep([g])}>탐지 결과 유지</Button><Button size="sm" variant="ghost" onClick={() => openDialog({ kind: 'exclude', groupKey: k })}>탐지 제외 검토</Button></>
               : <Tag tone={RES[g.fp || '']?.[1]} dot>{RES[g.fp || '']?.[0] || '처리함'}</Tag>}</div></td>
           </tr>
-          {ex && <tr className={f.cases}><td colSpan={cols}><ol>{g.refs.map((x, n) => <li key={n}><span>{x.e.user} · {x.e.dept} · {ago(x.e.time)} · {x.e.ai} · 정책 {x.e.ver}</span><p>{sentence(g, n)}</p></li>)}</ol></td></tr>}
+          {ex && <tr className={f.cases}><td colSpan={cols}><ol>{g.refs.map((x, n) => <li key={n}><span>{x.e.user} · {x.e.dept} · {ago(x.e.time)} · {x.e.ai}{x.e.ver ? ` · 정책 ${x.e.ver}` : ''}</span><p>{sentence(g, n)}</p></li>)}</ol></td></tr>}
           </Fragment>
         })}</tbody>
       </table></div>

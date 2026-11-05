@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { motion } from 'motion/react'
 import { ChevronRight, Inbox, RefreshCw, CircleCheck, Database } from 'lucide-react'
 import clsx from 'clsx'
-import { S, emit, useStore, openOf, fpGroups, groupKey, boardWork, QUEUE_ORDER, QUEUE_NAME, ago, ent, quickClose, fpKeep, demoReason, advanceBoard, closeCase, undoToast, type Queue } from '../../domain/store'
+import { S, emit, useStore, openOf, fpGroups, groupKey, boardWork, QUEUE_ORDER, QUEUE_NAME, ago, ent, quickClose, fpKeep, demoReason, advanceBoard, closeCase, undoToast, hooks, type Queue } from '../../domain/store'
 import type { Case, FpGroup } from '../../domain/types'
 import { connect } from '../../api/client'
 import { acksNow, pcStatus, refreshAcks } from '../../api/policy'
@@ -81,7 +81,7 @@ export default function Board() {
   const allOk = () => {
     const list = [...opt]
     list.forEach(c => closeCase(c, { k: 'legit', cause: null, memo: '사유 확인', rule: null }))
-    undoToast(`선택 검토 ${list.length}건 문제 없음`, () => { list.forEach(c => { c.status = 'open'; c.close = null }); S.ui.sel = 'opt' })
+    undoToast(`선택 검토 ${list.length}건 문제 없음`, () => { list.forEach(c => { c.status = 'open'; c.close = null; c.timeline.pop(); hooks.reopen?.(c) }); S.ui.sel = 'opt' })
     advanceBoard()
   }
 
@@ -149,7 +149,7 @@ export default function Board() {
         <div className={b.who}>
           <span className={b.avatar} aria-hidden="true">{c.user.replace(/^직원 /, '').slice(0, 1)}</span>
           <div className={b.whoT}><b>{c.user} <span>{c.dept} · {ago(c.time)}</span></b><span>{types(c)} → <b>{c.ev.ai}</b></span>
-            <small>전송 당시 정책 {c.ev.ver} · {typesOf(c).map(t => `${t} ${ent(t)?.method ?? '—'}`).join(' · ')}</small></div>
+            <small>{c.ev.ver ? `전송 당시 정책 ${c.ev.ver} · ` : '지금 정책 기준 · '}{typesOf(c).map(t => `${t} ${ent(t)?.method ?? '—'}`).join(' · ')}</small></div>
           <a className={b.more} href={`#review/${c.id}`}>자세히<ChevronRight size={14} /></a>
         </div>
         <div className={b.text}><Sentence c={c} /></div>

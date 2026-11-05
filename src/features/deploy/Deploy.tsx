@@ -2,7 +2,7 @@
 import { MonitorCheck, RefreshCw, History } from 'lucide-react'
 import clsx from 'clsx'
 import { S, useStore } from '../../domain/store'
-import { acksNow, reasonKo, refreshAcks } from '../../api/policy'
+import { acksNow, historyFromServer, reasonKo, refreshAcks } from '../../api/policy'
 import { Button, Empty, Meter, Tag } from '../../ds'
 import { openDialog } from '../dialogs'
 import { fmt } from '../../lib/util'
@@ -35,7 +35,7 @@ export default function Deploy() {
       </section>
 
       <section className={d.card} aria-label="PC 적용 현황">
-        <div className={d.ch}><h2>PC 적용</h2>{live && <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={() => refreshAcks()}>새로고침</Button>}</div>
+        <div className={d.ch}><h2>PC 적용{live && P.version !== 'v0' ? ` · ${P.version}` : ''}</h2>{live && <Button size="sm" variant="ghost" icon={<RefreshCw size={14} />} onClick={() => refreshAcks()}>새로고침</Button>}</div>
         {!a || !a.devices ? <Empty icon={<MonitorCheck size={20} />} title="아직 받은 PC가 없어요" text="직원 PC가 새 정책을 받으면 여기에 모여요" />
           : <>
             <div className={d.ver}><b>{Math.round((a.applied / a.devices) * 100)}%</b><span>{a.devices}대 중 {a.applied}대 적용</span></div>
@@ -51,7 +51,7 @@ export default function Deploy() {
       </section>
 
       <section className={clsx(d.card, d.full)} aria-label="배포 기록">
-        <div className={d.ch}><h2>배포 기록</h2>{live && <span className={d.note}>서버에 기록 목록이 없어 이 브라우저에서 배포한 것만 보여요</span>}</div>
+        <div className={d.ch}><h2>배포 기록</h2>{live && !historyFromServer && <span className={d.note}>서버에 기록 목록이 없어 이 브라우저에서 배포한 것만 보여요</span>}</div>
         {hist.length ? <ol className={d.hist}>{hist.map(h => <li key={h.version + +h.at} className={d.hi}>
           <div className={d.hv}><b>{h.version}</b><span>{fmt(h.at)}</span></div>
           <ul className={d.hc}>{h.changes.map((c, i) => <li key={i}><span>{c.what}</span><em>{c.src}</em></li>)}</ul>

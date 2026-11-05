@@ -24,9 +24,11 @@ npm run dev                  # http://localhost:5320
 
 | 이름 | 필수 | 설명 |
 |---|---|---|
-| `BACKEND_URL` | 예 | 백엔드 주소. 예: `http://13.193.207.69:8501` |
+| `BACKEND_URL` | 예 | 백엔드 주소. 예: `https://13.193.207.69` |
+| `BACKEND_TOKEN` | 아니요 | 백엔드가 인증을 요구하면 넣는다. `Authorization: Bearer` 로 붙여 보낸다 |
+| `BACKEND_CA` | 아니요 | 백엔드 인증서(PEM)가 바뀌었을 때만. 기본은 `api/_backend-ca.ts` 에 고정한 팀 서버 인증서 |
 
-브라우저 코드에는 들어가지 않는다(`VITE_` 접두사 없음). 브라우저는 같은 주소의 `/api` 만 부르고, 개발에서는 Vite 프록시가, 배포에서는 `api/proxy.ts`(Vercel 함수, `vercel.json` 이 `/api/*` 를 넘김)가 `BACKEND_URL` 로 넘긴다. 그래서 백엔드가 `http` 이거나 CORS 가 콘솔 주소를 허용하지 않아도 된다.
+셋 다 브라우저 코드에는 들어가지 않는다(`VITE_` 접두사 없음). 브라우저는 같은 주소의 `/api` 만 부르고, 개발에서는 Vite 프록시가, 배포에서는 `api/proxy.ts`(Vercel 함수, `vercel.json` 이 `/api/*` 를 넘김)가 `BACKEND_URL` 로 넘긴다. 팀 서버는 자체 서명 인증서를 쓰므로 인증서 검증을 끄지 않고 그 인증서만 신뢰하도록 고정했다.
 
 ## 배포 (Vercel)
 
@@ -38,13 +40,16 @@ npm run dev                  # http://localhost:5320
 
 ## 백엔드 연동 상태
 
-| 콘솔 기능 | 상태 |
+| 콘솔 기능 | API |
 |---|---|
-| 흐름도 숫자(입력·변환·원문 전송·오탐·선택·필수) | `/logs/events` 최근 7일로 계산 |
-| 선택 검토·오탐 신고·필수 검토 목록 | 이벤트에서 만든다. 직원·부서·AI·사유 글·잡힌 값은 서버에 없어 빈칸 |
-| 서명 후 배포 | `/policy/publish` 로 보내면 서버가 버전을 매겨 서명·저장. 첫 화면에서 `/policy/latest` 를 읽어 버전·규칙·항목 켬/끔을 맞춘다. 회사 고유 단어·탐지 제외 값은 sha256 해시로 보낸다 |
-| PC 적용 현황 | `/policy/acks` (적용 n대 · 거부 n대와 사유) |
-| 판단·종결·되돌리기 | 화면 안에서만 동작(서버 API 없음) |
+| 흐름도 숫자, 오탐 신고 | `/logs/events` 최근 7일로 계산, `/logs/stats` |
+| 필수·선택 검토 목록과 결론 | `/cases`(열린 건·종결 건), 판단은 `/cases/{id}/close`, 되돌리기·다시 열기는 `/cases/{id}/reopen`. 같은 건 요청은 순서대로 보낸다 |
+| 처리 기록 | `/cases/{id}` 의 `history` |
+| 직원 사유 | 이벤트의 `reason_text` · `reason_at` (직원 앱이 `/events/{id}/reason` 으로 제출) |
+| 서명 후 배포 | `/policy/publish`(버전·서명은 서버), 시작할 때 `/policy/latest` 로 버전·규칙·항목 켬/끔을 맞춘다. 고유 단어·탐지 제외 값은 sha256 해시로 보낸다 |
+| 배포 기록 · PC 적용 | `/policy/history`, `/policy/{버전}/acks` |
+| 직원·부서·대상 AI, 잡힌 값 | 서버에 아직 없음(이슈 #21) — 칸을 비워 둔다 |
+| 정책 초안 | 브라우저 안에만 있음 — 새로고침하면 사라진다 |
 
 빠진 API와 제안은 [docs/BACKEND-API-GAP.md](docs/BACKEND-API-GAP.md), 정책 번들·서명 형식은 [docs/BUNDLE-SPEC.md](docs/BUNDLE-SPEC.md)에 있다.
 
