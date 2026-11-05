@@ -1,6 +1,6 @@
 // 대화상자: 결론 내기 · 탐지 제외(오른쪽 패널) · 서명 후 배포 · 변경 내용 · 고유 단어 추가 · 일괄 종결 · 서버
 import { useState, type ReactNode } from 'react'
-import { S, emit, useStore, hooks, caseById, closeCase, addRule, suggestRule, change, fpGroups, groupKey, fpExclude, publish, nextVersion, addDict, ent, toast, type Dialog } from '../domain/store'
+import { S, emit, useStore, hooks, caseById, closeCase, addRule, suggestRule, change, fpGroups, groupKey, fpExclude, publish, addDict, ent, toast, type Dialog } from '../domain/store'
 import { CAUSES, CONCLUSION, METHODS } from '../domain/defaults'
 import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, josa, partial } from '../lib/util'
@@ -144,26 +144,27 @@ function Publish({ onDone }: { onDone?: () => void }) {
   const [busy, setBusy] = useState(false), [err, setErr] = useState<string | null>(null)
   const ok = async () => {
     if (busy) return
-    let v: string | undefined
-    if (S.api.live) {
-      setBusy(true); setErr(null)
-      try {
-        v = await publishToServer()
-        // 배포는 서버에 저장만 한다. 서버 탐지가 이 버전을 쓰도록 바로 적용한다
-        const no = await applyOnServer(+v.slice(1)).catch(e => (e as Error).message)
-        if (no) toast(`${v}를 저장했지만 서버에 적용하지 못했어요 (${reasonKo(no)}) · 배포 화면에서 다시 적용해 주세요`)
-      } catch (e) {
-        const m = (e as Error).message
-        setErr(/signing key/i.test(m) ? '서버의 서명 키를 찾을 수 없어요. 백엔드 담당자에게 알려 주세요' : m); setBusy(false); return
-      }
+    // 서명·저장·적용은 서버가 한다. 연결이 없으면 배포하지 않는다(화면 안에서만 버전을 올리지 않음)
+    if (!S.api.live) return
+    let v: string, msg: string
+    setBusy(true); setErr(null)
+    try {
+      v = await publishToServer()
+      // 배포는 서버에 저장만 한다. 서버 탐지가 이 버전을 쓰도록 바로 적용한다
+      const no = await applyOnServer(+v.slice(1)).catch(e => (e as Error).message)
+      msg = no ? `${v}를 저장했지만 서버에 적용하지 못했어요 (${reasonKo(no)}) · 배포 화면에서 다시 적용해 주세요` : `${v}를 서명해 배포했고 서버 탐지에 적용했어요`
+    } catch (e) {
+      const m = (e as Error).message
+      setErr(/signing key/i.test(m) ? '서버의 서명 키를 찾을 수 없어요. 백엔드 담당자에게 알려 주세요' : m); setBusy(false); return
     }
-    S.ui.dialog = null; publish(v); if (S.api.live) afterServerPublish(); onDone?.(); emit()
+    S.ui.dialog = null; publish(v, msg); afterServerPublish(); onDone?.(); emit()
   }
   return (
-    <Modal open onClose={closeDialog} title={S.api.live ? '서명 후 배포' : `${nextVersion()} 서명 후 배포`}
+    <Modal open onClose={closeDialog} title="서명 후 배포"
       desc="서버가 버전을 매겨 서명하고, 서버 탐지에 바로 적용해요. 직원 입력은 모두 서버에서 검사하니 따로 내려보낼 필요가 없어요."
-      foot={<Foot ok="서명 후 배포하기" okLabel="서명하는 중…" busy={busy} onOk={ok} />}>
+      foot={<Foot ok="서명 후 배포하기" okLabel="서명하는 중…" busy={busy} onOk={ok} disabled={!S.api.live} />}>
       <ChangeList />
+      {!S.api.live && <Note error>서버에 연결되지 않아 배포할 수 없어요. 다시 연결한 뒤 배포해 주세요.</Note>}
       {err && <Note error>배포하지 못했어요: {err}</Note>}
     </Modal>
   )

@@ -114,13 +114,13 @@ const unadd = (hit: (what: string) => boolean) => { const C = S.policy.changes, 
 export function deleteRule(i: number) { const r = S.policy.learned.splice(i, 1)[0]; if (r.live || !unadd(w => w === `자동 변환 추가: ${r.when} → ${r.type} ${r.method}`)) change(`자동 변환 삭제: ${r.when} → ${r.type} ${r.method}`, r.from); emit() }
 export function deleteExclude(i: number) { const d = S.policy.exclude.splice(i, 1)[0]; if (!d.draft || !unadd(w => w.startsWith('탐지 제외 추가: "') && w.endsWith(` (${d.why})`))) change(`탐지 제외 삭제: "${partial('', d.term)}"`); emit() }
 export function setMeta(k: string, v: boolean) { S.policy.meta[k] = v; change(`파일 사본: ${k} ${v ? '제거' : '유지'}`); emit() }
-export function publish(nv = nextVersion()) {
+export function publish(nv = nextVersion(), msg = `서명 후 배포했어요 · ${nv}`) {
   const P = S.policy
   P.learned.forEach(r => { if (!r.live) { r.live = true; r.at = clock(); r.fresh = true } })
   P.dict.forEach(d => delete d.draft); P.exclude.forEach(d => delete d.draft)
   S.history.push({ version: nv, at: clock(), changes: [...P.changes], server: S.api.live })
   P.version = nv; P.deployed = fmt(clock()); P.changes = []
-  toast(`서명 후 배포했어요 · ${nv}`)
+  toast(msg)
 }
 
 // ── 사건 처리
