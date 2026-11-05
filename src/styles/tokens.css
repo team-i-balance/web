@@ -10,24 +10,25 @@
 :root {
   color-scheme: light;
   /* 면 */
-  --bg: #eef0f4;
+  /* 회색은 Devs 와 같은 중립 회색 단계(#F8F9FA → #212529)를 라이트에 맞게 뒤집어 쓴다 */
+  --bg: #f1f3f5;
   --surface: #ffffff;
-  --surface-2: #fafbfc;
-  --well: #f4f5f8;
-  --seg: #e3e6ec;
+  --surface-2: #f8f9fa;
+  --well: #f1f3f5;
+  --seg: #e9ecef;
   --seg-on: #ffffff; /* 세그먼트·메뉴에서 고른 칸 */
-  --chip: #e9ebf0;
-  --hover: #f1f2f6;
-  --press: #e6e8ee;
-  --scrim: rgba(16, 18, 28, 0.32);
+  --chip: #e9ecef;
+  --hover: #f1f3f5;
+  --press: #e9ecef;
+  --scrim: rgba(33, 37, 41, 0.36);
   /* 글자 */
-  --fg: #14161c;
-  --sub: #4e5463;
-  --mute: #6e7383;
-  --faint: #80869a;
+  --fg: #212529;
+  --sub: #495057;
+  --mute: #6c757d;
+  --faint: #8a929a;
   /* 선 */
-  --line: #e1e4ea;
-  --line-2: #c9cdd6;
+  --line: #dee2e6;
+  --line-2: #ced4da;
   /* 강조: 지금 처리할 곳 */
   --acc: #2563eb; /* 시그널 블루(2026-11-05 정함) */
   --acc-on: #ffffff;
@@ -44,16 +45,18 @@
   --info: #1f7fb8;
   --focus: #2563eb;
   /* 깊이 */
-  --sh-1: 0 1px 2px rgba(20, 22, 40, 0.05);
-  --sh-2: 0 1px 2px rgba(20, 22, 40, 0.05), 0 12px 32px rgba(20, 22, 40, 0.08);
-  --sh-3: 0 2px 6px rgba(20, 22, 40, 0.06), 0 24px 64px rgba(20, 22, 40, 0.18);
+  /* 깊이: Devs 처럼 면은 평평하게(그림자 없음). 떠 있는 것(팝오버·대화상자·알림)만 그림자 */
+  --sh-1: none;
+  --sh-2: 0 8px 24px rgba(33, 37, 41, 0.12);
+  --sh-3: 0 16px 48px rgba(33, 37, 41, 0.2);
   /* 글자 크기 */
   --font: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
-  --t-11: 11px; --t-12: 12px; --t-13: 13px; --t-14: 14px; --t-15: 15px; --t-16: 16px;
-  --t-18: 18px; --t-20: 20px; --t-24: 24px; --t-28: 28px; --t-32: 32px;
+  /* 글자(Devs): 12 xsmall · 14 small · 16 medium · 18 large · 제목 20/24/32. 12보다 작게 쓰지 않는다 */
+  --t-11: 12px; --t-12: 12px; --t-13: 14px; --t-14: 14px; --t-15: 16px; --t-16: 16px;
+  --t-18: 20px; --t-20: 20px; --t-24: 24px; --t-28: 32px; --t-32: 32px;
   /* 간격 4pt */
-  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-9: 36px; --s-12: 48px;
   /* 모서리(Devs 단계): 2 가장 작은 부품 · 6 작은 버튼·라벨 · 12 버튼·입력·상자 · 16 큰 패널(최대) */
   --r-xs: 2px; --r-sm: 6px; --r-md: 12px; --r-lg: 12px; --r-xl: 16px; --r-full: 999px;
   /* 움직임 */
@@ -75,7 +78,7 @@
     --acc: #6ea0ff; --acc-on: #101216; --acc-ink: #a3c2ff; --acc-tile: color-mix(in srgb, #6ea0ff 14%, #25292d); --acc-ring: rgba(110, 160, 255, 0.18);
     --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
     --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #8fb5ff;
-    --sh-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+    --sh-1: none;
     --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
     --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);
   }
@@ -89,7 +92,7 @@
   --acc: #6ea0ff; --acc-on: #101216; --acc-ink: #a3c2ff; --acc-tile: color-mix(in srgb, #6ea0ff 14%, #25292d); --acc-ring: rgba(110, 160, 255, 0.18);
   --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
   --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #8fb5ff;
-  --sh-1: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sh-1: none;
   --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
   --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);
 }

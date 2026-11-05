@@ -14,7 +14,7 @@ body {
   overflow-wrap: anywhere;
 }
 h1, h2, h3, h4, p { margin: 0; }
-h1, h2, h3 { letter-spacing: -0.02em; text-wrap: balance; }
+h1, h2, h3 { letter-spacing: -0.02em; line-height: 1.25; text-wrap: balance; } /* Devs 제목 줄 간격 120% 안팎 */
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: default; }
