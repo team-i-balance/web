@@ -11,8 +11,8 @@ import s from './ds.module.css'
 
 export { s as ds }
 
-// ── 버튼
-type Variant = 'default' | 'primary' | 'now' | 'ghost'
+// ── 버튼: now 채운 파랑(화면당 주 행동 하나) · primary 강한 테두리 · default · ghost 회색 글자 · quiet 표 행 안 반복 버튼(28px) · link 화면 이동 파란 글자
+export type Variant = 'default' | 'primary' | 'now' | 'ghost' | 'quiet' | 'link'
 interface BtnProps { variant?: Variant; size?: 'sm' | 'md' | 'lg'; icon?: ReactNode; kbd?: string; iconOnly?: boolean; danger?: boolean }
 const btnCls = ({ variant = 'default', size = 'md', iconOnly, danger }: BtnProps, extra?: string) =>
   clsx(s.btn, size !== 'md' && s[size], variant !== 'default' && s[variant], iconOnly && s.iconOnly, danger && s.danger, extra)
@@ -43,18 +43,23 @@ export function DecideButton({ title, desc, k, onClick }: { title: string; desc:
 export function Badge({ n, tone, label }: { n: number | string; tone?: 'now' | 'danger'; label?: string }) {
   return <span className={clsx(s.badge, tone === 'now' && s.badgeNow, tone === 'danger' && s.badgeDanger)} aria-label={label}>{n}</span>
 }
+// 상태 점: 목록 행의 판단 상태. danger 위반 · ok 종결 · none 예외 인정·오탐·미판단. 글자를 주면 옆에 13px 로
+export function Dot({ tone = 'none', children, title }: { tone?: 'danger' | 'ok' | 'none'; children?: ReactNode; title?: string }) {
+  const t = { danger: s.dotDanger, ok: s.dotOk, none: s.dotNone }
+  return <span className={s.dotRow} title={title}><i className={clsx(s.dot, t[tone])} aria-hidden="true" />{children}</span>
+}
 export function Tag({ children, tone, dot }: { children: ReactNode; tone?: 'danger' | 'ok' | 'warn' | 'now' | 'outline'; dot?: boolean }) {
   const t = { danger: s.tagDanger, ok: s.tagOk, warn: s.tagWarn, now: s.tagNow, outline: s.tagOutline }
   return <span className={clsx(s.tag, tone && t[tone])}>{dot && <i className={s.dot} />}{children}</span>
 }
 
 // ── 알림 상자: 성공·경고·오류·안내. 아이콘 + 제목 한 줄 + 설명(두 줄 이내) + 행동
-export type NoticeTone = 'success' | 'warning' | 'error' | 'info'
-const NOTICE_ICON = { success: CircleCheck, warning: TriangleAlert, error: CircleAlert, info: Info }
+export type NoticeTone = 'success' | 'warning' | 'error' | 'info' | 'now'
+const NOTICE_ICON = { success: CircleCheck, warning: TriangleAlert, error: CircleAlert, info: Info, now: Info }
 export function Notice({ tone = 'info', title, children, actions }: { tone?: NoticeTone; title?: ReactNode; children?: ReactNode; actions?: ReactNode }) {
   const I = NOTICE_ICON[tone]
   return (
-    <div className={clsx(s.notice, s[tone])} role={tone === 'error' ? 'alert' : undefined}>
+    <div className={clsx(s.notice, tone === 'now' ? s.noticeNow : tone === 'error' ? s.noticeError : s[tone])} role={tone === 'error' ? 'alert' : undefined}>
       <I size={16} className={s.noticeI} aria-hidden="true" />
       <div className={s.noticeB}>{title && <b>{title}</b>}{children && <div>{children}</div>}</div>
       {actions && <div className={s.noticeA}>{actions}</div>}
@@ -80,8 +85,9 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
 export const TextArea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function TextArea({ className, ...p }, ref) {
   return <textarea ref={ref} className={clsx(s.textarea, className)} {...p} />
 })
-export function Select({ small, className, ...p }: { small?: boolean } & SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={clsx(s.select, small && s.selectSm, className)} {...p} />
+// quiet: 표 안에서 쓰는 조용한 선택(28px, 평소 테두리·바탕 없음)
+export function Select({ small, quiet, className, ...p }: { small?: boolean; quiet?: boolean } & SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className={clsx(s.select, small && !quiet && s.selectSm, quiet && s.selectQuiet, className)} {...p} />
 }
 export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return <RSwitch.Root className={s.switch} checked={checked} onCheckedChange={onChange} aria-label={label}><RSwitch.Thumb className={s.thumb} /></RSwitch.Root>
@@ -94,13 +100,13 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean | 'ind
   )
 }
 
-// ── 세그먼트: 탭처럼 쓰는 선택. 모양은 Devs 필터 칩(알약, 고른 것은 강조색 + 체크)
+// ── 세그먼트: 탭처럼 쓰는 선택. 알약 칩, 고른 것은 밝은 면. 파랑·체크 없음(now 도 중립 숫자)
 export function Segmented<K extends string>({ value, onChange, items, label }: { value: K; onChange: (k: K) => void; items: { k: K; t: string; n?: number; now?: boolean }[]; label: string }) {
   return (
     <div className={s.seg} role="tablist" aria-label={label}>
       {items.map(i => (
         <button key={i.k} type="button" role="tab" aria-selected={value === i.k} className={s.segItem} onClick={() => onChange(i.k)}>
-          {value === i.k && <Check size={14} strokeWidth={2.5} aria-hidden="true" />}{i.t}{i.n != null && <Badge n={i.n} tone={i.now && i.n ? 'now' : undefined} />}
+          {i.t}{i.n != null && <Badge n={i.n} />}
         </button>
       ))}
     </div>
@@ -149,11 +155,16 @@ export function Empty({ icon, title, text, children, center }: { icon?: ReactNod
 export const Skeleton = ({ w = '100%', h = 14 }: { w?: number | string; h?: number }) => <div className={s.skel} style={{ width: w, height: h }} />
 
 // ── 진행 막대
-export const Meter = ({ value, label }: { value: number; label: string }) => (
-  <div className={s.meter} role="meter" aria-label={label} aria-valuenow={Math.round(value * 100)} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} /></div>
-)
+export const Meter = ({ value, label, size }: { value: number; label: string; size?: 'sm' | 'md' }) => {
+  const v = Math.max(0, Math.min(1, value))
+  return (
+    <div className={clsx(s.meter, size === 'md' && s.meterMd)} role="meter" aria-label={label} aria-valuenow={Math.round(v * 100)} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${v * 100}%` }} data-part={v < 1 || undefined} /></div>
+  )
+}
 
 // ── 가린 값·보낸 문장
+// 문장 속 잡힌 값: 받은(가린) 문자열만 그대로 보여 준다
+export const Hit = ({ children, title }: { children: ReactNode; title?: string }) => <mark className={s.hit} title={title}>{children}</mark>
 export const Masked = ({ type, value }: { type: string; value: string }) => <mark className={s.mask} title={`${type} 원문 (일부 가림)`}>{partial(type, value)}</mark>
 export function Sentence({ c }: { c: Pick<Case, 'items'> & { ev: { tpl: string } } }) {
   const parts = c.ev.tpl.split(/(\{\d\})/)

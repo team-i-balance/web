@@ -3,9 +3,9 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Command } from 'cmdk'
 import { LayoutGrid, ShieldAlert, Flag, SlidersHorizontal, MonitorCheck, ChartColumn, Search, Play, Keyboard, RefreshCw, ArrowRight, UserRound, ShieldCheck } from 'lucide-react'
 import clsx from 'clsx'
-import { S, emit, useStore, openOf, fpGroups, boardWork, QUEUE_ORDER, QUEUE_NAME } from '../domain/store'
+import { S, emit, useStore, fpGroups, boardWork, QUEUE_ORDER, QUEUE_NAME } from '../domain/store'
 import { connect } from '../api/client'
-import { Badge, Kbd, Tip } from '../ds'
+import { Kbd, Tip } from '../ds'
 import { Modal } from '../ds/Overlay'
 import { partial } from '../lib/util'
 import { ROUTE_NAME, go, type Route } from './route'
@@ -14,18 +14,19 @@ import { undoLast } from '../features/toasts'
 import { toggleCoach } from '../features/coach'
 import sh from './shell.module.css'
 
-// 메뉴 아이콘: Devs 처럼 20px 가는 선
+// 메뉴 아이콘: 16px 가는 선, 색은 글자색을 따른다
 const ICON: Record<Route, ReactNode> = {
-  home: <LayoutGrid size={20} />, review: <ShieldAlert size={20} />, fp: <Flag size={20} />,
-  policy: <SlidersHorizontal size={20} />, deploy: <MonitorCheck size={20} />, insights: <ChartColumn size={20} />,
+  home: <LayoutGrid size={16} />, review: <ShieldAlert size={16} />, fp: <Flag size={16} />,
+  policy: <SlidersHorizontal size={16} />, deploy: <MonitorCheck size={16} />, insights: <ChartColumn size={16} />,
 }
 
+// 메뉴 숫자: 처리할 일 수(work[q])만, 바탕 없는 회색 숫자. 지금 화면에서는 화면 안 숫자와 겹쳐서 그리지 않는다
+const NAV_WORK: Partial<Record<Route, [q: 'req' | 'fp' | 'pol', label: string]>> = { review: ['req', '결론 낼 필수 검토'], fp: ['fp', '오탐 신고'], policy: ['pol', '배포 대기 변경'] }
 function navBadge(r: Route): ReactNode {
-  if (r === 'review') { const n = openOf('req').length; return n ? <Badge n={n} tone={boardWork().req ? 'now' : undefined} label={`필수 검토 ${n}건`} /> : null }
-  if (r === 'fp') { const n = fpGroups(true).length; return n ? <Badge n={n} label={`오탐 신고 ${n}건`} /> : null }
-  if (r === 'policy') { const n = S.policy.changes.length; return n ? <Badge n={n} label={`배포 대기 변경 ${n}개`} /> : null }
-  if (r === 'deploy') { const a = S.api.pol?.acks; return a?.rejected ? <Badge n={a.rejected} tone="danger" label={`거부한 PC ${a.rejected}대`} /> : null }
-  return null
+  const w = NAV_WORK[r]
+  if (!w) return null
+  const n = boardWork()[w[0]]
+  return n ? <span className={sh.navN} aria-label={`${w[1]} ${n}`}>{n}</span> : null
 }
 
 const connText = () => {
@@ -35,7 +36,7 @@ const connText = () => {
 const openPalette = () => { S.ui.palette = true; emit() }
 const Brand = () => (
   <a className={sh.brand} href="#home" aria-label="입력정보 점검 콘솔 작업판으로">
-    <ShieldCheck size={24} className={sh.logo} aria-hidden="true" /><span className={sh.brandT}>입력정보 점검</span>
+    <ShieldCheck size={20} className={sh.logo} aria-hidden="true" /><span className={sh.brandT}>입력정보 점검</span>
   </a>
 )
 
@@ -64,14 +65,14 @@ export function TopBar({ r }: { r: Route }) {
       <aside className={sh.side} aria-label="메뉴">
         <div className={sh.sideTop}><Brand /></div>
         <button type="button" className={sh.search} onClick={openPalette} aria-label="찾기·이동 (⌘K)">
-          <Search size={20} /><span>찾기</span><Kbd>⌘K</Kbd>
+          <Search size={16} /><span>찾기</span><Kbd>⌘K</Kbd>
         </button>
         <nav className={sh.nav}>
-          {routes.map(k => <Item key={k} icon={ICON[k]} label={ROUTE_NAME[k]} right={navBadge(k)} href={'#' + k} current={r === k} rail={rail} />)}
+          {routes.map(k => <Item key={k} icon={ICON[k]} label={ROUTE_NAME[k]} right={r === k ? null : navBadge(k)} href={'#' + k} current={r === k} rail={rail} />)}
         </nav>
         <div className={sh.sideFoot}>
           <Item icon={<i className={clsx(sh.connDot, sh[S.api.state])} />} label={connText()} onClick={() => openDialog({ kind: 'server' })} cls={sh.conn} rail={rail} />
-          <Item icon={<Play size={20} />} label="시연 순서" onClick={toggleCoach} rail={rail} />
+          <Item icon={<Play size={16} />} label="시연 순서" onClick={toggleCoach} rail={rail} />
         </div>
       </aside>
       <header className={sh.top}>
@@ -83,7 +84,7 @@ export function TopBar({ r }: { r: Route }) {
         </div>
       </header>
       <nav className={sh.bottom} aria-label="메뉴">
-        {routes.map(k => <a key={k} className={sh.tab} href={'#' + k} aria-current={r === k ? 'page' : undefined}>{ICON[k]}{ROUTE_NAME[k]}<span className={sh.tabN}>{navBadge(k)}</span></a>)}
+        {routes.map(k => <a key={k} className={sh.tab} href={'#' + k} aria-current={r === k ? 'page' : undefined}>{ICON[k]}{ROUTE_NAME[k]}<span className={sh.tabN}>{r === k ? null : navBadge(k)}</span></a>)}
       </nav>
     </>
   )

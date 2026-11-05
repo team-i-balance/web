@@ -1,39 +1,40 @@
-.wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-content: start; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.full { grid-column: 1 / -1; }
-.ch { display: flex; align-items: center; gap: 10px; }
-.ch h2 { font-size: var(--t-16); font-weight: var(--w-title); }
-.ch > :last-child:not(:first-child) { margin-left: auto; }
-.ver { display: flex; align-items: baseline; gap: 12px; }
-.ver b { font-size: var(--t-32); font-weight: var(--w-title); letter-spacing: -0.02em; line-height: 1.2; } /* Devs 제목 최대 32 */
-.ver span { color: var(--sub); }
-.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.stat { padding: 12px 16px; border-radius: var(--r-md); background: var(--bg); display: flex; flex-direction: column; gap: 4px; } /* Devs 안쪽 면 */
-.stat span { font-size: var(--t-12); color: var(--mute); font-weight: var(--w-label); }
-.stat b { font-size: var(--t-24); font-weight: var(--w-title); letter-spacing: -0.02em; }
-.stat.bad b { color: var(--danger); }
-.stat.good b { color: var(--ok); }
-.big { font-size: var(--t-32); font-weight: var(--w-title); letter-spacing: -0.02em; }
-.reasons { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
-.reasons li { display: flex; justify-content: space-between; gap: 12px; }
-.reasons li span:last-child { color: var(--fg); font-weight: var(--w-label); }
+/* 구역 사이 24, 패널 안 16(ds.panel), 묶음 안 8 */
+.wrap { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.ch { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ch h2 { font-size: var(--t-16); font-weight: var(--w-title); color: var(--fg); letter-spacing: -0.01em; }
+.ch h2 small { font-size: var(--t-13); font-weight: var(--w-body); color: var(--mute); margin-left: 8px; letter-spacing: 0; }
+.end { margin-left: auto; }
+/* 위쪽: 왼쪽 적용 수·막대, 오른쪽 거부 안내 */
+.top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.left { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sum { display: flex; align-items: baseline; gap: 8px; }
+.sum b { font-size: var(--t-28); font-weight: var(--w-title); letter-spacing: -0.02em; line-height: 1.2; color: var(--fg); }
+.sum span { color: var(--mute); font-size: var(--t-14); }
+.bar { max-width: 480px; }
+.reasons { display: flex; flex-wrap: wrap; gap: 8px; }
+.reasons b { color: var(--fg); font-weight: var(--w-label); }
 .note { font-size: var(--t-12); color: var(--mute); }
+/* 배포 기록 */
 .hist { display: flex; flex-direction: column; }
-.hi { display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); }
-.hi:first-child { border-top: 0; padding-top: 4px; }
-.hv { display: flex; flex-direction: column; gap: 4px; }
-.hv b { font-size: var(--t-20); font-weight: var(--w-title); letter-spacing: -0.02em; }
+.hi { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--line); }
+.hi:first-child { border-top: 0; padding-top: 0; }
+.hv { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.hv b { font-size: var(--t-15); font-weight: var(--w-title); color: var(--fg); }
 .hv span { font-size: var(--t-12); color: var(--mute); }
-.hc { display: flex; flex-direction: column; gap: 6px; font-size: var(--t-14); min-width: 0; }
-.hc li { display: flex; gap: 10px; justify-content: space-between; }
-.hc em { font-style: normal; color: var(--mute); font-size: var(--t-12); white-space: nowrap; }
-.kv { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; font-size: var(--t-13); }
-.kv dt { color: var(--mute); }
+.hc { display: flex; flex-direction: column; gap: 8px; max-width: 840px; min-width: 0; }
+.hc li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 8px; }
+.cl { font-size: var(--t-12); font-weight: var(--w-label); color: var(--mute); white-space: nowrap; }
+.ct { font-size: var(--t-14); line-height: 1.5; color: var(--fg); min-width: 0; overflow-wrap: anywhere; }
+.hc li > :last-child:not(.ct) { align-self: center; }
+/* 버전 펼침: 앞 버전 대비를 위에, 나머지는 2단 */
+.vd { grid-column: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.vchg { display: flex; flex-direction: column; gap: 4px; font-size: var(--t-14); color: var(--fg); max-width: 760px; }
+.vchg b { font-weight: var(--w-label); }
+.kv { width: 100%; max-width: 840px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; font-size: var(--t-13); color: var(--mute); }
+.kv > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kv dt { font-weight: var(--w-label); }
 .kv dd { margin: 0; overflow-wrap: anywhere; }
 .kv dd.mono { font-family: var(--mono); font-size: var(--t-12); } /* 서명 키·해시만 고정폭 */
-@media (max-width: 960px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 600px) { .card { padding: 18px 16px; } .stats { grid-template-columns: 1fr; } }
-.vd { grid-column: 2; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
-.vd .kv { width: 100%; }
 .vlist { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
-@media (max-width: 640px) { .vd { grid-column: 1 / -1; } }
+@media (max-width: 960px) { .top { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .vd { grid-column: 1 / -1; } .kv { grid-template-columns: minmax(0, 1fr); } }

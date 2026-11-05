@@ -5,7 +5,7 @@
 .radio[data-on] { border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc); background: var(--acc-tile); }
 .radio input { margin: 3px 0 0; accent-color: var(--acc); width: 16px; height: 16px; flex: none; }
 .radio span { display: flex; flex-direction: column; gap: 2px; }
-.radio small { color: var(--sub); font-size: var(--t-12); }
+.radio small { color: var(--sub); font-size: var(--t-13); }
 .box { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: var(--r-lg); background: var(--surface-2); border: 1px solid var(--line); }
 .checkRow { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--t-14); }
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -15,7 +15,7 @@
 .mut { color: var(--mute); font-size: var(--t-12); font-weight: var(--w-label); }
 .big { font-size: var(--t-20); letter-spacing: -0.01em; }
 .changes { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
-.changes li { display: flex; gap: 12px; justify-content: space-between; padding: 10px 14px; font-size: var(--t-14); }
+.changes li { display: flex; gap: 8px; justify-content: flex-start; align-items: baseline; padding: 10px 14px; font-size: var(--t-14); }
 .changes li + li { border-top: 1px solid var(--line); }
 .changes em { font-style: normal; color: var(--mute); font-size: var(--t-12); white-space: nowrap; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; }

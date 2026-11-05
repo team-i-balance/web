@@ -1,6 +1,6 @@
 /* ── 버튼 */
 .btn {
-  --h: 40px; /* Devs: 작은 32 · 기본 40 · 큰 48 */
+  --h: var(--ctl-md); /* 높이: quiet 28 · sm 32 · 기본 40 · lg 48 */
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: var(--h); padding: 0 14px; border-radius: var(--r-md);
   border: 1px solid var(--line-2); background: var(--well); color: var(--fg); /* 다크: 누를 수 있는 것은 요소 면 + 뚜렷한 테두리 */
@@ -13,71 +13,113 @@
 .btn:active:not(:disabled) { background: var(--press); }
 .btn:disabled { background: var(--well); border-color: transparent; color: var(--faint); box-shadow: none; cursor: not-allowed; }
 .btn svg { flex: none; }
-.sm { --h: 32px; padding: 0 12px; font-size: var(--t-13); border-radius: var(--r-sm); gap: 4px; }
-.lg { --h: 48px; padding: 0 20px; font-size: var(--t-15); border-radius: var(--r-lg); }
-.primary { background: var(--fg); color: var(--surface); border-color: var(--fg); }
-.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--fg) 86%, var(--surface)); border-color: transparent; }
-.primary:active:not(:disabled) { background: color-mix(in srgb, var(--fg) 72%, var(--surface)); }
-.now { background: var(--acc); color: var(--acc-on); border-color: var(--acc); }
-.primary, .now { font-weight: var(--w-title); } /* 채운 버튼만 굵게, 나머지 버튼은 라벨 굵기 */
-.now:hover:not(:disabled) { background: color-mix(in srgb, var(--acc) 86%, #000); border-color: transparent; }
-.now:active:not(:disabled) { background: color-mix(in srgb, var(--acc) 72%, #000); }
-.ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--acc-ink); } /* Devs ghost: 배경·테두리 없이 강조색 글자 */
-.ghost:hover:not(:disabled) { background: var(--hover); }
+.sm { --h: var(--ctl-sm); padding: 0 12px; font-size: var(--t-13); border-radius: var(--r-sm); gap: 4px; }
+.lg { --h: var(--ctl-lg); padding: 0 20px; font-size: var(--t-15); border-radius: var(--r-md); }
+/* 강한 테두리 버튼. 채운 버튼은 now 하나뿐 */
+.primary { background: var(--well); color: var(--fg); border-color: var(--sub); }
+.primary:hover:not(:disabled) { background: var(--chip); border-color: var(--sub); }
+.primary:active:not(:disabled) { background: var(--press); }
+/* 주 행동(화면당 하나): 채운 파랑 */
+.now { background: var(--acc-fill); color: var(--acc-on); border-color: var(--acc-fill); font-weight: var(--w-title); }
+.now:hover:not(:disabled) { background: color-mix(in srgb, var(--acc-fill) 88%, #000); border-color: color-mix(in srgb, var(--acc-fill) 88%, #000); }
+.now:active:not(:disabled) { background: color-mix(in srgb, var(--acc-fill) 76%, #000); }
+/* 배경·테두리 없는 회색 글자 버튼 */
+.ghost { background: transparent; border-color: transparent; box-shadow: none; color: var(--sub); }
+.ghost:hover:not(:disabled) { background: var(--hover); border-color: transparent; color: var(--fg); }
 .ghost:active:not(:disabled) { background: var(--press); }
 .ghost:disabled { background: transparent; }
 .ghost.iconOnly { color: var(--sub); } /* 아이콘만 있는 도구(테마·닫기)는 회색 */
 .ghost.iconOnly:hover:not(:disabled) { color: var(--fg); }
+/* 화면 이동 링크(한두 곳만): 파란 글자, 올리면 밑줄 */
+.link { background: transparent; border-color: transparent; box-shadow: none; color: var(--acc-ink); padding-left: 4px; padding-right: 4px; }
+.link:hover:not(:disabled), .link:active:not(:disabled) { background: transparent; border-color: transparent; text-decoration: underline; text-underline-offset: 3px; }
+.link:disabled { background: transparent; }
+/* 표 행 안의 반복 버튼: 평소 조용하고, 행을 올리거나 포커스가 들어오면 드러난다. sm 보다 뒤에 둬야 28px 가 이긴다 */
+.quiet { --h: var(--ctl-xs); padding: 0 10px; font-size: var(--t-13); border-radius: var(--r-sm); gap: 4px; background: transparent; border-color: var(--line); color: var(--fg); }
+tr:hover .quiet, tr:focus-within .quiet, .quietHost:hover .quiet, .quietHost:focus-within .quiet { background: var(--well); border-color: var(--line-2); }
+.quiet:hover:not(:disabled) { background: var(--chip); border-color: var(--line-2); }
+.quiet:disabled { background: transparent; border-color: var(--line); }
 .danger { color: var(--danger); }
 .iconOnly { width: var(--h); padding: 0; }
 .kbd {
   display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px;
-  border: 1px solid var(--line); border-radius: 4px; background: var(--surface-2);
-  font: var(--w-label) var(--t-11)/1 var(--font); color: var(--mute);
+  border: 1px solid var(--line-2); border-radius: 4px; background: var(--surface-2);
+  font: var(--w-label) var(--t-12)/1 var(--font); color: var(--sub);
 }
 @media (hover: none) { .kbd { display: none; } }
 
 /* ── 판단 버튼: 제목 + 결과 한 줄 + 단축키 */
 .decide {
   display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 2px 10px;
-  min-height: 64px; padding: 12px 14px; text-align: left;
+  min-height: 64px; padding: 12px 16px; text-align: left;
   border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--well); color: var(--fg);
   transition: border-color var(--d-1) var(--ease), background var(--d-1) var(--ease);
 }
 .decide:hover { border-color: var(--sub); background: var(--chip); }
 .decide:active { background: var(--press); }
 .decide b { font-size: var(--t-15); font-weight: var(--w-title); }
-.decide span { grid-column: 1 / -1; font-size: var(--t-12); color: var(--sub); }
+.decide span { grid-column: 1 / -1; font-size: var(--t-13); line-height: 1.45; color: var(--sub); }
 .decide .kbd { grid-column: 2; grid-row: 1; }
 
 /* ── 배지·태그 */
 .badge {
   display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px;
   border-radius: var(--r-full); background: var(--chip); color: var(--sub);
-  font-size: var(--t-11); font-weight: var(--w-label); line-height: 1;
+  font-size: var(--t-12); font-weight: var(--w-label); line-height: 1; font-variant-numeric: tabular-nums;
 }
 .badgeNow { background: var(--acc); color: var(--acc-on); }
 .badgeDanger { background: var(--danger-soft); color: var(--danger); }
 .tag {
-  display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px;
-  border-radius: var(--r-full); background: var(--chip); color: var(--sub);
+  display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 6px;
+  border-radius: var(--r-sm); background: var(--chip); color: var(--sub);
   font-size: var(--t-12); font-weight: var(--w-label); white-space: nowrap;
 }
 .tagDanger { background: var(--danger-soft); color: var(--danger); }
 .tagOk { background: var(--ok-soft); color: var(--ok); }
 .tagWarn { background: var(--warn-soft); color: var(--warn); }
 .tagNow { background: var(--acc-tile); color: var(--acc-ink); box-shadow: inset 0 0 0 1px var(--acc-ring); }
-.tagOutline { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.tagOutline { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--mute); }
+a.tag { text-decoration: none; }
+a.tagOutline:hover { color: var(--fg); box-shadow: inset 0 0 0 1px var(--line-2); }
+/* 태그 규칙: 한 행에 상태 라벨은 1개. 범주가 다른 메타(AI 이름 등)는 태그 대신 글자로 */
+
+/* ── 상태 점: 목록 행의 판단 상태. 위반 danger · 종결 ok · 예외 인정·오탐·미판단 none */
+.dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.dotRow { display: inline-flex; align-items: center; gap: 6px; font-size: var(--t-13); font-weight: var(--w-body); color: var(--sub); white-space: nowrap; }
+.dotDanger { background: var(--danger); }
+.dotOk { background: var(--ok); }
+.dotNone { background: var(--faint); }
 
 /* ── 면 */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); }
 .well { background: var(--well); border-radius: var(--r-md); }
+/* 패널: 면 차이로 나눈다(테두리 없음). 바탕과 차이가 약하면 화면에서 border: 1px solid var(--line) 한 줄만 더한다 */
+.panel { background: var(--surface); border: 0; border-radius: var(--r-xl); padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.panel > h2 { font-size: var(--t-16); font-weight: var(--w-title); color: var(--fg); letter-spacing: -0.01em; }
+.panel > h2 small { font-size: var(--t-13); font-weight: var(--w-body); color: var(--mute); margin-left: 8px; letter-spacing: 0; }
+
+/* ── 숫자 칸: 오른쪽 정렬 + 고정폭 숫자 */
+.num { font-variant-numeric: tabular-nums; text-align: right; }
+
+/* ── 표(모든 표 화면이 함께 쓴다): 세로선·바깥 테두리 없음, 행 40. 두 줄 행은 table2(48) */
+.table { width: 100%; border-collapse: collapse; }
+.table th {
+  height: 40px; padding: 0 12px; font: var(--w-label) var(--t-12)/1.5 var(--font); color: var(--mute);
+  background: transparent; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; vertical-align: middle;
+}
+.table td { height: 40px; padding: 8px 12px; font-size: var(--t-14); border-bottom: 1px solid var(--line); vertical-align: middle; }
+.table th:first-child, .table td:first-child { padding-left: 24px; }
+.table th:last-child, .table td:last-child { padding-right: 24px; }
+.table th.num, .table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.table tbody tr:hover td { background: var(--row-hover); }
+.table tbody tr[data-picked] td, .table tbody tr[aria-current] td { background: var(--row-sel); } /* 고른 행은 올려도 고른 색 유지 */
+.table tr[data-picked] td:first-child, .table tr[aria-current] td:first-child { box-shadow: inset 2px 0 0 var(--acc); }
+.table2 td { height: 48px; }
 
 /* ── 입력 */
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .label { font-size: var(--t-13); font-weight: var(--w-label); color: var(--fg); display: flex; justify-content: space-between; gap: 8px; }
-.count { font-weight: 500; color: var(--mute); font-size: var(--t-12); }
+.count { font-weight: var(--w-label); color: var(--mute); font-size: var(--t-12); }
 .countOver { color: var(--danger); }
 .input, .select, .textarea {
   width: 100%; min-height: 40px; padding: 8px 12px; border-radius: var(--r-md);
@@ -97,6 +139,11 @@
   background-image: linear-gradient(45deg, transparent 50%, var(--mute) 50%), linear-gradient(135deg, var(--mute) 50%, transparent 50%);
   background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat;
 }
+.selectQuiet {
+  min-height: var(--ctl-xs); min-width: 72px; padding: 2px 24px 2px 8px; font-size: var(--t-13); border-radius: var(--r-sm);
+  background-color: transparent; border-color: transparent; background-position: calc(100% - 13px) 50%, calc(100% - 8px) 50%;
+}
+.selectQuiet:hover:not(:disabled), .selectQuiet:focus-visible { background-color: var(--well); border-color: var(--line-2); }
 .selectSm { min-width: 84px; min-height: 32px; padding: 4px 28px 4px 10px; font-size: var(--t-13); border-radius: var(--r-sm); }
 .hint, .error, .okMsg { display: flex; align-items: flex-start; gap: 4px; font-size: var(--t-12); color: var(--mute); }
 .hint svg, .error svg, .okMsg svg { flex: none; margin-top: 2px; }
@@ -109,7 +156,8 @@
   transition: background var(--d-2) var(--ease), border-color var(--d-2) var(--ease);
 }
 .switch[data-state='checked'] { background: #365989; border-color: #365989; } /* 줄지어 있어도 내용보다 튀지 않게 */
-.switch:disabled { opacity: 0.4; cursor: not-allowed; }
+.switch:disabled { border-color: var(--line); color: var(--faint); cursor: not-allowed; } /* 흐리게는 opacity 대신 색으로 */
+.switch:disabled .thumb { background: var(--faint); }
 .thumb { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform var(--d-2) var(--ease); }
 .thumb[data-state='checked'] { transform: translateX(14px); background: #dce8fa; }
 .check {
@@ -120,7 +168,7 @@
 .check[data-state='checked'], .check[data-state='indeterminate'] { background: var(--acc); border-color: var(--acc); color: var(--acc-on); }
 .check:disabled { background: var(--well); border-color: transparent; color: var(--faint); cursor: not-allowed; }
 
-/* ── 세그먼트(탭) → Devs 필터 칩: 알약 모양, 고른 칩은 강조색으로 채우고 체크 */
+/* ── 세그먼트(탭·필터 칩): 알약 모양, 고른 칩은 한 단계 밝은 면. 파랑은 쓰지 않는다 */
 .seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 .segItem {
   display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: var(--r-full);
@@ -128,19 +176,21 @@
   transition: background var(--d-1) var(--ease), color var(--d-1) var(--ease), border-color var(--d-1) var(--ease);
 }
 .segItem:hover { color: var(--fg); background: var(--hover); }
-.segItem[aria-selected='true'] { background: var(--acc-tile); border-color: var(--acc); color: var(--acc-ink); padding-left: 10px; } /* 고른 것은 옅은 강조 면. 채운 파랑은 주 행동에만 */
+.segItem[aria-selected='true'] { background: var(--seg-on); border-color: transparent; color: var(--fg); }
+.segItem .badge { background: var(--chip); color: var(--sub); }
+.segItem[aria-selected='true'] .badge { background: var(--chip); color: var(--fg); }
 
 /* ── 단계 바(Devs 단계 알약): 지난 단계는 체크, 지금 단계는 강조 테두리 + 채운 번호, 다음 단계는 흐린 번호 */
 .steps { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: var(--t-12); }
-.step { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 4px; border: 1px solid var(--line-2); border-radius: var(--r-full); color: var(--mute); white-space: nowrap; }
+.step { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px 0 4px; border: 1px solid var(--line-2); border-radius: var(--r-full); color: var(--mute); white-space: nowrap; }
 .step em { font-style: normal; color: var(--faint); }
 .stepDot {
-  width: 20px; height: 20px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center;
-  background: var(--well); color: var(--mute); font-size: 12px; font-weight: var(--w-label); font-variant-numeric: tabular-nums;
+  width: 16px; height: 16px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--well); color: var(--mute); font-size: var(--t-12); font-weight: var(--w-label); font-variant-numeric: tabular-nums;
 }
-.stepDone { background: var(--well); border-color: transparent; color: var(--sub); }
-.stepDone .stepDot { background: var(--chip); color: var(--sub); }
-.stepNow { border-color: var(--acc); color: var(--fg); font-weight: var(--w-title); background: var(--acc-tile); }
+.stepDone { background: transparent; border-color: transparent; color: var(--mute); }
+.stepDone .stepDot { background: transparent; color: var(--mute); }
+.stepNow { border-color: var(--acc); color: var(--fg); font-weight: var(--w-label); background: var(--acc-tile); }
 .stepNow .stepDot { background: var(--acc); color: var(--acc-on); }
 .stepLine { flex: none; color: var(--faint); }
 .stepLineDone { color: var(--mute); }
@@ -159,10 +209,12 @@
 @keyframes skel { to { background-position: -200% 0; } }
 
 /* ── 가린 값 */
-.mask { border-radius: 6px; padding: 1px 6px; font-weight: var(--w-label); background: var(--danger-soft); color: var(--danger); white-space: nowrap; }
-.maskConv { background: var(--chip); color: var(--sub); font-weight: 500; }
-.maskDel { background: transparent; color: var(--faint); text-decoration: line-through; font-weight: 500; }
-.sentence { font-size: var(--t-15); line-height: 1.75; word-break: keep-all; overflow-wrap: anywhere; }
+.mask { border-radius: 4px; padding: 2px 6px; font-weight: var(--w-label); background: var(--danger-soft); color: var(--danger); white-space: nowrap; }
+.maskConv { background: var(--chip); color: var(--sub); font-weight: var(--w-label); }
+/* 문장 속 잡힌 값(가린 문자열 그대로) */
+.hit { background: var(--acc-tile); color: var(--fg); font-weight: var(--w-label); border-radius: 4px; padding: 1px 4px; box-shadow: inset 0 0 0 1px var(--acc-ring); }
+.maskDel { background: transparent; color: var(--mute); text-decoration: line-through; font-weight: var(--w-label); }
+.sentence { font-size: var(--t-16); line-height: 1.65; word-break: keep-all; overflow-wrap: anywhere; }
 
 /* ── 키-값 */
 .kv { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px 16px; align-items: baseline; }
@@ -172,6 +224,9 @@
 /* ── 진행 막대 */
 .meter { height: 6px; border-radius: 3px; background: var(--chip); overflow: hidden; }
 .meter i { display: block; height: 100%; border-radius: 3px; background: var(--ok-fill); transition: width var(--d-3) var(--ease); }
+.meterMd { height: 8px; border-radius: 4px; }
+.meterMd i { border-radius: 4px; }
+.meter i[data-part] { border-top-right-radius: 0; border-bottom-right-radius: 0; } /* 다 차지 않았으면 오른쪽 모서리를 세운다 */
 
 /* ── 알림 상자(Devs Toast 규칙): 상태색 테두리 + 옅은 바탕 + 아이콘, 제목은 상태색, 설명은 보조색 */
 .notice {
@@ -182,12 +237,14 @@
 }
 .notice.success { --tone: var(--ok); }
 .notice.warning { --tone: var(--warn); }
-.notice.error { --tone: var(--danger); }
+.notice.noticeError { --tone: var(--danger); } /* .error 는 입력 오류 글자 이름이라 따로 */
 .notice.info { --tone: var(--info); }
+.noticeNow { --tone: var(--acc-ink); background: var(--acc-tile); } /* 지금 할 일 안내(파랑). .now 는 버튼 이름이라 따로 둔다 */
 .noticeI { flex: none; margin-top: 1px; color: var(--tone); }
 .noticeB { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; line-height: 1.5; }
 .noticeB > b { color: var(--tone); font-weight: var(--w-title); font-size: var(--t-14); }
 .noticeB > b + div { color: var(--sub); }
 .noticeB > div:only-child { color: var(--fg); }
+.noticeB ul, .noticeB li { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 8px; } /* 목록은 앞으로 모은다(space-between 금지) */
 .noticeA { flex: none; display: flex; gap: 6px; align-items: center; align-self: center; }
 @media (max-width: 600px) { .notice { flex-wrap: wrap; } .noticeA { width: 100%; padding-left: 26px; } }

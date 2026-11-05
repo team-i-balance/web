@@ -1,45 +1,65 @@
-.page { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); }
-.head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding: 22px 24px 16px; }
-.head h1 { font-size: var(--t-24); font-weight: var(--w-title); }
-.head p { color: var(--sub); font-size: var(--t-13); margin-top: 2px; }
-.head > :last-child { margin-left: auto; }
-.bulk { display: flex; align-items: center; gap: 8px; margin: 0 24px 12px; padding: 8px 8px 8px 14px; border-radius: var(--r-md); background: var(--well); font-size: var(--t-13); }
-.bulk b { margin-right: auto; }
-.scroll { flex: 1; overflow: auto; padding: 0 12px 12px; }
-.t { width: 100%; font-size: var(--t-14); }
-.t th { position: sticky; top: 0; z-index: 1; background: var(--well); text-align: left; font-size: var(--t-12); font-weight: var(--w-label); color: var(--fg); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-.t td { padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-.t tr:last-child td { border-bottom: 0; }
-.t tbody tr { transition: background var(--d-1) var(--ease); }
-.t tbody tr:hover { background: var(--surface-2); }
-.t tr[data-picked] { background: var(--well); }
-.pick { width: 40px; }
-.val { display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
-.val b { font-size: var(--t-15); }
-.val span { font-size: var(--t-12); color: var(--mute); }
-.cnt { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.cnt b { font-size: var(--t-15); }
-.cnt span { color: var(--mute); font-size: var(--t-12); margin-left: 4px; }
-.sent { color: var(--sub); font-size: var(--t-13); max-width: 420px; }
-.sent a { display: inline-block; margin-top: 4px; font-size: var(--t-12); color: var(--mute); }
-.acts { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; }
-@media (max-width: 900px) {
-  .t thead { display: none; }
-  .t, .t tbody, .t tr, .t td { display: block; }
-  .t tr { position: relative; padding: 14px 12px 14px 48px; border-bottom: 1px solid var(--line); }
-  .t td { padding: 0; border: 0; margin-bottom: 8px; }
-  .t td.pick { position: absolute; left: 14px; top: 16px; width: auto; }
-  .acts { justify-content: flex-start; flex-wrap: wrap; }
-  .head { padding: 18px 16px 12px; }
-  .bulk { margin: 0 16px 12px; }
-}
+/* 화면 면: ds.panel 과 같이 테두리 없이 면으로 나눈다 */
+.page { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 0; border-radius: var(--r-xl); }
+/* 머리: 제목과 탭 한 줄, 높이 56 */
+.head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 8px 24px; min-height: 56px; }
+.head h1 { font-size: var(--t-22); font-weight: var(--w-title); letter-spacing: -0.01em; }
+.headR { margin-left: auto; min-height: 40px; display: flex; align-items: center; }
+/* 일괄 바: 탭 자리에 같은 높이(40)로 들어간다 */
+.bulk { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 4px 0 12px; border-radius: var(--r-md); background: var(--well); font-size: var(--t-13); }
+.bulk b { font-weight: var(--w-label); margin-right: 8px; font-variant-numeric: tabular-nums; }
+.scroll { flex: 1; overflow: auto; padding: 0 0 12px; }
+
+/* 표: ds.table + ds.table2 위에 이 화면 열 폭만 얹는다 */
+.t { table-layout: fixed; }
+.cPick { width: 40px; }
+.cChev { width: 24px; }
+.t[data-tab='done'] .cChev { width: 40px; } /* 첫 칸이 되면 왼쪽 24 여백을 품는다 */
+.cVal { width: 220px; }
+.cCnt { width: 80px; }
+.cAct { width: 200px; }
+/* 머리는 표 위에 붙어 있게: 면과 같은 바탕이라 투명처럼 보인다 */
+.t thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.t th.actH { text-align: right; }
+.t tbody tr td { transition: background var(--d-1) var(--ease); }
+.t td.pick, .t th.pick { padding-right: 0; }
+.t td.chevC, .t th.chevC { padding-right: 0; padding-left: 0; }
+.t[data-tab='done'] td.chevC, .t[data-tab='done'] th.chevC { padding-left: 24px; }
+
+.val { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.val b { font-size: var(--t-15); font-weight: var(--w-title); color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.val span { display: flex; align-items: center; gap: 8px; font-size: var(--t-13); color: var(--mute); white-space: nowrap; }
+.cnt { white-space: nowrap; }
+.cnt b { display: block; font-size: var(--t-14); font-weight: var(--w-label); color: var(--sub); }
+.cnt span { display: block; color: var(--mute); font-size: var(--t-12); }
+.sent { color: var(--sub); font-size: var(--t-13); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
+.acts { display: flex; gap: 8px; justify-content: flex-end; align-items: center; white-space: nowrap; }
 
 .clickRow { cursor: pointer; }
-.chev { color: var(--mute); margin-right: 6px; vertical-align: -2px; transition: transform var(--d-2) var(--ease); }
+.chev { display: block; color: var(--mute); transition: transform var(--d-2) var(--ease), color var(--d-1) var(--ease); }
+tr:hover .chev, tr[data-open] .chev { color: var(--fg); }
 tr[data-open] .chev { transform: rotate(180deg); }
-.cases td { background: var(--surface-2); padding: 4px 12px 16px 52px !important; }
-.cases ol { display: flex; flex-direction: column; gap: 8px; }
-.cases li { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); }
-.cases li span { font-size: var(--t-12); color: var(--mute); }
-.cases li p { font-size: var(--t-14); }
-@media (max-width: 900px) { .cases td { padding: 0 12px 12px !important; } }
+/* 펼친 행: 면 한 단계 위, 상세는 한 단계 아래(--bg) */
+.t tbody tr[data-open]:not([data-picked]) td { background: var(--row-open); }
+.t tbody tr[data-open] td { border-bottom-color: transparent; }
+.t tbody tr.cases td, .t tbody tr.cases:hover td { background: var(--bg); height: auto; padding: 4px 24px 12px 76px; }
+.t[data-tab='done'] tbody tr.cases td { padding-left: 52px; } /* 값 열 왼쪽 끝에 맞춘다 */
+.cases ol { display: flex; flex-direction: column; }
+.cases li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 16px; padding: 10px 0; border-top: 1px solid var(--line); }
+.cases li:first-child { border-top: 0; }
+.cases li p { font-size: var(--t-13); line-height: 1.5; color: var(--sub); }
+.cases li span { font-size: var(--t-12); color: var(--mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 900px) {
+  .t thead, .t colgroup { display: none; }
+  .t, .t tbody, .t tr, .t td { display: block; }
+  .t tr { position: relative; padding: 14px 16px 14px 48px; border-bottom: 1px solid var(--line); }
+  .t[data-tab='done'] tr { padding-left: 16px; }
+  .t tr td, .t tr td:first-child, .t tr td:last-child { height: auto; padding: 0; border: 0; margin-bottom: 8px; }
+  .t tr td.pick { position: absolute; left: 16px; top: 16px; width: auto; }
+  .t tr td.chevC { display: none; }
+  .sent { max-width: none; white-space: normal; }
+  .acts { justify-content: flex-start; flex-wrap: wrap; }
+  .head { padding: 8px 16px; }
+  .t tbody tr.cases td, .t[data-tab='done'] tbody tr.cases td { padding: 0 16px 12px; }
+  .cases li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
