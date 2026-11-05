@@ -58,7 +58,8 @@ export function TopBar({ r }: { r: Route }) {
           </button>
           <Conn />
           <Tip text={dark ? '라이트 테마' : '다크 테마'}><Button variant="ghost" iconOnly icon={dark ? <Sun size={17} /> : <Moon size={17} />} onClick={toggleTheme} aria-label={dark ? '라이트 테마로' : '다크 테마로'} /></Tip>
-          <Tip text="시연 순서"><Button variant="ghost" iconOnly icon={<Play size={16} />} onClick={toggleCoach} aria-label="시연 순서 보기" /></Tip>
+          {S.api.live ? <Tip text="시연 순서"><Button variant="ghost" iconOnly icon={<Play size={16} />} onClick={toggleCoach} aria-label="시연 순서 보기" /></Tip>
+            : <Button size="sm" icon={<Play size={14} />} onClick={toggleCoach}>시연 순서</Button>}
         </div>
       </header>
       <nav className={sh.bottom} aria-label="메뉴">

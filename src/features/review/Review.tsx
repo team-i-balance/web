@@ -60,7 +60,7 @@ function Detail({ c }: { c: Case }) {
   const actions = c.status === 'closed' ? <><span /><Button onClick={() => reopen(c)}>다시 열기</Button></>
     : !c.reason ? <>{S.api.live ? <span /> : <Button variant="ghost" onClick={() => demoReason(c)}>사유 도착시키기 · 데모</Button>}<Button variant="primary" onClick={() => openDialog({ kind: 'close', caseId: c.id })}>사유 없이 결론 내기</Button></>
     : c.need === 'opt' ? <>{detail}<Button danger onClick={() => decide('violation')} kbd="1">위반으로 기록</Button><Button variant="primary" onClick={() => decide('ok')} kbd="2">문제 없음</Button></>
-    : <>{detail}<Button danger onClick={() => decide('violation')} kbd="1">위반으로 기록</Button><Button onClick={() => decide('legit')} kbd="2">예외 인정</Button><Button onClick={() => decide('fp')} kbd="3">오탐으로 기록</Button></>
+    : <>{detail}<Button danger onClick={() => decide('violation')} kbd="1">위반으로 기록</Button><Button onClick={() => decide('legit')} kbd="2">이번 건 예외 인정</Button><Button onClick={() => decide('fp')} kbd="3">오탐으로 기록</Button></>
   const tl = [{ t: c.time, who: c.user, what: `${leaked.map(i => i.type).join(', ')} ${c.need === 'req' ? '원문 전송' : '되돌림'}`, quote: null as string | null }, ...c.timeline.map(e => ({ ...e, quote: e.quote ?? null }))]
   return (
     <>
@@ -85,11 +85,13 @@ function Detail({ c }: { c: Case }) {
               {x.cause && <span>원인 · {CAUSES[x.cause].t}</span>}
               {x.memo && <span>판단 근거 · {x.memo}</span>}
               {x.rule && <span>재발 방지 · {x.rule}</span>}
-            </div></section>}
+            </div>
+            {(x.rule || S.policy.changes.some(ch => ch.src === c.id)) && S.policy.changes.length > 0 && <div className={r.next}><span>규칙 초안이 배포를 기다려요 · 아직 PC에 적용 전</span><Button size="sm" variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button><LinkButton size="sm" variant="ghost" href="#policy">정책에서 보기</LinkButton></div>}
+          </section>}
           <section className={r.sec}><h3>보낸 내용 <small>원문은 일부만 보여요</small></h3>
             <div className={r.text}><Sentence c={c} /></div>
             {c.items.some(i => i.reason === '오탐') && <div className={r.note}>{c.items.filter(i => i.reason === '오탐').map(i => i.type).join(', ')} 항목은 "오탐"으로 되돌려 <a href="#fp">오탐 신고</a>에서 따로 처리해요</div>}
-            <div className={r.tbox}><table className={r.table}><thead><tr><th>항목</th><th>나간 값</th><th>변환했다면</th><th>직원 처리</th></tr></thead><tbody>
+            <div className={r.tbox}><table className={r.table}><thead><tr><th>항목</th><th>나간 값</th><th>정책대로였다면</th><th>직원 처리</th></tr></thead><tbody>
               {c.items.map((it, i) => <tr key={i}><td>{it.type}</td>
                 <td>{it.status === 'conv' ? <span className={r.faint}>{it.conv || '(삭제)'}</span> : <span className={r.leak}>{partial(it.type, it.orig)}</span>}</td>
                 <td>{it.conv === '' ? <span className={r.faint}>(삭제)</span> : it.conv}</td>

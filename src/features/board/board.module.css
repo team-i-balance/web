@@ -66,7 +66,7 @@ button.tile:hover { background: var(--hover); }
 .reason { display: flex; gap: 12px; }
 .reason > span { flex: none; font-size: var(--t-12); color: var(--mute); padding-top: 2px; width: 56px; }
 .reason > p { font-size: var(--t-14); line-height: 1.6; }
-.decide { margin-top: auto; display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 10px; }
+.decide { margin-top: 8px; display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 10px; }
 .hint { font-size: var(--t-12); color: var(--mute); }
 .big { font-size: 44px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
 .big em { font-style: normal; color: var(--ok); }

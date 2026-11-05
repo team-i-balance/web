@@ -12,7 +12,7 @@ import p from './policy.module.css'
 function Rate({ b }: { b?: { n: number; rev: number } }) {
   if (!b || b.n < 3) return <span className={p.faint}>—</span>
   const r = pct(b.rev, b.n), hi = r >= 30
-  return <span className={p.rate + (hi ? ' ' + p.hi : '')} title={`최근 7일 ${b.n}건 중 ${b.rev}건 원문으로 되돌림`}><i><span style={{ width: `${Math.min(100, r * 2)}%` }} /></i><b>{r}%</b><small>{b.rev}/{b.n}</small>{hi && <Tag tone="warn">많이 되돌림</Tag>}</span>
+  return <span className={p.rate + (hi ? ' ' + p.hi : '')} title={`최근 7일 변환 제안 ${b.n}건 중 ${b.rev}건을 원문으로 보냄`}><i><span style={{ width: `${Math.min(100, r * 2)}%` }} /></i><b>{r}%</b><small>{b.rev}/{b.n}</small>{hi && <Tag tone="warn">원문 {b.rev}건</Tag>}</span>
 }
 const Draft = ({ on }: { on?: boolean }) => (on ? <Tag tone="now">배포 대기</Tag> : null)
 
@@ -32,14 +32,14 @@ export default function Policy() {
   return (
     <div className={p.wrap}>
       <nav className={p.nav} aria-label="정책 구역">
-        <div className={p.navT}><b>변환 정책</b><span>{P.version === 'v0' ? '아직 배포한 정책 없음' : `${P.version} 적용 중${P.deployed ? ` · ${P.deployed}` : ''}`}</span>{pc && <span>{pc}</span>}</div>
+        <div className={p.navT}><b>변환 정책</b><span>{P.version === 'v0' ? '아직 배포한 정책 없음' : `${P.version} 적용 중${P.deployed ? ` · ${P.deployed}` : ''}`}</span>{P.changes.length > 0 && <span className={p.draftNote}>초안 {P.changes.length}개 · 배포 전이라 PC에 적용 안 됨</span>}{pc && <span>{pc}</span>}</div>
         {secs.map(([id, t, v, k]) => <a key={id} className={p.navA} href={`#policy`} onClick={e => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{dr(k) && <i className={p.changed} aria-label="바뀜" />}{t}</span><small>{v}</small></a>)}
       </nav>
       <div className={p.main}>
         <section className={p.sec} id="p-types">
           <div className={p.sh}><h2>탐지 항목과 변환 방식</h2></div>
-          <div className={p.tbox}><table className={p.t}><thead><tr><th>사용</th><th>항목</th><th>등급</th><th>변환 방식</th><th>결과 예시</th><th>원문 되돌림 · 7일</th></tr></thead><tbody>
+          <div className={p.tbox}><table className={p.t}><thead><tr><th>사용</th><th>항목</th><th>등급</th><th>변환 방식</th><th>결과 예시</th><th>원문으로 보낸 비율 · 7일</th></tr></thead><tbody>
             {P.entities.map((e, i) => <tr key={e.name} data-off={!e.on || undefined}>
               <td><Switch checked={e.on} label={`${e.name} 탐지`} onChange={v => setEntityOn(i, v)} /></td>
               <td className={p.name}>{e.name}</td>
@@ -49,6 +49,7 @@ export default function Policy() {
               <td><Rate b={pm7.byType[e.name]} /></td>
             </tr>)}
           </tbody></table></div>
+          <p className={p.legend}><b>대체</b> 가짜 값으로 바꿔요 · <b>일반화</b> 범위로 줄여요(주소 → 구까지) · <b>삭제</b> 빼고 보내요 · <b>태그</b> [이름A]처럼 표시해요 · 같은 값은 한 대화 안에서 같은 값으로 바뀌어요</p>
         </section>
 
         <section className={p.sec} id="p-rules">

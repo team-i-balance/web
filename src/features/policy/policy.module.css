@@ -41,3 +41,7 @@
 @keyframes barIn { from { opacity: 0; transform: translate(-50%, 12px); } }
 @media (max-width: 1060px) { .wrap { grid-template-columns: minmax(0, 1fr); } .nav { position: static; flex-direction: row; flex-wrap: wrap; } .navT { width: 100%; } }
 @media (max-width: 860px) { .bar { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); } .bar span { display: none; } .sh { padding: 16px 16px 10px; } .metas { padding: 0 16px 16px; } }
+
+.draftNote { color: var(--acc-ink) !important; font-weight: 600; }
+.legend { padding: 4px 22px 18px; font-size: var(--t-12); color: var(--mute); line-height: 1.7; }
+.legend b { color: var(--sub); font-weight: 600; }

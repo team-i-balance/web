@@ -1,5 +1,5 @@
 // 현황: 기간(7일·30일) 동안 AI 입력·변환·원문 전송·되돌림. 서버에 없는 필드(대상 AI·부서)는 차트를 숨긴다.
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { S, useStore } from '../../domain/store'
 import { QUEUE_KO } from '../../api/client'
 import { Segmented, Tag } from '../../ds'
@@ -10,15 +10,19 @@ const DAY = 864e5
 const md = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
 
 // 일별 막대: 한 계열만 그리므로 범례 대신 제목이 이름을 맡는다
+// 눈금: 1·2·5 단위로 끝이 깔끔한 최댓값
+function niceMax(m: number) { if (m <= 4) return Math.max(1, m); const p = 10 ** Math.floor(Math.log10(m)); return [1, 2, 2.5, 5, 10].map(x => x * p).find(x => x >= m)! }
 function Daily({ days, k, raw }: { days: { d: Date; n: number; raw: number }[]; k: 'n' | 'raw'; raw?: boolean }) {
   const [hov, setHov] = useState(-1)
-  const W = 600, H = 150, L = 28, B = 22, max = Math.max(1, ...days.map(d => d[k])), step = (W - L) / days.length, bw = Math.max(3, Math.min(28, step - 2))
-  const nice = max <= 5 ? max : Math.ceil(max / 5) * 5, ys = [0, nice / 2, nice].map(Math.round)
+  const box = useRef<HTMLDivElement>(null), [cw, setCw] = useState(600)
+  useLayoutEffect(() => { const el = box.current; if (!el) return; const ro = new ResizeObserver(() => setCw(el.clientWidth)); ro.observe(el); setCw(el.clientWidth); return () => ro.disconnect() }, [])
+  const W = Math.max(240, cw), H = 160, L = 28, B = 22, max = Math.max(1, ...days.map(d => d[k])), step = (W - L) / days.length, bw = Math.max(3, Math.min(28, step - 4))
+  const nice = niceMax(max), ys = nice <= 2 ? [0, nice] : [0, nice / 2, nice]
   const y = (v: number) => (H - B) - (v / nice) * (H - B - 6)
-  const every = days.length > 14 ? 5 : 1
+  const every = Math.max(1, Math.ceil(days.length / Math.floor((W - L) / 44)))
   return (
-    <div className={i.chart} onMouseLeave={() => setHov(-1)}>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${raw ? '원문 전송' : 'AI 입력'} 일별 건수`}>
+    <div className={i.chart} ref={box} onMouseLeave={() => setHov(-1)}>
+      <svg viewBox={`0 0 ${W} ${H}`} height={H} role="img" aria-label={`${raw ? '원문 전송' : 'AI 입력'} 일별 건수`}>
         <g className={i.grid}>{ys.map(v => <line key={v} x1={L} x2={W} y1={y(v)} y2={y(v)} />)}</g>
         {ys.map(v => <text key={v} className={i.axis} x={L - 6} y={y(v) + 4} textAnchor="end">{v}</text>)}
         {days.map((d, j) => {
