@@ -27,9 +27,9 @@ export default function Deploy() {
           : <>
             <div className={d.ver}><b>{P.version}</b><span>{P.deployed ? `${P.deployed} 배포` : '서버에 배포됨'}</span></div>
             <dl className={d.kv}>
-              <dt>서명 키</dt><dd>{live ? S.api.pol?.keyid ?? '—' : 'console-demo'}</dd>
+              <dt>서명 키</dt><dd className={d.mono}>{live ? S.api.pol?.keyid ?? '—' : 'console-demo'}</dd>
               <dt>규칙</dt><dd>{P.learned.length}개 · 탐지 항목 {P.entities.filter(e => e.on).length}개 켬</dd>
-              {live && S.api.pol?.sha && <><dt>번들 해시</dt><dd>{S.api.pol.sha}</dd></>}
+              {live && S.api.pol?.sha && <><dt>번들 해시</dt><dd className={d.mono}>{S.api.pol.sha}</dd></>}
             </dl>
           </>}
       </section>

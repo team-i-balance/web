@@ -31,6 +31,7 @@
 .hc em { font-style: normal; color: var(--mute); font-size: var(--t-12); white-space: nowrap; }
 .kv { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px 12px; font-size: var(--t-13); }
 .kv dt { color: var(--mute); }
-.kv dd { margin: 0; font-family: var(--mono); font-size: var(--t-12); overflow-wrap: anywhere; }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+.kv dd.mono { font-family: var(--mono); font-size: var(--t-12); } /* 서명 키·해시만 고정폭 */
 @media (max-width: 960px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 600px) { .card { padding: 18px 16px; } .stats { grid-template-columns: 1fr; } }

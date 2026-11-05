@@ -131,7 +131,7 @@ export default function Board() {
         {wait.map(x => <div key={x.id} className={clsx(b.nx, b.wait)}><b>{x.user}<small>{ago(x.time)}</small></b><span>{types(x)} → {x.ev.ai}</span>
           <div className={b.row}>{live
             ? <><Button size="sm" variant="ghost" onClick={() => requestReason(x)}>사유 다시 요청</Button><Button size="sm" onClick={() => openDialog({ kind: 'close', caseId: x.id })}>사유 없이 결론</Button></>
-            : <Button size="sm" variant="ghost" onClick={() => demoReason(x)}>사유 도착시키기 · 데모</Button>}</div></div>)}
+            : <Button size="sm" variant="ghost" onClick={() => demoReason(x)}>사유 도착 · 데모</Button>}</div></div>)}
       </>}
     </>
   } else if (SEL === 'fp') {
