@@ -26,7 +26,7 @@ npm run dev                  # http://localhost:5320
 |---|---|---|
 | `BACKEND_URL` | 예 | 백엔드 주소. 예: `http://13.193.207.69:8501` |
 
-브라우저 코드에는 들어가지 않는다(`VITE_` 접두사 없음). 브라우저는 같은 주소의 `/api` 만 부르고, 개발에서는 Vite 프록시가, 배포에서는 `api/[...path].ts`(Vercel 함수)가 `BACKEND_URL` 로 넘긴다. 그래서 백엔드가 `http` 이거나 CORS 가 콘솔 주소를 허용하지 않아도 된다.
+브라우저 코드에는 들어가지 않는다(`VITE_` 접두사 없음). 브라우저는 같은 주소의 `/api` 만 부르고, 개발에서는 Vite 프록시가, 배포에서는 `api/proxy.ts`(Vercel 함수, `vercel.json` 이 `/api/*` 를 넘김)가 `BACKEND_URL` 로 넘긴다. 그래서 백엔드가 `http` 이거나 CORS 가 콘솔 주소를 허용하지 않아도 된다.
 
 ## 배포 (Vercel)
 
@@ -55,7 +55,7 @@ npm run dev                  # http://localhost:5320
 | `src/pages/` | 작업판(`Board`), 위반 검토, 오탐 신고, 변환 정책 |
 | `src/ui/` | 대화상자, 알림·되돌리기, 시연 순서, 공통 조각 |
 | `src/app.css` | 스타일. 뒤쪽 `v15`~ 절에서 다크·앰버 테마로 덮어쓴다 |
-| `api/[...path].ts` | Vercel 함수: `/api/*` → `BACKEND_URL` |
+| `api/proxy.ts` · `vercel.json` | Vercel 함수: `/api/*` → `BACKEND_URL` |
 | `public/fonts/` | Pretendard Variable (SIL OFL 1.1, `Pretendard-OFL.txt`) |
 | `docs/` | 디자인 설정(다크), 백엔드 API 대조, 정책 번들·서명 명세 |
 | `tools/` | 번들 서명·검증 참고 구현, 로컬 백엔드 예시 이벤트 넣기 |
