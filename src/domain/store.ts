@@ -28,7 +28,7 @@ export const S = {
   cases: [] as Case[],
   // 배포 기록: 서버 /policy/history 로 채운다
   history: [
-  ] as { version: string; sha?: string; at: Date; changes: PolicyChange[]; server: boolean }[],
+  ] as { version: string; sha?: string; by?: string | null; at: Date; changes: PolicyChange[]; server: boolean }[],
   api: { truncated: false, state: 'connecting' as 'connecting' | 'live' | 'offline' | 'auth', base: null as string | null, live: false, count: 0, stats: null as null | ServerStats, synced: null as Date | null, pol: null as null | ServerPolicy, stale: false },
   ui: {
     sel: null as Queue | null,
@@ -48,7 +48,10 @@ export const S = {
 }
 // 서버 정책 상태: 마지막 배포 번들(/policy/latest)과 서버 탐지가 실제로 쓰는 정책(/policy/current).
 // 직원 PC는 정책을 따로 받지 않는다. 입력을 서버(/process)로 검사하므로 서버에 적용된 정책이 곧 직원에게 적용된 정책이다
-export interface ServerPolicy { keyid: string | null; sha: string | null; active: { version: number; at: string | null } | null }
+export interface ServerPolicy { keyid: string | null; sha: string | null
+  // active: 활성으로 저장된 버전 · effective: 탐지가 실제로 쓰는 버전(적용 실패면 이전 버전, backend #64) · error: 마지막 적용 실패
+  active: { version: number; at: string | null; by?: string | null; effective: number | null; error: { version: number | null; code: string; at: string } | null } | null
+  keySet?: boolean } // 서버에 값 해시 키(POLICY_VALUE_HASH_KEY)가 있는지. 없으면 hmac 탐지 제외·오탐 묶음이 작동하지 않는다
 export interface ServerStats { total: number; acceptance_rate: number; revert_rate: number; evasion_suspect: number; by_queue: Record<string, number>; by_grade: Record<string, number>; by_action?: Record<string, number>; by_policy_version?: Record<string, number> }
 
 let version = 0

@@ -10,7 +10,7 @@ interface ServerCase { id: string; need: 'required' | 'optional'; status: 'open'
 interface ServerHistory { id: number; operation: 'close' | 'reopen'; conclusion: Conclusion | null; cause: Cause | null; memo: string | null; rule: string | null; by: string; at: string }
 interface Page { items: ServerCase[]; next_cursor: string | null }
 
-const who = (by: string) => (by === 'unauthenticated' ? '보안팀' : by)
+const who = (by: string) => (by === 'unauthenticated' ? '보안팀' : by.replace(/^security:/, '')) // 서버 감사 주체 'security:이름'(backend #59)
 const CONC_KO: Record<Conclusion, string> = { violation: '위반 확정', legit: '정당한 업무 사용', fp: '탐지 오류' }
 
 function reasonOf(x: ServerCase): CaseReason | null {
@@ -19,16 +19,13 @@ function reasonOf(x: ServerCase): CaseReason | null {
   if (pick) return { text: '', at: new Date(e.reason_at || e.created_at), when: '전송할 때', pick } // 사유 글은 없고 고른 사유만 있다
   return null
 }
-// 필수·선택은 '보낼 때 사유를 남겼는지'로 나눈다. 서버 need 는 action 으로만 갈라서(send_as_is=required)
-// 직원 앱이 사유를 받고 send_as_is 로 보낸 건이 필수로 온다. 요청 받고 나중에 낸 사유는 필수 그대로 둔다
-export const needOf = (e: ServerEvent): Case['need'] => (e.reason && !e.reason_requested_at ? 'opt' : 'req')
 function toCase(x: ServerCase): Case {
   const ev = fromServer(x.event), reason = reasonOf(x)
   const close: CaseClose | null = x.close ? { k: x.close.conclusion, cause: x.close.cause, memo: x.close.memo, rule: x.close.rule, by: who(x.close.by), at: new Date(x.close.at) } : null
   const timeline: TimelineEntry[] = []
   if (x.event.reason_requested_at) timeline.push({ t: new Date(x.event.reason_requested_at), who: '시스템', cls: 'sys', what: '직원에게 사유 요청' })
   if (reason && x.event.reason_requested_at) timeline.push({ t: reason.at, who: ev.user, cls: 'emp', what: '사유 제출', quote: x.event.reason_text })
-  return { id: x.id, ev, need: needOf(x.event), time: ev.time, user: ev.user, dept: ev.dept, items: ev.items, file: ev.file, status: x.status, reason, close, timeline }
+  return { id: x.id, ev, need: x.need === 'required' ? 'req' : 'opt', /* 서버가 '보낼 때 사유'로 나눈다(backend #60·#62) */ time: ev.time, user: ev.user, dept: ev.dept, items: ev.items, file: ev.file, status: x.status, reason, close, timeline }
 }
 
 async function all(queue: 'required' | 'optional' | 'closed', max = 10) {
@@ -94,12 +91,9 @@ function onReopen(c: Case, undo = false) {
   })
 }
 // 선택 검토 일괄 종결: /cases/close-bulk 로 100건씩(한 묶음은 전부 되거나 전부 안 됨)
-// 서버는 need=optional(revert_original)만 일괄로 받는다. 사유를 남기고 send_as_is 로 보낸 건은 한 건씩 종결한다
-function onCloseMany(all: Case[]) {
-  if (!S.api.live || !all.length) return
-  const memo = all[0].close?.memo || '사유 확인 — 업무 범위 내 사용'
-  const one = all.filter(c => (c.ev.server as ServerEvent | undefined)?.action === 'send_as_is'), cs = all.filter(c => !one.includes(c))
-  one.forEach(onClose)
+function onCloseMany(cs: Case[]) {
+  if (!S.api.live || !cs.length) return
+  const memo = cs[0].close?.memo || '사유 확인 — 업무 범위 내 사용'
   for (let i = 0; i < cs.length; i += 100) {
     const part = cs.slice(i, i + 100), ids = part.map(c => c.id)
     const job = track(Promise.all(ids.map(id => queue.get(id))).then(() => post<{ items: unknown[] }>('/cases/close-bulk', { ids, conclusion: 'legit', memo }))

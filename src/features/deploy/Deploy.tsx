@@ -9,6 +9,9 @@ import { fmt } from '../../lib/util'
 import d from './deploy.module.css'
 
 // 변경 문장의 첫 ':' 앞은 라벨, 뒤는 본문으로 나눈다(화면 표시만)
+// 서버 감사 주체 'security:이름' → '이름'(backend #59)
+const who = (by: string) => by.replace(/^security:/, '')
+
 function splitWhat(w: string): [string, string] {
   const i = w.indexOf(':')
   return i > 0 ? [w.slice(0, i).trim(), w.slice(i + 1).trim()] : ['', w]
@@ -36,9 +39,16 @@ export default function Deploy() {
           : none ? <Empty icon={<ServerCog size={20} />} title="아직 배포한 정책이 없어요" text="정책을 고친 뒤 서명 후 배포하면 서버 탐지에 바로 적용돼요" />
           : <div className={d.top}>
             <div className={d.left}>
-              <p className={d.sum}><b className="num">{act ? `v${act.version}` : '없음'}</b><span>{act ? `${act.at ? fmt(new Date(act.at)) + ' 적용 · ' : ''}직원 입력은 모두 이 정책으로 검사해요` : '서버가 아직 어떤 정책도 쓰지 않아요 · 기본 탐지만 해요'}</span></p>
+              {/* 활성으로 저장된 버전이 아니라 탐지가 실제로 쓰는 버전(effective)을 크게 보인다(backend #64) */}
+              <p className={d.sum}><b className="num">{act?.effective ? `v${act.effective}` : '없음'}</b><span>{act ? `${act.at ? fmt(new Date(act.at)) + ' 적용' : ''}${act.by ? ` · ${who(act.by)}` : ''} · 직원 입력은 모두 이 정책으로 검사해요` : '서버가 아직 어떤 정책도 쓰지 않아요 · 기본 탐지만 해요'}</span></p>
             </div>
-            {behind && <Notice tone="warning" title={`최신 배포 ${P.version}가 서버에 적용되지 않았어요`}
+            {act && act.effective !== act.version && <Notice tone="error" title={`v${act.version}를 서버가 적용하지 못했어요`}>
+              <p>{act.error ? `${reasonKo(act.error.code)} · ${fmt(new Date(act.error.at))}. ` : ''}{act.effective ? `탐지는 이전 v${act.effective}로 하고 있어요.` : '탐지는 정책 없이 하고 있어요.'} 자동 변환 규칙을 고쳐 다시 배포해 주세요.</p>
+            </Notice>}
+            {S.api.pol?.keySet === false && P.exclude.some(x => /^⟦(h=hmac:|=)/.test(x.term)) && <Notice tone="warning" title="오탐 신고에서 온 탐지 제외가 적용되지 않아요">
+              <p>서버에 값 해시 키(POLICY_VALUE_HASH_KEY)가 없어 hmac 탐지 제외를 건너뛰어요. 백엔드에 키를 넣어야 해요.</p>
+            </Notice>}
+            {behind && act?.effective === act?.version && <Notice tone="warning" title={`최신 배포 ${P.version}가 서버에 적용되지 않았어요`}
               actions={<Button variant="now" disabled={busy} onClick={apply}>{busy ? '적용하는 중…' : `${P.version} 서버에 적용하기`}</Button>}>
               {lastReject?.version === +P.version.slice(1)
                 ? <p>서버가 이 버전을 거절했어요({reasonKo(lastReject.reason)}). 다시 적용해도 같은 사유로 거절될 수 있어요.</p>
@@ -50,7 +60,7 @@ export default function Deploy() {
       <section className={ds.panel} aria-label="배포 기록">
         <div className={d.ch}><h2>배포 기록</h2>{live && !historyFromServer && <span className={d.note}>서버에 기록 목록이 없어 이 브라우저에서 배포한 것만 보여요</span>}</div>
         {hist.length ? <ol className={d.hist}>{hist.map(h => <li key={h.version + +h.at} className={d.hi}>
-          <div className={d.hv}><b>{h.version}</b><span>{fmt(h.at)}</span>{act && h.version === 'v' + act.version && <Tag tone="now">서버 적용 중</Tag>}</div>
+          <div className={d.hv}><b>{h.version}</b><span>{fmt(h.at)}{h.by ? ` · ${who(h.by)}` : ''}</span>{act && h.version === 'v' + act.version && <Tag tone="now">서버 적용 중</Tag>}</div>
           <ul className={d.hc}>{h.changes.map((c, i) => {
             const [lab, txt] = splitWhat(c.what)
             return <li key={i}>{lab && <span className={d.cl}>{lab}</span>}<span className={d.ct}>{txt}</span>{c.src && <Tag>{c.src}</Tag>}</li>

@@ -61,13 +61,16 @@ export function fromServer(ev: ServerEvent): AiEvent {
   const ko = (r?: string | null) => (r === 'false_positive' ? '오탐' : r === 'business_need' ? '업무상 필요' : null)
   const items: Item[] = ev.items?.length
     ? ev.items.map(it => {
-      const type = TYPE_KO[it.type] || it.type, r = ko(it.reason) ?? (it.decision === 'reverted' ? rsn : null)
+      // 원문이 나간 항목(되돌림·원문 그대로)은 이벤트 사유를 물려받는다. 서버 오탐 목록도 이 두 가지만 센다(backend #63)
+      const out = it.decision === 'reverted' || it.decision === 'raw'
+      const type = TYPE_KO[it.type] || it.type, r = ko(it.reason) ?? (out ? rsn : null)
       return { type, orig: `⟦=${it.preview ?? ''}#${it.value_hash ?? 'nohash-' + ev.id + '-' + type}⟧`, method: ent(type)?.method ?? '대체', conv: '(변환됨)',
-        status: grade !== 'S' ? null : it.decision === 'raw' ? 'raw' : it.decision === 'reverted' ? 'revert' : 'conv',
-        reason: it.decision === 'reverted' ? r : null, fp: it.decision === 'reverted' && r === '오탐' ? 'open' : null }
+        status: grade === 'O' ? null : it.decision === 'raw' ? 'raw' : it.decision === 'reverted' ? 'revert' : 'conv',
+        // 값 해시가 없으면(서버에 해시 키 없음) 같은 값끼리 묶거나 제외할 수 없어 오탐 묶음에 넣지 않는다
+        reason: out ? r : null, fp: out && r === '오탐' && it.value_hash ? 'open' : null }
     })
     : types.map(type => ({ type, orig: `⟦${type}⟧`, method: ent(type)?.method ?? '대체', conv: '(변환됨)',
-      status: grade !== 'S' ? null : action === 'raw' ? 'raw' : action === 'revert' ? 'revert' : 'conv',
+      status: grade === 'O' ? null : action === 'raw' ? 'raw' : action === 'revert' ? 'revert' : 'conv',
       reason: action === 'revert' ? rsn : null, fp: null })) // 값 해시가 없어 묶거나 제외할 수 없다(오탐 신고 화면에 건수만 알린다)
   // 직원 ID가 없으면 '직원 미전송'. 본문 해시는 사람이 아니라 글을 가리켜서 직원처럼 쓰지 않는다
   return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || '직원 미전송', dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: ev.source === 'file' ? { name: '엑셀 파일', meta: [] } : null,
@@ -78,8 +81,8 @@ export function fromServer(ev: ServerEvent): AiEvent {
 // 필수·선택은 보낼 때 사유를 남겼는지로 나눈다(사유 요청 뒤 낸 사유는 필수 그대로)
 const sentWithReason = (e: AiEvent) => { const s = e.server as ServerEvent | undefined; return !!(s?.reason && !s.reason_requested_at) }
 export function casesFrom(events: AiEvent[]): Case[] {
-  return events.filter(e => e.grade === 'S' && (e.action === 'raw' || (e.action === 'revert' && e.items.some(i => i.reason === '업무상 필요')))).map(e => ({
-    id: 'INC-' + e.id, ev: e, need: sentWithReason(e) ? 'opt' : 'req', time: e.time, user: e.user, dept: e.dept, items: e.items, file: null,
+  return events.filter(e => e.grade !== 'O' && (e.action === 'raw' || e.action === 'revert')).map(e => ({
+    id: 'INC-' + e.id, ev: e, need: e.grade === 'S' && sentWithReason(e) ? 'opt' : 'req', time: e.time, user: e.user, dept: e.dept, items: e.items, file: null,
     status: 'open', close: null, timeline: [],
     reason: !sentWithReason(e) ? null : { pick: '업무상 필요', text: '', at: e.time, when: '전송할 때' },
   }))
@@ -104,6 +107,13 @@ export const periodStats = (days: number) => get<ServerStats>('/logs/stats?' + n
 
 // 로그 내보내기(/logs/export): 서버가 보안팀 공개키로 암호화해 서버 쪽 파일로 쓴다. 브라우저로 내려받지 않는다.
 // 한 번에 최대 1000건, 더 있으면 next_cursor 로 같은 기간을 이어서 내보낸다
+// 내보낸 암호화 파일 받기(GET /logs/exports/{name}, 보안팀 전용, backend #65). 내용은 보안팀 키로 잠긴 그대로다
+export async function downloadExport(name: string) {
+  const r = await fetch(`${S.api.base}/logs/exports/${encodeURIComponent(name)}`)
+  if (!r.ok) throw new Error(String(r.status))
+  const url = URL.createObjectURL(await r.blob()), a = document.createElement('a')
+  a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
 export interface ExportResult { exported: number; file: string; public_key_fingerprint: string; next_cursor?: number | null }
 export const exportLogs = (start: Date, end: Date, cursor?: number | null) => post<ExportResult>('/logs/export?' + new URLSearchParams({ start: start.toISOString(), end: end.toISOString(), limit: '1000', ...(cursor ? { cursor: String(cursor) } : {}) }))
 

@@ -8,7 +8,7 @@ import { get, post } from './client'
 
 const ORG = 'acme' // 백엔드 POLICY_ORG 기본값
 const THRESHOLDS = { confidential: 0.45, personal: 0.35, high_confidence: 0.7 }
-const REASON_KO: Record<string, string> = { bad_type: '형식 오류', bad_signature: '서명 불일치', unsupported_schema: '모르는 형식', wrong_org: '다른 조직', rollback: '이전 버전', expired: '만료', model_mismatch: '모델 불일치' }
+const REASON_KO: Record<string, string> = { bad_type: '형식 오류', bad_signature: '서명 불일치', unsupported_schema: '모르는 형식', wrong_org: '다른 조직', rollback: '이전 버전', expired: '만료', model_mismatch: '모델 불일치', compile_failed: '서버가 정책을 적용하지 못함(규칙 이름이 겹치는 등)' }
 
 interface Envelope { payloadType: string; payload: string; signatures: { keyid: string; sig: string }[] }
 interface Payload { version: number; types?: Record<string, { on?: boolean; grade?: 'O' | 'S' | 'C'; method?: string }>; dict?: { h: string; type?: string }[]; exclude?: { h: string }[]; rules?: { id: string; label: string; description: string; grade: string; action: string }[] }
@@ -41,9 +41,11 @@ const decode = (b64: string): Payload => JSON.parse(new TextDecoder().decode(Uin
 // 서버 탐지가 지금 쓰는 정책(/policy/current). 콘솔의 배포(/policy/publish)는 저장만 하므로 /policy/deploy 로 적용해야 바뀐다
 export async function loadActive(ok?: () => boolean) {
   try {
-    const r = await get<{ active: boolean; version: number | null; activated_at: string | null }>('/policy/current')
+    const r = await get<{ active: boolean; version: number | null; activated_at: string | null; activated_by?: string | null; effective_version?: number | null; last_apply_error?: { version: number | null; code: string; at: string } | null; value_hash_key_set?: boolean }>('/policy/current')
     if (ok && !ok()) return
-    if (S.api.pol) S.api.pol.active = r.active && r.version != null ? { version: r.version, at: r.activated_at } : null
+    if (!S.api.pol) return
+    S.api.pol.active = r.active && r.version != null ? { version: r.version, at: r.activated_at, by: r.activated_by, effective: r.effective_version ?? r.version, error: r.last_apply_error ?? null } : null
+    S.api.pol.keySet = r.value_hash_key_set
   } catch { if (S.api.pol && (!ok || ok())) S.api.pol.active = null }
 }
 // 저장된 버전 n 을 서버 탐지에 적용한다. 성공하면 null, 거절되면 사유 코드
@@ -58,7 +60,7 @@ export async function applyOnServer(n: number): Promise<string | null> {
 export let lastReject: { version: number; reason: string } | null = null
 
 // 배포 기록(/policy/history). 이 브라우저에서 배포한 버전은 무엇이 바뀌었는지까지 남겨 둔 것을 쓴다
-interface HistoryItem { version: number; sha256: string; stored_at: string | null; rule_count: number }
+interface HistoryItem { version: number; sha256: string; stored_at: string | null; rule_count: number; published_by?: string | null }
 export let historyFromServer = false
 export async function loadHistory(ok?: () => boolean) {
   try {
@@ -67,7 +69,7 @@ export async function loadHistory(ok?: () => boolean) {
     const local = new Map(S.history.filter(h => h.server).map(h => [h.version, h]))
     S.history = items.sort((a, b) => a.version - b.version).map(h => {
       const v = 'v' + h.version, l = local.get(v)
-      return { version: v, sha: h.sha256, at: h.stored_at ? new Date(h.stored_at) : l?.at ?? new Date(0), changes: l?.changes ?? [{ what: `자동 변환 규칙 ${h.rule_count}개 · 바뀐 내용은 '이 버전 내용 보기'에서`, src: '' }], server: true }
+      return { version: v, sha: h.sha256, by: h.published_by, at: h.stored_at ? new Date(h.stored_at) : l?.at ?? new Date(0), changes: l?.changes ?? [{ what: `자동 변환 규칙 ${h.rule_count}개 · 바뀐 내용은 '이 버전 내용 보기'에서`, src: '' }], server: true }
     })
     const last = items.find(h => 'v' + h.version === S.policy.version)
     if (last?.stored_at) S.policy.deployed = fmt(new Date(last.stored_at))
@@ -159,7 +161,7 @@ export function markExcluded() {
 // 고칠 때마다 서버 초안에 저장해 새로고침·다른 보안팀원과 공유한다. 화면을 되살리는 데 필요한 평문(고유 단어·제외 값)은
 // 초안의 console_state 칸에만 두고, payload 에는 해시만 담는다(평문은 배포본에 들어가지 않는다).
 // console_state: 서버가 서명하지 않는 화면 복원 칸(#46). 예전 초안은 payload.console 에 있었다
-interface DraftOut { payload: (Record<string, unknown> & { console?: ConsoleState }) | null; console_state?: ConsoleState | null; changes: { what: string; src: string }[]; has_draft: boolean; etag: string }
+interface DraftOut { payload: (Record<string, unknown> & { console?: ConsoleState }) | null; console_state?: ConsoleState | null; changes: { what: string; src: string; by?: string | null }[]; has_draft: boolean; etag: string }
 interface ConsoleState { entities: Policy['entities']; learned: Policy['learned']; dict: Policy['dict']; exclude: Policy['exclude']; meta: Policy['meta'] }
 let etag: string | null = null, timer = 0, saving: Promise<void> = Promise.resolve(), saves = 0, edits = 0
 export let draftOn = false
@@ -174,7 +176,7 @@ function applyDraft(d: DraftOut) {
   const base = initialPolicy().entities
   P.entities = base.map(b => ({ ...b, ...c.entities.find(e => e.name === b.name), sample: b.sample }))
   P.learned = c.learned; P.dict = c.dict; P.exclude = c.exclude; P.meta = c.meta
-  P.changes = d.has_draft ? d.changes.map(x => ({ what: x.what, src: x.src })) : []
+  P.changes = d.has_draft ? d.changes.map(x => ({ what: x.what, src: x.src, by: x.by })) : []
   // 초안이 없으면(배포 뒤) 저장해 둔 규칙·단어는 이미 배포된 것이다
   if (!d.has_draft) { P.learned.forEach(r => (r.live = true)); P.dict.forEach(x => delete x.draft); P.exclude.forEach(x => delete x.draft) }
 }
@@ -248,6 +250,8 @@ export function serverStatus(): string | null {
   const a = S.api.pol?.active, latest = +S.policy.version.slice(1) || 0
   if (!latest) return null
   if (!a) return '서버에 적용 안 됨'
+  // 저장은 됐어도 서버가 컴파일하지 못하면 이전 버전으로 탐지한다
+  if (a.effective !== a.version) return a.effective ? `적용 실패 · 서버는 v${a.effective} 사용 중` : '적용 실패 · 정책 없이 탐지 중'
   return a.version === latest ? '서버 적용 중' : `서버는 v${a.version} 사용 중`
 }
 // 최신 배포 버전을 서버에 적용(배포 때 적용이 실패했거나, 이 기능 전에 배포해 저장만 된 버전)
@@ -258,4 +262,4 @@ export async function applyLatest() {
     toast(no ? `${v}를 서버에 적용하지 못했어요 (${reasonKo(no)})` : `${v}를 서버 탐지에 적용했어요`)
   } catch (e) { toast(`${v}를 서버에 적용하지 못했어요 (${(e as Error).message})`) }
 }
-export const serverBehind = () => S.api.live && +S.policy.version.slice(1) > 0 && S.api.pol?.active?.version !== +S.policy.version.slice(1)
+export const serverBehind = () => { const a = S.api.pol?.active, n = +S.policy.version.slice(1); return S.api.live && n > 0 && (a?.version !== n || a.effective !== n) }

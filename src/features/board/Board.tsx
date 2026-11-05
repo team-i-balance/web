@@ -8,6 +8,7 @@ import { useBoardModel } from './model'
 import type { Case, FpGroup } from '../../domain/types'
 import { connect } from '../../api/client'
 import { applyLatest } from '../../api/policy'
+import { hashOf } from '../../api/fp'
 import { requestReason } from '../../api/cases'
 import { Button, DecideButton, Empty, LinkButton, Sentence, Skeleton, StepBar, Tag, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
@@ -109,7 +110,7 @@ export default function Board() {
     body = c ? (
       <div className={b.pb}>
         <div className={b.who}>
-          <div className={b.whoT}><span><b className={b.name}>{c.user}</b><span className={b.meta}>{c.dept} · {ago(c.time)} · {c.ev.ai}</span></span></div>
+          <div className={b.whoT}><span><b className={b.name}>{c.ev.grade === 'C' && <Tag tone="danger">기밀</Tag>} {c.user}</b><span className={b.meta}>{c.dept} · {ago(c.time)} · {c.ev.ai}</span></span></div>
           <a className={b.more} href={`#review/${c.id}`}>자세히<ChevronRight size={16} /></a>
         </div>
         <div className={b.text}><Sentence c={c} /></div>
@@ -118,7 +119,7 @@ export default function Board() {
           <span className={b.actual}>실제: 원문 전송</span>
           <span className={b.polVer}>{c.ev.ver ? `정책 ${c.ev.ver}` : '지금 정책'}</span></p></div>
         <div className={b.reason}><span>직원 사유</span>{c.reason?.text ? <p>{c.reason.text}</p>
-          : c.reason?.pick === '오탐' ? <p>'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫으세요. 값 정보가 없어 탐지 제외로는 이어지지 않아요</p>
+          : c.reason?.pick === '오탐' ? <p>{c.items.some(i => hashOf(i.orig)) ? "'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫고, 값을 빼려면 오탐 신고에서 탐지 제외하세요" : "'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫으세요. 값 해시가 없어 탐지 제외로는 이어지지 않아요"}</p>
           : c.reason?.pick ? <p>사유 글 없이 '{c.reason.pick}'만 골랐어요</p>
           : <p className={clsx(b.none, b.row)}>{SEL === 'req' ? '사유가 없어요 · 직원 프로그램은 아직 나중에 사유를 받지 못해요' : '사유 없음'}{SEL === 'req' && <Button size="sm" variant="quiet" onClick={() => requestReason(c)}>사유 다시 요청</Button>}</p>}</div>
         <div className={b.decide} style={{ '--n': SEL === 'req' ? 3 : 2 } as React.CSSProperties}>

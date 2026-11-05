@@ -1,7 +1,7 @@
 // 현황: 기간(7일·30일) 동안 AI 입력·변환·원문 전송·되돌림. 서버에 없는 필드(대상 AI·부서)는 차트를 숨긴다.
 import { useLayoutEffect, useRef, useState } from 'react'
-import { useStore } from '../../domain/store'
-import { QUEUE_KO } from '../../api/client'
+import { useStore, toast } from '../../domain/store'
+import { QUEUE_KO, downloadExport } from '../../api/client'
 import { useInsightsModel } from './model'
 import { Button, Notice, Segmented, Tag, ds } from '../../ds'
 import clsx from 'clsx'
@@ -71,7 +71,7 @@ export default function Insights() {
         ? <Notice tone="error" title="로그를 내보내지 못했어요">{ex.err}</Notice>
         : ex.last && <Notice tone="success" title={`${ex.total.toLocaleString()}건을 암호화해 서버에 저장했어요`}
           actions={ex.last.next_cursor ? <Button size="sm" onClick={() => runExport(true)}>이어서 내보내기</Button> : undefined}>
-          보안팀 공개키(지문 <code>{ex.last.public_key_fingerprint}</code>)로 잠갔어요. {ex.files.length > 1 ? `서버 파일 ${ex.files.length}개: ` : '서버 파일 '}<code>{ex.files.join(', ')}</code>
+          보안팀 공개키(지문 <code>{ex.last.public_key_fingerprint}</code>)로 잠갔어요. {ex.files.length > 1 ? `파일 ${ex.files.length}개 · ` : ''}{ex.files.map(f => <Button key={f} size="sm" variant="ghost" icon={<Download size={14} />} onClick={() => downloadExport(f).catch(e => toast(`파일을 받지 못했어요 (${(e as Error).message})`))}>{f}</Button>)}
           {ex.last.next_cursor ? ' · 이 기간에 남은 로그가 더 있어요' : ' · 이 기간 로그를 모두 내보냈어요'}
         </Notice>)}
       <div className={i.tiles}>

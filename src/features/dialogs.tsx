@@ -121,7 +121,7 @@ function Exclude({ groupKey: key, onDone }: { groupKey: string; onDone?: () => v
   )
 }
 
-export const ChangeList = () => <ul className={f.changes}>{S.policy.changes.map((c, i) => <li key={i}><span>{c.what}</span><em>{c.src}</em></li>)}</ul>
+export const ChangeList = () => <ul className={f.changes}>{S.policy.changes.map((c, i) => <li key={i}><span>{c.what}</span><em>{c.src}{c.by ? ` · ${c.by.replace(/^security:/, '')}` : ''}</em></li>)}</ul>
 
 function Bulk({ ids }: { ids: string[] }) {
   const [memo, setMemo] = useState('사유 확인 — 업무 범위 내 사용')
@@ -161,7 +161,7 @@ function Publish({ onDone }: { onDone?: () => void }) {
       msg = no ? `${v}를 저장했지만 서버에 적용하지 못했어요 (${reasonKo(no)}) · 배포 화면에서 다시 적용해 주세요` : `${v}를 서명해 배포했고 서버 탐지에 적용했어요`
     } catch (e) {
       const m = (e as Error).message
-      setErr(/signing key/i.test(m) ? '서버의 서명 키를 찾을 수 없어요. 백엔드 담당자에게 알려 주세요' : m); setBusy(false); return
+      setErr(/signing key/i.test(m) ? '서버의 서명 키를 찾을 수 없어요. 백엔드 담당자에게 알려 주세요' : /POLICY_COMPILE_FAILED/.test(m) ? '서버가 이 정책을 적용할 수 없어요(자동 변환 규칙 이름이 겹치거나 서버 고정 항목과 같은 등). 규칙을 확인해 주세요' : m); setBusy(false); return
     }
     S.ui.dialog = null; publish(v, msg); afterServerPublish().then(syncExcludeDecisions); onDone?.(); emit()
   }

@@ -9,6 +9,7 @@ import { Button, Checkbox, DecideButton, Dot, Empty, LinkButton, Notice, Segment
 import { openDialog } from '../dialogs'
 import { useReviewModel } from './model'
 import { loadCaseDetail, requestReason } from '../../api/cases'
+import { hashOf } from '../../api/fp'
 import { fmt, partial } from '../../lib/util'
 import r from './review.module.css'
 
@@ -65,14 +66,14 @@ function Detail({ c }: { c: Case }) {
           <LinkButton className={r.back} variant="ghost" size="sm" href="#review" icon={<ArrowLeft size={16} />}>목록</LinkButton>
           {closed && <>{c.need === 'req' ? <Tag>필수</Tag> : <Tag>선택</Tag>}{x && <Dot tone={DOT[x.k]}>{CONCLUSION[x.k][0]}</Dot>}</>}
         </div>
-        <h2>{c.user} 님이 {leaked.map(i => i.type).join(', ')} 원문을 {c.ev.ai === 'AI 미전송' ? 'AI' : c.ev.ai}에 보냈어요</h2>
+        <h2>{c.ev.grade === 'C' && <Tag tone="danger">기밀</Tag>} {c.user} 님이 {leaked.map(i => i.type).join(', ')} 원문을 {c.ev.ai === 'AI 미전송' ? 'AI' : c.ev.ai}에 보냈어요</h2>
         <div className={r.metaT} title={ago(c.time)}>{fmt(c.time)}{c.ev.ver ? ` · 정책 ${c.ev.ver}` : ''}</div>
       </div>
       <div className={r.dbody}>
         <div className={r.col}>
           <section className={r.sec}><h3>직원 사유 {c.reason?.pick && <Tag>{c.reason.pick}</Tag>}</h3>
             {c.reason?.text ? <blockquote className={r.quote}>{c.reason.text}</blockquote>
-              : c.reason?.pick === '오탐' ? <div className={r.note}>'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫으세요. 값 정보가 없어 탐지 제외로는 이어지지 않아요</div>
+              : c.reason?.pick === '오탐' ? <div className={r.note}>{c.items.some(i => hashOf(i.orig)) ? "'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫고, 값을 빼려면 오탐 신고에서 탐지 제외하세요" : "'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫으세요. 값 해시가 없어 탐지 제외로는 이어지지 않아요"}</div>
               : c.reason ? <div className={r.note}>사유 글 없이 '{c.reason.pick}'만 골랐어요</div>
               : <div className={r.note}>사유가 없어요 · 지금 직원 프로그램은 나중에 사유를 낼 방법이 없어요</div>}</section>
           {x && <section className={r.sec}><h3>보안팀 결론</h3>

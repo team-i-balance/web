@@ -39,7 +39,8 @@ export default function FalsePositives() {
   const [open, setOpen] = useState<string | null>(null)
   const isOpen = tab === 'open'
   // 서버 이벤트에 항목(값 해시)이 없는 오탐 신고: 묶을 수 없어 건수만 알린다
-  const noValue = S.events.filter(e => { const v = e.server as ServerEvent | undefined; return v?.reason === 'false_positive' && !v.items?.length }).length
+  const noValue = S.events.filter(e => { const v = e.server as ServerEvent | undefined; return v?.reason === 'false_positive' && !v.items?.some(i => (i.decision === 'reverted' || i.decision === 'raw') && i.value_hash) }).length
+  const keyMissing = S.api.pol?.keySet === false
   return (
     <div className={ds.page}>
       <div className={ds.pageHead}>
@@ -54,8 +55,9 @@ export default function FalsePositives() {
           : <Segmented label="상태" value={tab} onChange={setTab} items={[{ k: 'open', t: '처리할 신고', n: counts.open }, { k: 'done', t: '처리함', n: counts.done }]} />}
         </div>
       </div>
-      {noValue > 0 && <Notice tone="warning" title={`값 정보 없이 들어온 오탐 신고 ${noValue}건`}>
-        직원 프로그램이 어떤 값을 오탐이라 했는지 보내지 않아서 값으로 묶거나 탐지 제외할 수 없어요. 아래 목록에는 넣지 않았어요.
+      {noValue > 0 && <Notice tone="warning" title={`값 해시 없이 들어온 오탐 신고 ${noValue}건`}>
+        {keyMissing ? '서버에 값 해시 키(POLICY_VALUE_HASH_KEY)가 없어 같은 값끼리 묶거나 탐지 제외할 수 없어요. 백엔드에 키를 넣으면 이후 신고부터 여기에 모여요.'
+          : '어떤 값을 오탐이라 했는지 서버에 값 해시가 없어 묶거나 탐지 제외할 수 없어요(예전 이벤트이거나 값을 보내지 않은 경우).'} 아래 목록에는 넣지 않았어요.
       </Notice>}
       <section className={f.page} aria-label="오탐 신고">
       {groups.length ? <div className={f.scroll}><table className={clsx(ds.table, ds.table2, f.t)} data-tab={tab}>

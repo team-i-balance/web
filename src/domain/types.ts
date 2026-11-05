@@ -57,7 +57,7 @@ export interface Entity { name: string; grade: Grade; method: Method; sample: st
 export interface LearnedRule { type: string; when: string; method: Method; from: string; hits: number; live: boolean; at?: Date; fresh?: boolean }
 export interface DictTerm { term: string; alias: string; type: string; draft?: boolean }
 export interface ExcludeTerm { term: string; why: string; from: string; draft?: boolean }
-export interface PolicyChange { what: string; src: string }
+export interface PolicyChange { what: string; src: string; by?: string | null } // by: 서버 초안에 저장한 보안팀원(backend #59)
 
 export interface Policy {
   version: string
