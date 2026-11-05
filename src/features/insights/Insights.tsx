@@ -55,13 +55,13 @@ export default function Insights() {
   useStore()
   const [span, setSpan] = useState<'7' | '30'>('7')
   const [more, setMore] = useState(20)
-  const { n, end, from, E, days, raw, sent, byType, tmax, byAi, amax, st, live, ex, runExport } = useInsightsModel(span)
+  const { truncated, n, end, from, E, days, raw, sent, byType, tmax, byAi, amax, st, live, ex, runExport } = useInsightsModel(span)
   const files = E.filter(e => e.file).length
   return (
     <div className={i.wrap}>
       <div className={ds.pageHead}>
         <h1>현황</h1>
-        <span className={ds.pageMeta}>{md(from)} – {md(end)} · {pad(end.getHours())}:{pad(end.getMinutes())} 기준</span>
+        <span className={ds.pageMeta}>{md(from)} – {md(end)} · {pad(end.getHours())}:{pad(end.getMinutes())} 기준{truncated && ' · 너무 많아 일부만 불러옴'}</span>
         <div className={ds.pageTools}>
           <Segmented label="기간" value={span} onChange={setSpan} items={[{ k: '7', t: '7일' }, { k: '30', t: '30일' }]} />
           {live && <Button icon={<Download size={14} />} disabled={ex?.busy} onClick={() => runExport()}>{ex?.busy ? '내보내는 중…' : `${n}일 로그 내보내기`}</Button>}
@@ -71,7 +71,7 @@ export default function Insights() {
         ? <Notice tone="error" title="로그를 내보내지 못했어요">{ex.err}</Notice>
         : ex.last && <Notice tone="success" title={`${ex.total.toLocaleString()}건을 암호화해 서버에 저장했어요`}
           actions={ex.last.next_cursor ? <Button size="sm" onClick={() => runExport(true)}>이어서 내보내기</Button> : undefined}>
-          보안팀 공개키(지문 <code>{ex.last.public_key_fingerprint}</code>)로 잠갔어요. 파일 <code>{ex.last.file.split('/').pop()}</code>
+          보안팀 공개키(지문 <code>{ex.last.public_key_fingerprint}</code>)로 잠갔어요. {ex.files.length > 1 ? `서버 파일 ${ex.files.length}개: ` : '서버 파일 '}<code>{ex.files.join(', ')}</code>
           {ex.last.next_cursor ? ' · 이 기간에 남은 로그가 더 있어요' : ' · 이 기간 로그를 모두 내보냈어요'}
         </Notice>)}
       <div className={i.tiles}>
@@ -107,7 +107,7 @@ export default function Insights() {
             </div>
           </section>}
           {st && <section className={ds.panel}>
-            <h2>서버 집계</h2>
+            <h2>서버 집계 · {n}일</h2>
             <div className={i.queues}>{Object.entries(st.by_queue).map(([k, v]) => <div key={k} className={i.q}>{QUEUE_KO[k] || k}<b>{v}</b></div>)}</div>
             {st.by_policy_version && <div className={i.queues}>{Object.entries(st.by_policy_version).sort(([a], [b]) => (a === 'none' ? 1 : b === 'none' ? -1 : +b - +a)).map(([k, v]) => <div key={k} className={i.q}>{k === 'none' ? '버전 기록 없음' : `정책 v${k}`}<b>{v}</b></div>)}</div>}
             {st.by_action && <details className={i.more}><summary>처리별 건수</summary><div className={i.queues}>{Object.entries(st.by_action).map(([k, v]) => <div key={k} className={i.q}>{ACTION_KO[k] || k}<b>{v}</b></div>)}</div></details>}

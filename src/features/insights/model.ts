@@ -7,7 +7,8 @@ const DAY = 864e5
 // 원문이 나간 건: 원문 그대로(send_as_is)와 원문으로 되돌림(revert_original) 둘 다
 const out = (e: { action: string }) => e.action === 'raw' || e.action === 'revert'
 export function useInsightsModel(span: '7' | '30') {
-  const n = +span, end = new Date(S.now), from = new Date(+end - n * DAY)
+  // 타일과 일별 막대가 같은 기간을 세도록 첫날 0시부터 센다(n개 날짜)
+  const n = +span, end = new Date(S.now), from = new Date(end.getFullYear(), end.getMonth(), end.getDate() - (n - 1))
   const E = S.events.filter(e => e.time >= from && e.time <= end)
   const days = Array.from({ length: n }, (_, j) => {
     const d0 = new Date(end.getFullYear(), end.getMonth(), end.getDate() - (n - 1 - j)), d1 = new Date(+d0 + DAY)
@@ -24,17 +25,19 @@ export function useInsightsModel(span: '7' | '30') {
   const amax = Math.max(1, ...byAi.map(([, v]) => v))
   // 서버 통계는 고른 기간으로 다시 받는다
   const [pst, setPst] = useState<ServerStats | null>(null)
-  useEffect(() => { if (S.api.live) periodStats(n).then(setPst, () => setPst(null)) }, [n, S.api.synced])
-  const st = S.api.live ? pst ?? S.api.stats : null
+  // 고른 기간의 통계만 보인다(못 받으면 7일 값으로 대신하지 않고 숨긴다)
+  useEffect(() => { setPst(null); if (S.api.live) periodStats(n).then(setPst, () => setPst(null)) }, [n, S.api.synced])
+  const st = S.api.live ? pst : null
   // 로그 내보내기: 기간을 고정해 두고 next_cursor 로 이어 간다
-  const [ex, setEx] = useState<null | { busy: boolean; total: number; last?: ExportResult; err?: string; range: [Date, Date] }>(null)
+  const [ex, setEx] = useState<null | { busy: boolean; total: number; last?: ExportResult; files: string[]; err?: string; range: [Date, Date] }>(null)
   useEffect(() => setEx(null), [n])
   const runExport = async (cont = false) => {
     const range: [Date, Date] = cont && ex ? ex.range : [new Date(Date.now() - n * DAY), new Date()]
     const base = cont && ex ? ex.total : 0
-    setEx({ busy: true, total: base, last: cont ? ex?.last : undefined, range })
-    try { const r = await exportLogs(range[0], range[1], cont ? ex?.last?.next_cursor : null); setEx({ busy: false, total: base + r.exported, last: r, range }) }
-    catch (e) { setEx({ busy: false, total: base, last: cont ? ex?.last : undefined, err: String((e as Error)?.message || e), range }) }
+    const files = cont && ex ? ex.files : []
+    setEx({ busy: true, total: base, last: cont ? ex?.last : undefined, files, range })
+    try { const r = await exportLogs(range[0], range[1], cont ? ex?.last?.next_cursor : null); setEx({ busy: false, total: base + r.exported, last: r, files: [...files, r.file.split('/').pop() || r.file], range }) }
+    catch (e) { setEx({ busy: false, total: base, last: cont ? ex?.last : undefined, files, err: String((e as Error)?.message || e), range }) }
   }
-  return { n, end, from, E, days, sens, raw, sent, items, rev, byType, tmax, byAi, amax, st, live: S.api.live, ex, runExport }
+  return { truncated: S.api.truncated, n, end, from, E, days, sens, raw, sent, items, rev, byType, tmax, byAi, amax, st, live: S.api.live, ex, runExport }
 }
