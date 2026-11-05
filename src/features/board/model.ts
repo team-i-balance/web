@@ -13,7 +13,6 @@ export function useBoardModel() {
   const req = openOf('req'), ready = req.filter(c => c.reason).sort((a, b2) => +b2.time - +a.time), wait = req.filter(c => !c.reason)
   const opt = openOf('opt').sort((a, b2) => +b2.time - +a.time), fps = fpGroups(true), P = S.policy
   const fresh = P.learned.filter(r => r.live && r.fresh).map(r => r.type)
-  const caught = fresh.length ? E.filter(e => e.action === 'raw' && e.items.some(i => i.status === 'raw' && fresh.includes(i.type))).length : 0
   const work = boardWork()
   if (!S.ui.sel) S.ui.sel = QUEUE_ORDER.find(k => work[k]) || 'req'
   const SEL = S.ui.sel, lastPub = S.ui.lastPub, now = work[SEL] > 0
@@ -29,7 +28,7 @@ export function useBoardModel() {
   const cur = Q.find(x => keyOf(x) === S.ui.cur[SEL]) || Q[0] || null
   if (cur) S.ui.cur[SEL] = keyOf(cur)
   const ci = cur ? Q.indexOf(cur) : -1
-  const eff = SEL === 'pol' && !!lastPub && fresh.length > 0 && !P.changes.length
+  const eff = SEL === 'pol' && !!lastPub && !P.changes.length
 
   const steps: Step[] | null = !cur && SEL !== 'pol' ? null : ({
     req: (cur as Case | null)?.reason ? [['원문 전송', 'done'], ['사유 도착', 'done'], ['판단', 'now'], ['규칙 배포', 'next'], ['서버 적용', 'next']]
@@ -60,7 +59,7 @@ export function useBoardModel() {
   const live = S.api.live, includeTest = S.api.includeTest, truncated = S.api.truncated
   const finishEffect = () => { S.ui.lastPub = null; advanceBoard() } // 배포 효과를 보고 다음 할 일로
   const publishDone = () => { S.ui.lastPub = S.policy.version; emit() } // 배포 대화상자가 끝나면 효과 화면으로
-  return { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, ready, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
+  return { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, ready, wait, opt, fps, P, fresh, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
     Q, keyOf, cur, ci, eff, steps, act, decideCase, keepFp, select, pickItem, allOk }
 }
 export type BoardModel = ReturnType<typeof useBoardModel>

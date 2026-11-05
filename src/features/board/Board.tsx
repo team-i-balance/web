@@ -39,7 +39,7 @@ export default function Board() {
   const { scale, boxW, off } = useFit(scroller)
   const lock = useRef(0)
 
-  const { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
+  const { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, confOut, sens, raw, req, wait, opt, fps, P, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
     Q, keyOf, cur, ci, eff, steps, decideCase, keepFp, select, pickItem, allOk } = useBoardModel()
 
   // ── 단축키: 1·2·3 판단, ↑↓ 다른 건, Z 되돌리기
@@ -66,7 +66,7 @@ export default function Board() {
   const N = [
     { id: 'in', l: 'AI 입력', v: E.length, s: '' },
     { id: 'conv', l: '개인정보 변환', v: sens, s: '', t: `공개 ${pub} · 기밀 ${conf}${confOut ? `(원문 전송 ${confOut})` : ''}` },
-    { id: 'raw', l: '원문 전송', v: lastPub && fresh.length ? `${raw} → ${raw - caught}` : raw, s: '원문 그대로 보냄', danger: raw > 0, go: 'req' as Queue },
+    { id: 'raw', l: '원문 전송', v: raw, s: '원문 그대로 보냄', danger: raw > 0, go: 'req' as Queue },
     { id: 'fp', l: '오탐 신고', v: fps.length, s: '잘못 잡힌 값', q: 'fp' as Queue },
     { id: 'opt', l: '선택 검토', v: opt.length, s: '사유 남기고 보냄', q: 'opt' as Queue },
     { id: 'req', l: '필수 검토', v: req.length, s: wait.length ? `사유 대기 ${wait.length}` : '사유 없이 보냄', q: 'req' as Queue },
@@ -152,8 +152,10 @@ export default function Board() {
     const pcRow = pc && <div className={b.row}><Tag tone={behind ? 'warn' : 'ok'} dot>{pc}</Tag>{live && behind && <Button size="sm" variant="ghost" onClick={() => applyLatest()}>{P.version} 서버에 적용하기</Button>}</div>
     body = eff ? (
       <div className={b.pb}>
-        <div className={b.big}>원문 전송 {raw} → <em>{raw - caught}</em></div>
-        <p className={b.effNote}>{lastPub} 배포 · 지난 7일에 이 규칙이 있었다면</p>
+        {/* 지난 기록은 바뀌지 않는다. 효과는 이후 입력부터라, 추정치를 실측처럼 보여 주지 않고 배포한 내용만 보인다 */}
+        <div className={b.big}>{lastPub} 배포</div>
+        <ul className={b.effNote}>{(S.history.at(-1)?.changes ?? []).map((c, i) => <li key={i}>{c.what}</li>)}</ul>
+        <p className={b.effNote}>이후 직원 입력부터 이 정책으로 검사해요. 지난 기록은 그대로예요.</p>
         {pcRow}
         <div className={clsx(b.row, b.rowGap)}><Button variant="primary" onClick={finishEffect}>다음 할 일<ChevronRight size={16} /></Button></div>
       </div>
