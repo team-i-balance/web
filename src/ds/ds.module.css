@@ -3,13 +3,13 @@
   --h: 40px; /* Devs: 작은 32 · 기본 40 · 큰 48 */
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: var(--h); padding: 0 14px; border-radius: var(--r-md);
-  border: 1px solid var(--line-2); background: var(--surface); color: var(--fg);
+  border: 1px solid var(--line-2); background: var(--well); color: var(--fg); /* 다크: 누를 수 있는 것은 요소 면 + 뚜렷한 테두리 */
   font-size: var(--t-14); font-weight: var(--w-label); line-height: 1; white-space: nowrap; text-decoration: none;
   box-shadow: var(--sh-1);
   transition: background var(--d-1) var(--ease), border-color var(--d-1) var(--ease), color var(--d-1) var(--ease);
 }
 /* 상태 4단계: 기본 → 올림 → 누름 → 비활성(Devs 버튼 규칙). 채운 강조(now)는 한 화면에 하나 */
-.btn:hover:not(:disabled) { background: var(--hover); }
+.btn:hover:not(:disabled) { background: var(--chip); border-color: var(--sub); }
 .btn:active:not(:disabled) { background: var(--press); }
 .btn:disabled { background: var(--well); border-color: transparent; color: var(--faint); box-shadow: none; cursor: not-allowed; }
 .btn svg { flex: none; }
@@ -41,12 +41,11 @@
 .decide {
   display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 2px 10px;
   min-height: 64px; padding: 12px 14px; text-align: left;
-  border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--surface); color: var(--fg);
-  box-shadow: var(--sh-1);
-  transition: border-color var(--d-1) var(--ease), background var(--d-1) var(--ease), transform var(--d-1) var(--ease);
+  border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--well); color: var(--fg);
+  transition: border-color var(--d-1) var(--ease), background var(--d-1) var(--ease);
 }
-.decide:hover { border-color: var(--fg); }
-.decide:active { transform: translateY(1px); background: var(--hover); }
+.decide:hover { border-color: var(--sub); background: var(--chip); }
+.decide:active { background: var(--press); }
 .decide b { font-size: var(--t-15); font-weight: var(--w-title); }
 .decide span { grid-column: 1 / -1; font-size: var(--t-12); color: var(--sub); }
 .decide .kbd { grid-column: 2; grid-row: 1; }
@@ -109,10 +108,10 @@
   width: 36px; height: 22px; flex: none; border-radius: var(--r-full); border: 1px solid var(--line-2); padding: 1px; background: var(--well);
   transition: background var(--d-2) var(--ease), border-color var(--d-2) var(--ease);
 }
-.switch[data-state='checked'] { background: var(--acc); border-color: var(--acc); }
+.switch[data-state='checked'] { background: #365989; border-color: #365989; } /* 줄지어 있어도 내용보다 튀지 않게 */
 .switch:disabled { opacity: 0.4; cursor: not-allowed; }
 .thumb { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform var(--d-2) var(--ease); }
-.thumb[data-state='checked'] { transform: translateX(14px); }
+.thumb[data-state='checked'] { transform: translateX(14px); background: #dce8fa; }
 .check {
   width: 18px; height: 18px; flex: none; border-radius: 4px; border: 1.5px solid var(--line-2); background: var(--surface);
   display: inline-flex; align-items: center; justify-content: center; padding: 0; color: var(--surface);
@@ -129,8 +128,7 @@
   transition: background var(--d-1) var(--ease), color var(--d-1) var(--ease), border-color var(--d-1) var(--ease);
 }
 .segItem:hover { color: var(--fg); background: var(--hover); }
-.segItem[aria-selected='true'] { background: var(--acc); border-color: var(--acc); color: var(--acc-on); padding-left: 10px; }
-.segItem[aria-selected='true'] .badge { background: color-mix(in srgb, var(--acc-on) 22%, transparent); color: inherit; }
+.segItem[aria-selected='true'] { background: var(--acc-tile); border-color: var(--acc); color: var(--acc-ink); padding-left: 10px; } /* 고른 것은 옅은 강조 면. 채운 파랑은 주 행동에만 */
 
 /* ── 단계 바(Devs 단계 알약): 지난 단계는 체크, 지금 단계는 강조 테두리 + 채운 번호, 다음 단계는 흐린 번호 */
 .steps { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: var(--t-12); }
@@ -173,7 +171,7 @@
 
 /* ── 진행 막대 */
 .meter { height: 6px; border-radius: 3px; background: var(--chip); overflow: hidden; }
-.meter i { display: block; height: 100%; border-radius: 3px; background: var(--ok); transition: width var(--d-3) var(--ease); }
+.meter i { display: block; height: 100%; border-radius: 3px; background: var(--ok-fill); transition: width var(--d-3) var(--ease); }
 
 /* ── 알림 상자(Devs Toast 규칙): 상태색 테두리 + 옅은 바탕 + 아이콘, 제목은 상태색, 설명은 보조색 */
 .notice {

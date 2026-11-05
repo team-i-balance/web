@@ -33,7 +33,7 @@ button.tile:hover { background: var(--hover); }
 .pill { font-size: 12px; font-weight: var(--w-label); padding: 1px 7px; border-radius: var(--r-full); background: var(--chip); color: var(--fg); }
 .pillNow { background: var(--acc); color: var(--acc-on); }
 .nmeter { height: 4px; border-radius: 2px; background: var(--chip); overflow: hidden; margin-top: 2px; }
-.nmeter i { display: block; height: 100%; background: var(--ok); }
+.nmeter i { display: block; height: 100%; background: var(--ok-fill); }
 
 /* ── 고른 노드 → 패널 연결 */
 .bridge { position: relative; height: 14px; flex: none; overflow: hidden; }
@@ -80,7 +80,7 @@ button.tile:hover { background: var(--hover); }
 .sideH { font-size: var(--t-12); font-weight: var(--w-label); color: var(--mute); margin-top: 6px; display: flex; justify-content: space-between; }
 .sideH:first-child { margin-top: 0; }
 .nx { display: flex; flex-direction: column; gap: 1px; padding: 10px 12px; border-radius: var(--r-md); background: var(--well); border: 0; text-align: left; color: var(--fg); font-size: var(--t-14); transition: background var(--d-1) var(--ease); }
-button.nx:hover { background: var(--hover); }
+button.nx:hover { background: var(--chip); }
 .nx b { display: flex; justify-content: space-between; gap: 8px; font-weight: var(--w-title); }
 .nx b small { font-weight: 500; color: var(--mute); font-size: var(--t-12); }
 .nx span { font-size: var(--t-12); color: var(--sub); }

@@ -8,7 +8,7 @@
 .lh { display: flex; justify-content: space-between; padding: 12px 12px 6px; font-size: var(--t-12); font-weight: var(--w-label); color: var(--mute); }
 .row { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 12px; border-radius: var(--r-md); text-decoration: none; color: var(--fg); transition: background var(--d-1) var(--ease); }
 .row:hover { background: var(--hover); }
-.row[aria-current='true'] { background: var(--acc-tile); box-shadow: inset 0 0 0 1px var(--acc); }
+.row[aria-current='true'] { background: var(--acc-tile); box-shadow: inset 2px 0 0 var(--acc); }
 .rowNoCheck { grid-template-columns: minmax(0, 1fr) auto; }
 .who { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
 .who b { font-size: var(--t-14); }

@@ -1,4 +1,4 @@
-.wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 12px; }
+.wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 192px minmax(0, 1fr); gap: 12px; }
 .nav { align-self: start; position: sticky; top: 12px; display: flex; flex-direction: column; gap: 2px; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); box-shadow: var(--sh-1); }
 .navT { padding: 6px 10px 10px; display: flex; flex-direction: column; gap: 2px; }
 .navT b { font-size: var(--t-18); letter-spacing: -0.02em; }
@@ -16,7 +16,7 @@
 .tbox { overflow-x: auto; padding: 0 10px 10px; }
 .t { width: 100%; min-width: 640px; font-size: var(--t-14); }
 .t th { text-align: left; font-size: var(--t-12); font-weight: var(--w-label); color: var(--fg); background: var(--well); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-.t td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.t td { padding: 10px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .t tr:last-child td { border-bottom: 0; }
 .t tr[data-off] td:not(:first-child) { opacity: 0.5; }
 .name { font-weight: var(--w-title); white-space: nowrap; }

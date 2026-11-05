@@ -1,5 +1,5 @@
-/* 디자인 토큰 — C 정밀 계기. 다크 면은 Devs 디자인 시스템의 3단계(바탕 #1E2126 → 상자 #25292D → 요소 #343A40)를 따른다. 라이트가 기본, [data-theme=dark] 또는 시스템 다크에서 바뀐다.
-   강조색(--acc)은 "지금 처리할 곳"에만 쓴다. 선택·탭 같은 일반 상태는 중립색. */
+/* 디자인 토큰 — 다크 하나(2026-11-05 결정). 부품·면·모서리는 Devs 디자인 시스템, 강조색은 우리 시그널 블루, 글자는 우리 기준.
+   강조색(--acc)은 "지금 처리할 곳"·고른 것·주 행동에만 쓴다. */
 @font-face {
   font-family: 'Pretendard Variable';
   src: url('/fonts/PretendardVariable.woff2') format('woff2');
@@ -8,47 +8,48 @@
 }
 
 :root {
-  color-scheme: light;
-  /* 면 */
-  /* 회색은 Devs 와 같은 중립 회색 단계(#F8F9FA → #212529)를 라이트에 맞게 뒤집어 쓴다 */
-  --bg: #f1f3f5;
-  --surface: #ffffff;
-  --surface-2: #f8f9fa;
-  --well: #f1f3f5;
-  --seg: #e9ecef;
-  --seg-on: #ffffff; /* 세그먼트·메뉴에서 고른 칸 */
-  --chip: #e9ecef;
-  --hover: #f1f3f5;
-  --press: #e9ecef;
-  --scrim: rgba(33, 37, 41, 0.36);
-  /* 글자 */
-  --fg: #212529;
-  --sub: #495057;
-  --mute: #6c757d;
-  --faint: #8a929a;
+  color-scheme: dark;
+  /* 면(Devs 다크 3단계): 바탕 → 상자(패널) → 요소(입력·안쪽 상자). 다크 하나만 쓴다(2026-11-05) */
+  --bg: #1e2126;
+  --surface: #25292d;
+  --surface-2: #2b3035;
+  --well: #343a40;
+  --seg: #1a1d21;
+  --seg-on: #343a40;
+  --chip: #3b4148;
+  --hover: #2e3439; /* 행·목록 올림 */
+  --press: #42484f;
+  --scrim: rgba(0, 0, 0, 0.6);
+  /* 글자: 본문 → 보조 → 흐림(시각·메타) → 아주 흐림(입력 안내) */
+  --fg: #f1f3f5;
+  --sub: #c1c7ce;
+  --mute: #a3abb4;
+  --faint: #868e96; /* 비활성·입력 안내에만 */
   /* 선 */
-  --line: #dee2e6;
-  --line-2: #ced4da;
-  /* 강조: 지금 처리할 곳 */
-  --acc: #2563eb; /* 시그널 블루(2026-11-05 정함) */
+  --line: #3a4148; /* 패널 테두리·안쪽 구분선 */
+  --line-2: #59616b; /* 버튼·입력 테두리 */
+  /* 강조(시그널 블루): 채우는 색은 흰 글자가 읽히게 조금 깊게, 어두운 면 위 글자·아이콘은 밝게 */
+  --acc: #3d7ef7;
   --acc-on: #ffffff;
-  --acc-ink: #1d4fc4;
-  --acc-tile: #eff4fe;
-  --acc-ring: rgba(37, 99, 235, 0.14);
-  /* 상태 */
-  --danger: #d2293f;
-  --danger-soft: rgba(210, 41, 63, 0.08);
-  --ok: #119a63;
-  --ok-soft: rgba(17, 154, 99, 0.12);
-  --warn: #a15c07;
-  --warn-soft: rgba(217, 119, 6, 0.12);
-  --info: #1f7fb8;
-  --focus: #2563eb;
-  /* 깊이 */
-  /* 깊이: Devs 처럼 면은 평평하게(그림자 없음). 떠 있는 것(팝오버·대화상자·알림)만 그림자 */
+  --acc-ink: #8fb5ff;
+  --acc-tile: color-mix(in srgb, #3d7ef7 16%, #25292d);
+  --acc-ring: rgba(61, 126, 247, 0.24);
+  /* 상태(Devs 시스템 색) */
+  --danger: #ff7272;
+  --danger-soft: rgba(255, 114, 114, 0.12);
+  --ok: #55dc92;
+  --ok-soft: rgba(85, 220, 146, 0.12);
+  --warn: #f8c952;
+  --warn-soft: rgba(248, 201, 82, 0.12);
+  --info: #62caf4;
+  /* 넓은 면에 칠할 때(차트 막대·진행 막대)는 한 단계 차분한 상태색. 원래 상태색은 아이콘·수치에만 */
+  --danger-fill: #d96870;
+  --ok-fill: #4baa7b;
+  --focus: #8fb5ff;
+  /* 깊이: 면은 평평하게(그림자 없음). 떠 있는 것(팝오버·대화상자·알림)만 그림자 */
   --sh-1: none;
-  --sh-2: 0 8px 24px rgba(33, 37, 41, 0.12);
-  --sh-3: 0 16px 48px rgba(33, 37, 41, 0.2);
+  --sh-2: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --sh-3: 0 16px 48px rgba(0, 0, 0, 0.55);
   /* 글자 크기 */
   --font: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
@@ -69,35 +70,6 @@
   /* 배치 */
   --rail: 232px;
   --top: 56px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --bg: #1e2126; --surface: #25292d; --surface-2: #2b3035; --well: #343a40; --seg: #1a1d21; --seg-on: #343a40; --chip: #3b4148;
-    --hover: #383e45; --press: #42484f; --scrim: rgba(0, 0, 0, 0.56);
-    --fg: #f1f3f5; --sub: #adb5bd; --mute: #929aa3; --faint: #7a828b;
-    --line: #343a40; --line-2: #495057;
-    --acc: #6ea0ff; --acc-on: #101216; --acc-ink: #a3c2ff; --acc-tile: color-mix(in srgb, #6ea0ff 14%, #25292d); --acc-ring: rgba(110, 160, 255, 0.18);
-    --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
-    --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #8fb5ff;
-    --sh-1: none;
-    --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
-    --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);
-  }
-}
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --bg: #1e2126; --surface: #25292d; --surface-2: #2b3035; --well: #343a40; --seg: #1a1d21; --seg-on: #343a40; --chip: #3b4148;
-  --hover: #383e45; --press: #42484f; --scrim: rgba(0, 0, 0, 0.56);
-  --fg: #f1f3f5; --sub: #adb5bd; --mute: #929aa3; --faint: #7a828b;
-  --line: #343a40; --line-2: #495057;
-  --acc: #6ea0ff; --acc-on: #101216; --acc-ink: #a3c2ff; --acc-tile: color-mix(in srgb, #6ea0ff 14%, #25292d); --acc-ring: rgba(110, 160, 255, 0.18);
-  --danger: #ff7d86; --danger-soft: rgba(255, 125, 134, 0.14); --ok: #43d49a; --ok-soft: rgba(67, 212, 154, 0.16);
-  --warn: #f5b454; --warn-soft: rgba(245, 180, 84, 0.14); --info: #62caf4; --focus: #8fb5ff;
-  --sh-1: none;
-  --sh-2: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
-  --sh-3: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 64px rgba(0, 0, 0, 0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {

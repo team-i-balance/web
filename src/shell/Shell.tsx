@@ -1,7 +1,7 @@
-// 앱 뼈대: 왼쪽 사이드바(로고·찾기·메뉴·연결 상태·테마·시연), 좁으면 아이콘만, 휴대폰은 위 막대 + 아래 탭. 명령 팔레트, 단축키 안내
+// 앱 뼈대: 왼쪽 사이드바(로고·찾기·메뉴·연결 상태·시연), 좁으면 아이콘만, 휴대폰은 위 막대 + 아래 탭. 명령 팔레트, 단축키 안내
 import { useEffect, useState, type ReactNode } from 'react'
 import { Command } from 'cmdk'
-import { LayoutGrid, ShieldAlert, Flag, SlidersHorizontal, MonitorCheck, ChartColumn, Search, Sun, Moon, Play, Keyboard, RefreshCw, ArrowRight, UserRound, ShieldCheck } from 'lucide-react'
+import { LayoutGrid, ShieldAlert, Flag, SlidersHorizontal, MonitorCheck, ChartColumn, Search, Play, Keyboard, RefreshCw, ArrowRight, UserRound, ShieldCheck } from 'lucide-react'
 import clsx from 'clsx'
 import { S, emit, useStore, openOf, fpGroups, boardWork, QUEUE_ORDER, QUEUE_NAME } from '../domain/store'
 import { connect } from '../api/client'
@@ -9,7 +9,6 @@ import { Badge, Kbd, Tip } from '../ds'
 import { Modal } from '../ds/Overlay'
 import { partial } from '../lib/util'
 import { ROUTE_NAME, go, type Route } from './route'
-import { currentTheme, toggleTheme } from './theme'
 import { openDialog } from '../features/dialogs'
 import { undoLast } from '../features/toasts'
 import { toggleCoach } from '../features/coach'
@@ -59,8 +58,6 @@ function Item({ icon, label, right, href, current, onClick, cls, rail }: { icon:
 
 export function TopBar({ r }: { r: Route }) {
   const routes = Object.keys(ROUTE_NAME) as Route[]
-  const dark = currentTheme() === 'dark'
-  const theme = dark ? '라이트 테마' : '다크 테마'
   const rail = useRail()
   return (
     <>
@@ -74,7 +71,6 @@ export function TopBar({ r }: { r: Route }) {
         </nav>
         <div className={sh.sideFoot}>
           <Item icon={<i className={clsx(sh.connDot, sh[S.api.state])} />} label={connText()} onClick={() => openDialog({ kind: 'server' })} cls={sh.conn} rail={rail} />
-          <Item icon={dark ? <Sun size={20} /> : <Moon size={20} />} label={theme} onClick={toggleTheme} rail={rail} />
           <Item icon={<Play size={20} />} label="시연 순서" onClick={toggleCoach} rail={rail} />
         </div>
       </aside>
@@ -83,7 +79,6 @@ export function TopBar({ r }: { r: Route }) {
         <div className={sh.tools}>
           <button type="button" className={sh.tool} onClick={openPalette} aria-label="찾기·이동"><Search size={20} /></button>
           <button type="button" className={sh.tool} onClick={() => openDialog({ kind: 'server' })} aria-label={`데이터: ${connText()}`}><i className={clsx(sh.connDot, sh[S.api.state])} /></button>
-          <button type="button" className={sh.tool} onClick={toggleTheme} aria-label={theme}>{dark ? <Sun size={20} /> : <Moon size={20} />}</button>
           <button type="button" className={sh.tool} onClick={toggleCoach} aria-label="시연 순서"><Play size={20} /></button>
         </div>
       </header>
@@ -126,7 +121,6 @@ function Palette() {
               <Flag size={16} />{partial(g.type, g.value)}<span className={sh.palMeta}>{g.type} · {g.refs.length}회</span></Command.Item>)}
           </Command.Group>}
           <Command.Group heading="설정" className={sh.palGroup}>
-            <Command.Item className={sh.palItem} onSelect={run(toggleTheme)}>{currentTheme() === 'dark' ? <Sun size={16} /> : <Moon size={16} />}테마 바꾸기</Command.Item>
             <Command.Item className={sh.palItem} onSelect={run(() => { connect() })}><RefreshCw size={16} />서버에서 다시 불러오기</Command.Item>
             <Command.Item className={sh.palItem} onSelect={run(toggleCoach)}><Play size={16} />시연 순서 보기</Command.Item>
             <Command.Item className={sh.palItem} onSelect={run(() => { S.ui.help = true; emit() })}><Keyboard size={16} />단축키 보기<span className={sh.palMeta}>?</span></Command.Item>
