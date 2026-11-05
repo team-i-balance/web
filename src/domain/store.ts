@@ -107,13 +107,14 @@ export function undoToast(msg: string, undo?: () => void) { S.ui.utoast = { id: 
 
 // ── 정책 변경 (서명 후 배포 전까지는 초안)
 export const change = (what: string, src = '직접 수정') => { S.policy.changes.push({ what, src }); hooks.draft?.() }
-export function setEntityOn(i: number, on: boolean) { const e = S.policy.entities[i]; e.on = on; change(`${e.name} 탐지 ${on ? '켬' : '끔'}`); emit() }
+// 배포 전에 원래 값으로 되돌리면 앞의 변경을 거둬들인다(끔 → 켬이 변경 두 개로 남아 배포 대기로 보이지 않게)
+export function setEntityOn(i: number, on: boolean) { const e = S.policy.entities[i]; e.on = on; if (!unadd(w => w === `${e.name} 탐지 ${on ? '끔' : '켬'}`)) change(`${e.name} 탐지 ${on ? '켬' : '끔'}`); emit() }
 export function setEntityGrade(i: number, g: 'O' | 'S' | 'C') {
   const e = S.policy.entities[i], b = e.grade
   e.grade = g; e.method = g === 'S' ? (e.method === '—' ? '대체' : e.method) : '—'
-  change(`${e.name} 등급: ${GRADE[b]} → ${GRADE[g]}`); emit()
+  if (!unadd(w => w === `${e.name} 등급: ${GRADE[g]} → ${GRADE[b]}`)) change(`${e.name} 등급: ${GRADE[b]} → ${GRADE[g]}`); emit()
 }
-export function setEntityMethod(i: number, m: Method) { const e = S.policy.entities[i], b = e.method; e.method = m; change(`${e.name} 변환 방식: ${b} → ${m}`); emit() }
+export function setEntityMethod(i: number, m: Method) { const e = S.policy.entities[i], b = e.method; e.method = m; if (!unadd(w => w === `${e.name} 변환 방식: ${m} → ${b}`)) change(`${e.name} 변환 방식: ${b} → ${m}`); emit() }
 // 변경 기록은 서버 초안에 저장되고 배포 기록으로도 남으니 단어는 첫·끝 글자만 적는다(평문을 남기지 않음)
 const maskWord = (v: string) => (v.startsWith('⟦') ? partial('', v) : v.length <= 2 ? v[0] + '*' : v[0] + '*'.repeat(v.length - 2) + v.slice(-1))
 export function deleteDict(i: number) { const d = S.policy.dict.splice(i, 1)[0]; if (!d.draft || !unadd(w => w === `회사 고유 단어 추가: ${maskWord(d.term)} (${d.type})`)) change(`회사 고유 단어 삭제: ${maskWord(d.term)}`); emit() }
