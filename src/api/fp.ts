@@ -4,6 +4,7 @@
 import type { FpGroup } from '../domain/types'
 import { S, hooks, toast } from '../domain/store'
 import { get, post } from './client'
+import { publishedExcludes } from './policy'
 
 interface Group { value_hash: string; status: 'open' | 'done'; decision: { decision: 'keep' | 'exclude'; why?: string | null } | null; last_event_id: number }
 
@@ -25,6 +26,9 @@ export async function loadFpDecisions() {
     const h = it.fp ? hashOf(it.orig) : null
     if (h && done.has(h)) it.fp = done.get(h)!
   }))
+  // 정책으로 이미 탐지 제외해 배포한 값인데 서버 신고가 아직 열려 있으면 '제외' 판단을 남겨 맞춘다
+  const ex = publishedExcludes(), open = await get<Group[]>('/false-positives?status=open&limit=1000', 5000).catch(() => [] as Group[])
+  for (const g of open) { const h = g.value_hash.toLowerCase(); if (ex.has(h)) await send(h, 'exclude', '배포된 정책의 탐지 제외') }
 }
 
 const pending = new Map<string, number>()

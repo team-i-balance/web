@@ -118,8 +118,11 @@ export async function loadPolicy() {
 }
 
 // 탐지 제외한 값(정책·초안의 hmac 해시)과 같은 오탐 신고는 '제외함'으로 둔다. 서버에 오탐 판단 기록이 없어서 정책으로 되살린다
+const exHash = (t: string) => (t.startsWith('⟦h=hmac:') ? t.slice(8, -1) : t.startsWith('⟦=') ? t.slice(t.indexOf('#') + 1, -1) : null)
+// 배포된 정책의 탐지 제외 값 해시(초안 제외)
+export const publishedExcludes = () => new Set(S.policy.exclude.filter(x => !x.draft).map(x => exHash(x.term)).filter((h): h is string => !!h).map(h => h.toLowerCase()))
 function markExcluded() {
-  const hashOf = (t: string) => (t.startsWith('⟦h=hmac:') ? t.slice(8, -1) : t.startsWith('⟦=') ? t.slice(t.indexOf('#') + 1, -1) : null)
+  const hashOf = exHash
   const ex = new Set(S.policy.exclude.map(x => hashOf(x.term)).filter(Boolean))
   if (!ex.size) return
   S.events.forEach(e => e.items.forEach(it => { if (it.fp === 'open' && ex.has(hashOf(it.orig))) it.fp = 'exclude' }))
