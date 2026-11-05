@@ -79,7 +79,7 @@ function Detail({ c }: { c: Case }) {
               {x.memo && <span>판단 근거 · {x.memo}</span>}
               {x.rule && <span>재발 방지 · {x.rule}</span>}
             </div>
-            {(x.rule || S.policy.changes.some(ch => ch.src === c.id)) && S.policy.changes.length > 0 && <Notice tone="now" actions={<><LinkButton size="sm" variant="link" href="#policy">정책에서 보기</LinkButton><Button size="sm" variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button></>}>규칙 초안이 배포를 기다려요 · 아직 PC에 적용 전</Notice>}
+            {(x.rule || S.policy.changes.some(ch => ch.src === c.id)) && S.policy.changes.length > 0 && <Notice tone="now" actions={<><LinkButton size="sm" variant="link" href="#policy">정책에서 보기</LinkButton><Button size="sm" variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button></>}>규칙 초안이 배포를 기다려요 · 아직 서버 탐지에 적용 전</Notice>}
           </section>}
           <section className={r.sec}><h3>보낸 내용</h3>
             <div className={r.text}><Sentence c={c} /></div>

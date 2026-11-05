@@ -1,9 +1,9 @@
-// 배포·PC 적용: 직원 PC가 받았는지(적용·거부와 사유), 배포 기록
-import { Fragment, useEffect, useState } from 'react'
-import { MonitorCheck, RefreshCw, History, ChevronDown } from 'lucide-react'
+// 배포: 서버 탐지가 어느 정책을 쓰는지와 배포 기록. 직원 PC는 입력을 서버로 검사하므로 정책을 따로 받지 않는다
+import { useEffect, useState } from 'react'
+import { ServerCog, RefreshCw, History, ChevronDown } from 'lucide-react'
 import { S, useStore } from '../../domain/store'
-import { acksNow, historyFromServer, loadVersion, reasonKo, refreshAcks, type VersionView } from '../../api/policy'
-import { Button, Empty, Meter, Notice, Tag, ds } from '../../ds'
+import { applyLatest, historyFromServer, loadVersion, refreshActive, serverBehind, type VersionView } from '../../api/policy'
+import { Button, Empty, Notice, Tag, ds } from '../../ds'
 import { openDialog } from '../dialogs'
 import { fmt } from '../../lib/util'
 import d from './deploy.module.css'
@@ -16,41 +16,38 @@ function splitWhat(w: string): [string, string] {
 
 export default function Deploy() {
   useStore()
-  const P = S.policy, a = acksNow(), live = S.api.live
+  const P = S.policy, live = S.api.live, act = S.api.pol?.active ?? null, behind = serverBehind()
   const hist = [...S.history].filter(h => !live || h.server).reverse()
-  const left = a ? a.devices - a.applied - a.rejected : 0
-  const reasons = a ? Object.entries(a.reject_reasons) : []
-  const none = P.version === 'v0'
+  const none = P.version === 'v0' || !P.version
+  const [busy, setBusy] = useState(false)
+  const apply = async () => { setBusy(true); await applyLatest(); setBusy(false) }
   return (
     <div className={d.wrap}>
-      <div className={ds.pageHead}><h1>배포·PC</h1></div>
-      {P.changes.length > 0 && <Notice tone="now" title={`배포 대기 변경 ${P.changes.length}개 · 배포해야 PC에 적용돼요`}
+      <div className={ds.pageHead}><h1>배포</h1></div>
+      {P.changes.length > 0 && <Notice tone="now" title={`배포 대기 변경 ${P.changes.length}개 · 배포해야 서버 탐지에 적용돼요`}
         actions={<Button variant="now" onClick={() => openDialog({ kind: 'publish' })}>서명 후 배포하기</Button>} />}
 
-      <section className={ds.panel} aria-label="PC 적용 현황">
+      <section className={ds.panel} aria-label="서버 적용">
         <div className={d.ch}>
-          <h2>PC 적용{none ? '' : ` · ${P.version}`}{!none && P.deployed && <small>{P.deployed} 배포</small>}</h2>
-          {live && <Button className={d.end} size="sm" variant="ghost" icon={<RefreshCw size={16} />} onClick={() => refreshAcks()}>새로고침</Button>}
+          <h2>서버 탐지에 쓰는 정책</h2>
+          {live && <Button className={d.end} size="sm" variant="ghost" icon={<RefreshCw size={16} />} onClick={() => refreshActive()}>새로고침</Button>}
         </div>
-        {none ? <Empty icon={<MonitorCheck size={20} />} title="아직 배포한 정책이 없어요" text="정책을 고친 뒤 서명 후 배포하면 여기에 보여요" />
-          : !a || !a.devices ? <Empty icon={<MonitorCheck size={20} />} title="아직 받은 PC가 없어요" text="직원 PC가 새 정책을 받으면 여기에 모여요" />
+        {none ? <Empty icon={<ServerCog size={20} />} title="아직 배포한 정책이 없어요" text="정책을 고친 뒤 서명 후 배포하면 서버 탐지에 바로 적용돼요" />
           : <div className={d.top}>
             <div className={d.left}>
-              <p className={d.sum}><b className="num">{a.applied} / {a.devices}대</b><span>적용{left > 0 && ` · 기다리는 중 ${left}대`}</span></p>
-              <div className={d.bar}><Meter size="md" value={a.applied / a.devices} label="PC 적용 비율" /></div>
+              <p className={d.sum}><b className="num">{act ? `v${act.version}` : '없음'}</b><span>{act ? `${act.at ? fmt(new Date(act.at)) + ' 적용 · ' : ''}직원 입력은 모두 이 정책으로 검사해요` : '서버가 아직 어떤 정책도 쓰지 않아요 · 기본 탐지만 해요'}</span></p>
             </div>
-            {a.rejected > 0 && <Notice tone="warning"
-              title={`거부한 PC ${a.rejected}대${reasons.length === 1 ? ` · ${reasonKo(reasons[0][0])}` : ''}`}>
-              {reasons.length > 1 && <p className={d.reasons}>{reasons.map(([k, n], i) => <Fragment key={k}>{i > 0 && <span aria-hidden="true">·</span>}<span>{reasonKo(k)} <b>{n}대</b></span></Fragment>)}</p>}
-              <p>거부한 PC는 이전 정책을 계속 써요</p>
+            {behind && <Notice tone="warning" title={`최신 배포 ${P.version}가 서버에 적용되지 않았어요`}
+              actions={<Button variant="now" disabled={busy} onClick={apply}>{busy ? '적용하는 중…' : `${P.version} 서버에 적용하기`}</Button>}>
+              <p>배포는 저장만 되고 적용이 빠졌던 버전이에요. 적용하기 전에 아래 배포 기록에서 내용을 확인해 주세요.</p>
             </Notice>}
           </div>}
       </section>
 
       <section className={ds.panel} aria-label="배포 기록">
         <div className={d.ch}><h2>배포 기록</h2>{live && !historyFromServer && <span className={d.note}>서버에 기록 목록이 없어 이 브라우저에서 배포한 것만 보여요</span>}</div>
-        {hist.length ? <ol className={d.hist}>{hist.map((h, hi) => <li key={h.version + +h.at} className={d.hi}>
-          <div className={d.hv}><b>{h.version}</b><span>{fmt(h.at)}</span>{hi === 0 && h.version === P.version && <Tag tone="now">적용 중</Tag>}</div>
+        {hist.length ? <ol className={d.hist}>{hist.map(h => <li key={h.version + +h.at} className={d.hi}>
+          <div className={d.hv}><b>{h.version}</b><span>{fmt(h.at)}</span>{act && h.version === 'v' + act.version && <Tag tone="now">서버 적용 중</Tag>}</div>
           <ul className={d.hc}>{h.changes.map((c, i) => {
             const [lab, txt] = splitWhat(c.what)
             return <li key={i}>{lab && <span className={d.cl}>{lab}</span>}<span className={d.ct}>{txt}</span>{c.src && <Tag>{c.src}</Tag>}</li>

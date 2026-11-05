@@ -2,7 +2,7 @@
 // API 연동은 이 파일과 api/·domain/ 만 고치고, 디자인은 Board.tsx·board.module.css 만 고친다.
 import { S, emit, openOf, fpGroups, groupKey, boardWork, QUEUE_ORDER, quickClose, fpKeep, advanceBoard, closeCase, undoToast, hooks, type Queue } from '../../domain/store'
 import type { Case, FpGroup } from '../../domain/types'
-import { acksNow, pcStatus } from '../../api/policy'
+import { serverBehind, serverStatus } from '../../api/policy'
 import type { Step } from '../../ds'
 
 export function useBoardModel() {
@@ -17,7 +17,7 @@ export function useBoardModel() {
   const work = boardWork()
   if (!S.ui.sel) S.ui.sel = QUEUE_ORDER.find(k => work[k]) || 'req'
   const SEL = S.ui.sel, lastPub = S.ui.lastPub, now = work[SEL] > 0
-  const acks = acksNow(), pc = pcStatus()
+  const pc = serverStatus(), behind = serverBehind()
   const loading = S.api.state === 'connecting'
   const serverEmpty = S.api.live && !S.api.count
 
@@ -32,13 +32,13 @@ export function useBoardModel() {
   const eff = SEL === 'pol' && !!lastPub && fresh.length > 0 && !P.changes.length
 
   const steps: Step[] | null = !cur && SEL !== 'pol' ? null : ({
-    req: (cur as Case | null)?.reason ? [['원문 전송', 'done'], ['사유 도착', 'done'], ['판단', 'now'], ['규칙 배포', 'next'], ['PC 적용', 'next']]
-      : [['원문 전송', 'done'], ['사유 요청', 'now'], ['판단', 'next'], ['규칙 배포', 'next'], ['PC 적용', 'next']],
+    req: (cur as Case | null)?.reason ? [['원문 전송', 'done'], ['사유 도착', 'done'], ['판단', 'now'], ['규칙 배포', 'next'], ['서버 적용', 'next']]
+      : [['원문 전송', 'done'], ['사유 요청', 'now'], ['판단', 'next'], ['규칙 배포', 'next'], ['서버 적용', 'next']],
     opt: [['되돌림', 'done'], ['사유 남김', 'done'], ['확인', 'now'], ['종결', 'next']],
-    fp: [['오탐으로 되돌림', 'done'], ['판단', 'now'], ['배포', 'next'], ['PC 적용', 'next']],
-    pol: eff ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'done'], ['PC 적용', 'now']]
-      : P.changes.length ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'now'], ['PC 적용', 'next']]
-      : [['서명 후 배포', 'done'], ['PC 적용', acks && !acks.applied ? 'now' : 'done']],
+    fp: [['오탐으로 되돌림', 'done'], ['판단', 'now'], ['배포', 'next'], ['서버 적용', 'next']],
+    pol: eff ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'done'], ['서버 적용', behind ? 'now' : 'done']]
+      : P.changes.length ? [['판단', 'done'], ['규칙 생성', 'done'], ['서명 후 배포', 'now'], ['서버 적용', 'next']]
+      : [['서명 후 배포', 'done'], ['서버 적용', behind ? 'now' : 'done']],
   } as Record<Queue, Step[]>)[SEL]
 
   // ── 처리
@@ -60,7 +60,7 @@ export function useBoardModel() {
   const live = S.api.live, includeTest = S.api.includeTest, truncated = S.api.truncated
   const finishEffect = () => { S.ui.lastPub = null; advanceBoard() } // 배포 효과를 보고 다음 할 일로
   const publishDone = () => { S.ui.lastPub = S.policy.version; emit() } // 배포 대화상자가 끝나면 효과 화면으로
-  return { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, sens, raw, req, ready, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, acks, pc, loading, serverEmpty,
+  return { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, sens, raw, req, ready, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
     Q, keyOf, cur, ci, eff, steps, act, decideCase, keepFp, select, pickItem, allOk }
 }
 export type BoardModel = ReturnType<typeof useBoardModel>

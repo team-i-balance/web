@@ -32,16 +32,19 @@ export async function buildPayload(P: Policy) {
 
 const decode = (b64: string): Payload => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64), c => c.charCodeAt(0))))
 
-// PC 적용 현황: 지금 버전 기준(/policy/{n}/acks). 없으면 전체 요약(/policy/acks)
-async function loadAcks() {
-  type A = NonNullable<NonNullable<typeof S.api.pol>['acks']>
-  const n = +S.policy.version.slice(1)
-  if (n > 0) {
-    // 다른 버전 응답과 섞인 전체 요약으로 바꾸지 않는다
-    try { const r = await get<A>(`/policy/${n}/acks`); if (S.api.pol) S.api.pol.acks = r } catch { if (S.api.pol) S.api.pol.acks = null }
-    return
-  }
-  try { const r = await get<{ summary: A }>('/policy/acks'); if (S.api.pol) S.api.pol.acks = r.summary } catch { /* 현황은 없어도 된다 */ }
+// 서버 탐지가 지금 쓰는 정책(/policy/current). 콘솔의 배포(/policy/publish)는 저장만 하므로 /policy/deploy 로 적용해야 바뀐다
+async function loadActive() {
+  try {
+    const r = await get<{ active: boolean; version: number | null; activated_at: string | null }>('/policy/current')
+    if (S.api.pol) S.api.pol.active = r.active && r.version != null ? { version: r.version, at: r.activated_at } : null
+  } catch { if (S.api.pol) S.api.pol.active = null }
+}
+// 저장된 버전 n 을 서버 탐지에 적용한다. 성공하면 null, 거절되면 사유 코드
+export async function applyOnServer(n: number): Promise<string | null> {
+  const env = await get<Envelope>(`/policy/${n}`, 5000)
+  const r = await post<{ accepted: boolean; reason: string }>('/policy/deploy', { bundle: env })
+  await loadActive(); emit()
+  return r.accepted ? null : r.reason
 }
 
 // 배포 기록(/policy/history). 이 브라우저에서 배포한 버전은 무엇이 바뀌었는지까지 남겨 둔 것을 쓴다
@@ -91,7 +94,7 @@ export async function loadVersion(n: number): Promise<VersionView> {
 
 // 서버의 최신 배포본을 콘솔 정책에 반영한다. 아직 배포가 없으면 v0(규칙 없음)부터.
 export async function loadPolicy() {
-  S.api.pol = { keyid: null, sha: null, acks: null }
+  S.api.pol = { keyid: null, sha: null, active: null }
   const P = S.policy
   try {
     const env = await get<Envelope>('/policy/latest')
@@ -114,7 +117,7 @@ export async function loadPolicy() {
   }
   P.deployed = ''; P.changes = []
   S.history = []
-  await Promise.all([loadAcks(), loadHistory(), loadDraft()])
+  await Promise.all([loadActive(), loadHistory(), loadDraft()])
   markExcluded()
 }
 
@@ -131,7 +134,7 @@ function markExcluded() {
 
 // ── 정책 초안 (/policy/draft, 백엔드 docs/policy-draft-api.md)
 // 고칠 때마다 서버 초안에 저장해 새로고침·다른 보안팀원과 공유한다. 화면을 되살리는 데 필요한 평문(고유 단어·제외 값)은
-// 초안의 console_state 칸에만 두고, payload 에는 해시만 담는다(평문은 PC 번들에 들어가지 않는다).
+// 초안의 console_state 칸에만 두고, payload 에는 해시만 담는다(평문은 배포본에 들어가지 않는다).
 // console_state: 서버가 서명하지 않는 화면 복원 칸(#46). 예전 초안은 payload.console 에 있었다
 interface DraftOut { payload: (Record<string, unknown> & { console?: ConsoleState }) | null; console_state?: ConsoleState | null; changes: { what: string; src: string }[]; has_draft: boolean; etag: string }
 interface ConsoleState { entities: Policy['entities']; learned: Policy['learned']; dict: Policy['dict']; exclude: Policy['exclude']; meta: Policy['meta'] }
@@ -194,23 +197,30 @@ export async function publishToServer(): Promise<string> {
   return 'v' + r.version
 }
 
-export async function refreshAcks() { await loadAcks(); emit() }
+export async function refreshActive() { await loadActive(); emit() }
 // 서버에 배포한 직후: 새 버전 기준 현황과 기록을 다시 읽는다
 export async function afterServerPublish() {
-  await Promise.all([loadAcks(), loadHistory(), loadDraft()])
+  await Promise.all([loadActive(), loadHistory(), loadDraft()])
   markExcluded(); emit()
 }
 
-type Acks = NonNullable<NonNullable<typeof S.api.pol>['acks']>
-export const acksNow = (): Acks | null => (S.api.live ? S.api.pol?.acks ?? null : null)
 export const reasonKo = (k: string) => REASON_KO[k] || k
 
 
-// 직원 PC 적용 현황 한 줄
-export function pcStatus(): string | null {
-  const a = acksNow()
-  if (!a) return null
-  if (!a.devices) return '아직 받은 PC 없음'
-  const rj = Object.entries(a.reject_reasons).map(([k, n]) => `${REASON_KO[k] || k} ${n}`).join(', ')
-  return `PC ${a.applied}/${a.devices}대 적용` + (a.rejected ? ` · 거부 ${a.rejected}대(${rj})` : '')
+// 서버 적용 상태 한 줄(배포한 최신 버전이 서버 탐지에 쓰이고 있는지)
+export function serverStatus(): string | null {
+  if (!S.api.live) return null
+  const a = S.api.pol?.active, latest = +S.policy.version.slice(1) || 0
+  if (!latest) return null
+  if (!a) return '서버에 적용 안 됨'
+  return a.version === latest ? '서버 적용 중' : `서버는 v${a.version} 사용 중`
 }
+// 최신 배포 버전을 서버에 적용(배포 때 적용이 실패했거나, 이 기능 전에 배포해 저장만 된 버전)
+export async function applyLatest() {
+  const v = S.policy.version
+  try {
+    const no = await applyOnServer(+v.slice(1))
+    toast(no ? `${v}를 서버에 적용하지 못했어요 (${reasonKo(no)})` : `${v}를 서버 탐지에 적용했어요`)
+  } catch (e) { toast(`${v}를 서버에 적용하지 못했어요 (${(e as Error).message})`) }
+}
+export const serverBehind = () => S.api.live && +S.policy.version.slice(1) > 0 && S.api.pol?.active?.version !== +S.policy.version.slice(1)

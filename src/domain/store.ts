@@ -47,8 +47,9 @@ export const S = {
     fpPicked: new Set<string>(),
   },
 }
-// 서버 정책 상태: 마지막 배포 번들과 직원 PC 적용 현황(/policy/latest · /policy/acks)
-export interface ServerPolicy { keyid: string | null; sha: string | null; acks: { devices: number; applied: number; rejected: number; reject_reasons: Record<string, number> } | null }
+// 서버 정책 상태: 마지막 배포 번들(/policy/latest)과 서버 탐지가 실제로 쓰는 정책(/policy/current).
+// 직원 PC는 정책을 따로 받지 않는다. 입력을 서버(/process)로 검사하므로 서버에 적용된 정책이 곧 직원에게 적용된 정책이다
+export interface ServerPolicy { keyid: string | null; sha: string | null; active: { version: number; at: string | null } | null }
 export interface ServerStats { total: number; acceptance_rate: number; revert_rate: number; evasion_suspect: number; by_queue: Record<string, number>; by_grade: Record<string, number>; by_action?: Record<string, number>; by_policy_version?: Record<string, number> }
 
 let version = 0

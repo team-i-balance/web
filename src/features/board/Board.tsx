@@ -7,7 +7,7 @@ import { S, useStore, groupKey, QUEUE_ORDER, QUEUE_NAME, ago, ent, advanceBoard,
 import { useBoardModel } from './model'
 import type { Case, FpGroup } from '../../domain/types'
 import { connect } from '../../api/client'
-import { refreshAcks } from '../../api/policy'
+import { applyLatest } from '../../api/policy'
 import { requestReason } from '../../api/cases'
 import { Button, DecideButton, Empty, LinkButton, Sentence, Skeleton, StepBar, Tag, typesOf } from '../../ds'
 import { openDialog } from '../dialogs'
@@ -39,7 +39,7 @@ export default function Board() {
   const { scale, boxW, off } = useFit(scroller)
   const lock = useRef(0)
 
-  const { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, sens, raw, req, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, acks, pc, loading, serverEmpty,
+  const { live, includeTest, truncated, finishEffect, publishDone, E, pub, conf, sens, raw, req, wait, opt, fps, P, fresh, caught, work, SEL, lastPub, now, behind, pc, loading, serverEmpty,
     Q, keyOf, cur, ci, eff, steps, decideCase, keepFp, select, pickItem, allOk } = useBoardModel()
 
   // ── 단축키: 1·2·3 판단, ↑↓ 다른 건, Z 되돌리기
@@ -149,7 +149,7 @@ export default function Board() {
     side = (Q as FpGroup[]).filter(x => x !== g).map(x => <button key={groupKey(x)} type="button" className={b.nx} data-pick={groupKey(x)} onClick={() => pickItem(groupKey(x))}><b>{partial(x.type, x.value)}<small>{x.refs.length}회</small></b><span>{x.type}</span></button>)
   } else {
     sideTitle = '자동 변환 규칙'
-    const pcRow = pc && <div className={b.row}><Tag tone={acks?.rejected ? 'warn' : acks?.applied ? 'ok' : undefined} dot>{pc}</Tag>{live && <Button size="sm" variant="ghost" icon={<RefreshCw size={16} />} onClick={() => refreshAcks()}>새로고침</Button>}</div>
+    const pcRow = pc && <div className={b.row}><Tag tone={behind ? 'warn' : 'ok'} dot>{pc}</Tag>{live && behind && <Button size="sm" variant="ghost" onClick={() => applyLatest()}>{P.version} 서버에 적용하기</Button>}</div>
     body = eff ? (
       <div className={b.pb}>
         <div className={b.big}>원문 전송 {raw} → <em>{raw - caught}</em></div>

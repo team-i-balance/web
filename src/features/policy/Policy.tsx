@@ -6,7 +6,7 @@ import { GRADE, METHODS } from '../../domain/defaults'
 import type { Method } from '../../domain/types'
 import { Button, Empty, Select, Switch, Tag, ds } from '../../ds'
 import { openDialog } from '../dialogs'
-import { acksNow, reasonKo } from '../../api/policy'
+import { serverBehind, serverStatus } from '../../api/policy'
 import { convert, partial, pct } from '../../lib/util'
 import p from './policy.module.css'
 
@@ -53,16 +53,15 @@ export default function Policy() {
     ['p-file', '파일 사본', `${metaOn}/${Object.keys(P.meta).length}`, /파일 사본/],
   ]
   const active = useActive(secs.map(x => x[0]))
-  const a = acksNow()
-  const rjTitle = a && a.rejected ? Object.entries(a.reject_reasons).map(([k, n]) => `${reasonKo(k)} ${n}대`).join(', ') : undefined
+  const st = serverStatus()
   const del = (label: string, on: () => void) => <Button size="sm" variant="ghost" iconOnly icon={<Trash2 size={16} />} aria-label={label} onClick={on} />
   return (
     <div className={ds.page}>
     <div className={ds.pageHead}>
       <h1>변환 정책</h1>
       <span className={ds.pageMeta}>
-        {P.version === 'v0' ? '아직 배포한 정책 없음' : <span title={P.deployed ? `${P.deployed} 배포` : undefined}>{P.version} 적용 중</span>}
-        {a && <> · {a.devices ? `PC ${a.applied}/${a.devices}대` : '아직 받은 PC 없음'}{a.rejected > 0 && <> · <em className={p.rj} title={rjTitle}>거부 {a.rejected}대</em></>}</>}
+        {P.version === 'v0' ? '아직 배포한 정책 없음' : <span title={P.deployed ? `${P.deployed} 배포` : undefined}>{P.version} 배포됨</span>}
+        {st && <> · {serverBehind() ? <em className={p.rj}>{st}</em> : st}</>}
       </span>
     </div>
     <div className={p.wrap}>

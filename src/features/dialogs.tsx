@@ -5,7 +5,7 @@ import { CAUSES, CONCLUSION, METHODS } from '../domain/defaults'
 import type { Cause, Conclusion, Method } from '../domain/types'
 import { convert, fmt, josa, partial } from '../lib/util'
 import { QUEUE_KO, connect, post, setIncludeTest } from '../api/client'
-import { afterServerPublish, publishToServer } from '../api/policy'
+import { afterServerPublish, applyOnServer, publishToServer, reasonKo } from '../api/policy'
 import { Button, Checkbox, Field, Input, KV, Notice, Select, Switch, Tag, TextArea } from '../ds'
 import { Modal } from '../ds/Overlay'
 import f from './dialogs.module.css'
@@ -99,10 +99,10 @@ function Exclude({ groupKey: key, onDone }: { groupKey: string; onDone?: () => v
   const [err, setErr] = useState(false)
   if (!g) return null
   const wk = new Date(+S.now - 7 * 864e5), less = g.refs.filter(r => r.e.time >= wk).length
-  const noHash = g.value.includes('#nohash-') // 서버가 값 해시를 주지 않아 PC가 이 값을 알아볼 수 없다
+  const noHash = g.value.includes('#nohash-') // 서버가 값 해시를 주지 않아 정책으로 이 값을 알아볼 수 없다
   const ok = () => { if (noHash) return; if (!why.trim()) { setErr(true); return } fpExclude(g, why.trim()); S.ui.dialog = null; onDone?.(); emit() }
   return (
-    <Modal open sheet onClose={closeDialog} title="탐지 제외" desc="정책 초안에 추가돼요. 서명 후 배포하면 직원 PC에 적용돼요." foot={<Foot ok="초안에 추가하기" onOk={ok} disabled={noHash} />}>
+    <Modal open sheet onClose={closeDialog} title="탐지 제외" desc="정책 초안에 추가돼요. 서명 후 배포하면 서버 탐지에 적용돼요." foot={<Foot ok="초안에 추가하기" onOk={ok} disabled={noHash} />}>
       <div className={f.valueCard}><span className={f.mut}>{g.type}</span><b className={f.big}>{partial(g.type, g.value)}</b></div>
       <KV rows={[['범위', '정확히 이 값만'], ['근거', `오탐 신고 ${g.refs.length}회 · 직원 ${g.users.size}명`], ['효과', `최근 7일 기준 ${less}건이 덜 잡혀요`]]} />
       {noHash && <Note warn>이 신고에는 서버의 값 해시가 없어 제외 규칙을 만들 수 없어요. 직원 앱이 값 해시를 보내야 해요.</Note>}
@@ -146,7 +146,12 @@ function Publish({ onDone }: { onDone?: () => void }) {
     let v: string | undefined
     if (S.api.live) {
       setBusy(true); setErr(null)
-      try { v = await publishToServer() } catch (e) {
+      try {
+        v = await publishToServer()
+        // 배포는 서버에 저장만 한다. 서버 탐지가 이 버전을 쓰도록 바로 적용한다
+        const no = await applyOnServer(+v.slice(1)).catch(e => (e as Error).message)
+        if (no) toast(`${v}를 저장했지만 서버에 적용하지 못했어요 (${reasonKo(no)}) · 배포 화면에서 다시 적용해 주세요`)
+      } catch (e) {
         const m = (e as Error).message
         setErr(/signing key/i.test(m) ? '서버의 서명 키를 찾을 수 없어요. 백엔드 담당자에게 알려 주세요' : m); setBusy(false); return
       }
@@ -155,7 +160,7 @@ function Publish({ onDone }: { onDone?: () => void }) {
   }
   return (
     <Modal open onClose={closeDialog} title={S.api.live ? '서명 후 배포' : `${nextVersion()} 서명 후 배포`}
-      desc={S.api.live ? '서버가 버전을 매겨 서명해요. 직원 PC는 서명이 맞는 정책만 받아요.' : '서명한 정책만 직원 PC가 받아요.'}
+      desc="서버가 버전을 매겨 서명하고, 서버 탐지에 바로 적용해요. 직원 입력은 모두 서버에서 검사하니 따로 내려보낼 필요가 없어요."
       foot={<Foot ok="서명 후 배포하기" okLabel="서명하는 중…" busy={busy} onOk={ok} />}>
       <ChangeList />
       {err && <Note error>배포하지 못했어요: {err}</Note>}
