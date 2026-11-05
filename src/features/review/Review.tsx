@@ -72,6 +72,7 @@ function Detail({ c }: { c: Case }) {
         <div className={r.col}>
           <section className={r.sec}><h3>직원 사유 {c.reason?.pick && <Tag>{c.reason.pick}</Tag>}</h3>
             {c.reason?.text ? <blockquote className={r.quote}>{c.reason.text}</blockquote>
+              : c.reason?.pick === '오탐' ? <div className={r.note}>'오탐'이라며 원문을 보냈어요 · 개인정보가 아니면 '문제 없음'으로 닫으세요. 값 정보가 없어 탐지 제외로는 이어지지 않아요</div>
               : c.reason ? <div className={r.note}>사유 글 없이 '{c.reason.pick}'만 골랐어요</div>
               : <div className={r.note}>사유가 없어요 · 지금 직원 프로그램은 나중에 사유를 낼 방법이 없어요</div>}</section>
           {x && <section className={r.sec}><h3>보안팀 결론</h3>

@@ -85,7 +85,7 @@ export function metrics(from: Date, to: Date = S.now) {
   const sens = S.events.filter(e => e.grade === 'S' && e.time >= from && e.time < to && e.action !== 'cancel')
   const items = sens.flatMap(e => e.items)
   const byType: Record<string, { n: number; rev: number; fp: number }> = {}
-  items.forEach(i => { const b = (byType[i.type] ||= { n: 0, rev: 0, fp: 0 }); b.n++; if (i.status === 'revert') { b.rev++; if (i.reason === '오탐') b.fp++ } })
+  items.forEach(i => { const b = (byType[i.type] ||= { n: 0, rev: 0, fp: 0 }); b.n++; if (i.status === 'revert' || i.status === 'raw') { b.rev++; if (i.reason === '오탐') b.fp++ } }) // 원문으로 되돌림·원문 그대로 둘 다 원문 전송
   return { n: sens.length, byType }
 }
 export function boardWork() {

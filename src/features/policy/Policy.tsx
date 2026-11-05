@@ -16,7 +16,7 @@ const T = `${ds.table} ${p.t}`
 function Rate({ b }: { b?: { n: number; rev: number } }) {
   if (!b || b.n < 3) return <span className={p.faint}>—</span>
   const r = pct(b.rev, b.n), hi = r >= 30
-  return <span className={p.rate + (hi ? ' ' + p.hi : '')} title={`최근 7일 변환 제안 ${b.n}건 중 ${b.rev}건을 원문으로 보냄`}><b>{r}%</b><small>{b.rev}/{b.n}</small></span>
+  return <span className={p.rate + (hi ? ' ' + p.hi : '')} title={`최근 7일 이 항목이 잡힌 ${b.n}건 중 ${b.rev}건은 원문이 나감(원문 그대로·되돌림)`}><b>{r}%</b><small>{b.rev}/{b.n}</small></span>
 }
 const Draft = ({ on }: { on?: boolean }) => (on ? <span className={p.draft}><Tag tone="now">배포 대기</Tag></span> : null)
 const LEGEND = '대체: [이름_1]처럼 바꾸고, AI 답변이 오면 원래 값으로 되돌려요 · 일반화: 주소는 앞 두 낱말, 생년월일은 연대만 남겨요(이 둘만 돼요) · 삭제: [삭제됨]으로 바꿔요 · 태그: [이름]처럼 종류만 남겨요 · 번호는 입력 한 건 안에서만 같아요'
