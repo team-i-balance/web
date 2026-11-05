@@ -25,14 +25,21 @@
 /* ── 알림 */
 .toasts { position: fixed; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 49; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; width: max-content; max-width: calc(100vw - 32px); }
 .toast {
-  pointer-events: auto; display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 8px 8px 16px;
-  background: var(--fg); color: var(--surface); border-radius: var(--r-lg); box-shadow: var(--sh-3); font-size: var(--t-14); font-weight: 500;
+  --tone: var(--ok);
+  position: relative; pointer-events: auto; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 8px 8px 14px;
+  background: color-mix(in srgb, var(--tone) 10%, var(--surface)); color: var(--fg);
+  border: 1px solid color-mix(in srgb, var(--tone) 50%, transparent); border-radius: var(--r-md); box-shadow: var(--sh-2);
+  font-size: var(--t-14); font-weight: 500;
 }
+/* 상태(Devs Toast): 테두리·아이콘에 상태색, 글자는 본문색 */
+.toast.success { --tone: var(--ok); }
+.toast.warning { --tone: var(--warn); }
+.toast.error { --tone: var(--danger); }
+.toastI { flex: none; color: var(--tone); }
 .toast.plain { padding-right: 16px; }
-.toastBtn { height: 30px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: color-mix(in srgb, currentColor 14%, transparent); color: inherit; font-weight: 700; font-size: var(--t-13); display: inline-flex; align-items: center; gap: 6px; }
-.toastBtn:hover { background: color-mix(in srgb, currentColor 24%, transparent); }
-.toast { position: relative; }
+.toastBtn { height: 30px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: color-mix(in srgb, var(--fg) 8%, transparent); color: inherit; font-weight: 600; font-size: var(--t-13); display: inline-flex; align-items: center; gap: 6px; }
+.toastBtn:hover { background: color-mix(in srgb, var(--fg) 14%, transparent); }
 .toastKbd { font-size: 11px; opacity: 0.7; border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; }
-.toastBar { position: absolute; left: 12px; right: 12px; bottom: 4px; height: 2px; border-radius: 1px; background: currentColor; opacity: 0.25; transform-origin: left; animation: shrink 10s linear forwards; }
+.toastBar { position: absolute; left: 12px; right: 12px; bottom: 3px; height: 2px; border-radius: 1px; background: var(--tone); opacity: 0.5; transform-origin: left; animation: shrink 10s linear forwards; }
 @keyframes shrink { to { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .toastBar { animation: none; } }
