@@ -12,6 +12,7 @@ export interface ServerEvent {
   reason_text?: string | null; reason_requested_at?: string | null; reason_at?: string | null
   // 이슈 #21(PR #36)이 들어오면 채워진다
   user_id?: string | null; dept?: string | null; target_ai?: string | null
+  items?: { type: string; decision: 'converted' | 'reverted' | 'raw'; reason?: string | null; value_hash?: string | null; preview?: string | null }[]
 }
 
 const TYPE_KO: Record<string, string> = { NAME: '이름', PHONE: '전화번호', EMAIL: '이메일', ADDRESS: '주소', ID_NUMBER: '주민등록번호', ID: '주민등록번호', ACCOUNT: '계좌번호', CARD: '카드번호', DOB: '생년월일',
@@ -49,9 +50,19 @@ export function fromServer(ev: ServerEvent): AiEvent {
   const action: AiEvent['action'] = grade === 'C' ? 'block' : grade === 'O' ? 'pass'
     : (({ send_transformed: 'sent', send_as_is: 'raw', revert_original: 'revert', cancel: 'cancel' } as Record<string, AiEvent['action']>)[ev.action] || 'sent')
   const rsn = ev.reason === 'false_positive' ? '오탐' : ev.reason === 'business_need' ? '업무상 필요' : null
-  const items: Item[] = types.map(type => ({ type, orig: `⟦${type}⟧`, method: ent(type)?.method ?? '대체', conv: '(변환됨)',
-    status: grade !== 'S' ? null : action === 'raw' ? 'raw' : action === 'revert' ? 'revert' : 'conv',
-    reason: action === 'revert' ? rsn : null, fp: action === 'revert' && rsn === '오탐' ? 'open' : null }))
+  // 항목별 정보(#21)가 오면 가린 값(preview)과 값 해시로 채운다. 원래 값은 서버에도 없다.
+  const ko = (r?: string | null) => (r === 'false_positive' ? '오탐' : r === 'business_need' ? '업무상 필요' : null)
+  const items: Item[] = ev.items?.length
+    ? ev.items.map(it => {
+      const type = TYPE_KO[it.type] || it.type, r = ko(it.reason) ?? (it.decision === 'reverted' ? rsn : null)
+      if (!ent(type)) S.policy.entities.push({ name: type, grade: 'S', method: '대체', sample: '', on: true })
+      return { type, orig: `⟦=${it.preview ?? ''}#${it.value_hash ?? ev.id + type}⟧`, method: ent(type)?.method ?? '대체', conv: '(변환됨)',
+        status: grade !== 'S' ? null : it.decision === 'raw' ? 'raw' : it.decision === 'reverted' ? 'revert' : 'conv',
+        reason: it.decision === 'reverted' ? r : null, fp: it.decision === 'reverted' && r === '오탐' ? 'open' : null }
+    })
+    : types.map(type => ({ type, orig: `⟦${type}⟧`, method: ent(type)?.method ?? '대체', conv: '(변환됨)',
+      status: grade !== 'S' ? null : action === 'raw' ? 'raw' : action === 'revert' ? 'revert' : 'conv',
+      reason: action === 'revert' ? rsn : null, fp: action === 'revert' && rsn === '오탐' ? 'open' : null }))
   const h = (ev.content_hash || String(ev.id)).slice(0, 4)
   return { id: String(ev.id), time: new Date(ev.created_at), user: ev.user_id || `직원 ${h}`, dept: ev.dept || '부서 미전송', ai: ev.target_ai || 'AI 미전송', file: null,
     tpl: '본문은 서버에 저장하지 않아요', items, grade, action,
