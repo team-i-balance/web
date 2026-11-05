@@ -143,7 +143,10 @@ function Publish({ onDone }: { onDone?: () => void }) {
     let v: string | undefined
     if (S.api.live) {
       setBusy(true); setErr(null)
-      try { v = await publishToServer() } catch (e) { setErr((e as Error).message); setBusy(false); return }
+      try { v = await publishToServer() } catch (e) {
+        const m = (e as Error).message
+        setErr(/signing key/i.test(m) ? '서버의 서명 키를 찾을 수 없어요. 백엔드 담당자에게 알려 주세요' : m); setBusy(false); return
+      }
     }
     S.ui.dialog = null; publish(v); if (S.api.live) afterServerPublish(); else simulateDemoAcks(); onDone?.(); emit()
   }
